@@ -300,6 +300,276 @@ proof -
   finally show ?thesis .
 qed
 
+subsection \<open>The family of tests, and covering every input of weight \<open>t\<close>\<close>
+
+text \<open>
+  A test is a tuple of shift vectors, one per modulus, each admissible for the target
+  weight \<open>t\<close>.  Whether a test accepts an input depends only on the block weights, so the
+  universe to be covered is the finite set of weight tuples of inputs of weight \<open>t\<close>.
+\<close>
+
+definition Th :: "nat \<Rightarrow> (nat \<Rightarrow> nat list) set" where
+  "Th t = {\<theta> \<in> PiE {..<D} (\<lambda>l. shifts (modl l)). \<forall>l<D. adm (modl l) t (\<theta> l)}"
+
+definition wv :: "('v \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat list" where
+  "wv \<sigma> = restrict (\<lambda>l. map (cnt \<sigma>) (blks l)) {..<D}"
+
+definition Univ :: "nat \<Rightarrow> (nat \<Rightarrow> nat list) set" where
+  "Univ t = wv ` {\<sigma>. cnt \<sigma> L = t}"
+
+definition Rel :: "(nat \<Rightarrow> nat list) \<Rightarrow> (nat \<Rightarrow> nat list) \<Rightarrow> bool" where
+  "Rel \<theta> u = (\<forall>l<D. passesW (modl l) (u l) (\<theta> l))"
+
+definition aa :: nat where "aa = (\<Prod>l<D. fact (modl l))"
+definition rr :: nat where "rr = 3 ^ (D * Qb)"
+definition hh :: nat where "hh = D * (D * (k + 1) * Qb) + 1"
+
+lemma Rel_wv: "Rel \<theta> (wv \<sigma>) \<longleftrightarrow> (\<forall>l<D. passes (modl l) \<sigma> (blks l) (\<theta> l))"
+  by (simp add: Rel_def wv_def passes_passesW)
+
+lemma finite_Th: "finite (Th t)"
+proof -
+  have "Th t \<subseteq> PiE {..<D} (\<lambda>l. shifts (modl l))" by (auto simp: Th_def)
+  moreover have "finite (PiE {..<D} (\<lambda>l. shifts (modl l)))"
+    by (intro finite_PiE) (simp_all add: finite_shifts)
+  ultimately show ?thesis by (rule finite_subset)
+qed
+
+lemma aa_pos: "0 < aa"
+  by (simp add: aa_def)
+
+lemma card_Th: "card (Th t) \<le> rr * aa"
+proof -
+  have "card (Th t) \<le> card (PiE {..<D} (\<lambda>l. shifts (modl l)))"
+    by (intro card_mono) (auto simp: Th_def intro: finite_PiE simp: finite_shifts)
+  also have "\<dots> = (\<Prod>l<D. modl l ^ modl l)" by (simp add: card_PiE card_shifts)
+  also have "\<dots> \<le> (\<Prod>l<D. 3 ^ modl l * fact (modl l))"
+    by (intro prod_mono conjI) (simp_all add: pow_le_3pow_fact)
+  also have "\<dots> = (\<Prod>l<D. 3 ^ modl l) * aa" by (simp add: prod.distrib aa_def)
+  also have "(\<Prod>l<D. (3::nat) ^ modl l) \<le> (\<Prod>l<D. 3 ^ Qb)"
+    by (intro prod_mono conjI) (simp_all add: modl_le power_increasing)
+  also have "(\<Prod>l<D. (3::nat) ^ Qb) = rr"
+  proof -
+    have "(\<Prod>l<D. (3::nat) ^ Qb) = (3 ^ Qb) ^ D" by simp
+    also have "\<dots> = 3 ^ (Qb * D)" by (rule power_mult[symmetric])
+    also have "\<dots> = rr" by (simp add: rr_def mult.commute)
+    finally show ?thesis .
+  qed
+  finally show ?thesis by simp
+qed
+
+lemma wit:
+  assumes "u \<in> Univ t" shows "aa \<le> card {\<theta> \<in> Th t. Rel \<theta> u}"
+proof -
+  obtain \<sigma> where u: "u = wv \<sigma>" and w: "cnt \<sigma> L = t" using assms by (auto simp: Univ_def)
+  let ?G = "\<lambda>l. {ss \<in> shifts (modl l). passes (modl l) \<sigma> (blks l) ss}"
+  have sub: "PiE {..<D} ?G \<subseteq> {\<theta> \<in> Th t. Rel \<theta> u}"
+  proof
+    fix \<theta> assume th: "\<theta> \<in> PiE {..<D} ?G"
+    have sh: "\<theta> \<in> PiE {..<D} (\<lambda>l. shifts (modl l))" using th by (auto simp: PiE_iff)
+    have ps: "\<And>l. l < D \<Longrightarrow> passes (modl l) \<sigma> (blks l) (\<theta> l)" using th by (auto simp: PiE_iff)
+    have adm: "adm (modl l) t (\<theta> l)" if l: "l < D" for l
+    proof (rule passes_imp_adm)
+      show "length (blks l) = modl l" by simp
+      show "length (\<theta> l) = modl l" using sh l by (auto simp: PiE_iff shifts_def)
+      show "0 < modl l" by (rule modl_pos)
+      show "cnt \<sigma> (concat (blks l)) mod modl l = t mod modl l" using w by simp
+      show "passes (modl l) \<sigma> (blks l) (\<theta> l)" using ps l by blast
+    qed
+    have "\<theta> \<in> Th t" using sh adm by (simp add: Th_def)
+    moreover have "Rel \<theta> u" using ps u by (simp add: Rel_wv)
+    ultimately show "\<theta> \<in> {\<theta> \<in> Th t. Rel \<theta> u}" by simp
+  qed
+  have fin: "finite {\<theta> \<in> Th t. Rel \<theta> u}" using finite_Th by simp
+  have "aa \<le> (\<Prod>l<D. card (?G l))"
+    unfolding aa_def by (intro prod_mono conjI) (simp_all add: card_accepting_shifts modl_pos)
+  also have "\<dots> = card (PiE {..<D} ?G)" by (simp add: card_PiE)
+  also have "\<dots> \<le> card {\<theta> \<in> Th t. Rel \<theta> u}" using fin sub by (rule card_mono)
+  finally show ?thesis .
+qed
+
+definition Wset :: "(nat \<Rightarrow> nat list) set" where
+  "Wset = PiE {..<D} (\<lambda>l. {ws. set ws \<subseteq> {..length L} \<and> length ws = modl l})"
+
+lemma finite_Wset: "finite Wset"
+  unfolding Wset_def by (intro finite_PiE) (simp_all add: finite_lists_length_eq)
+
+lemma Univ_sub: "Univ t \<subseteq> Wset"
+proof
+  fix u assume "u \<in> Univ t"
+  then obtain \<sigma> where u: "u = wv \<sigma>" by (auto simp: Univ_def)
+  have "cnt \<sigma> B \<le> length L" if "B \<in> set (blks l)" for B l
+  proof -
+    have "cnt \<sigma> B \<le> length B" by (rule cnt_le_length)
+    also have "\<dots> \<le> length (concat (blks l))" using that by (rule length_le_concat)
+    finally show ?thesis by simp
+  qed
+  then show "u \<in> Wset" using u by (auto simp: Wset_def wv_def PiE_iff)
+qed
+
+lemma finite_Univ: "finite (Univ t)"
+  using finite_Wset Univ_sub by (rule finite_subset[rotated])
+
+lemma card_Univ: "card (Univ t) < 2 ^ hh"
+proof -
+  let ?K = "k + 1"
+  have "card (Univ t) \<le> card Wset" using finite_Wset Univ_sub by (intro card_mono)
+  also have "\<dots> = (\<Prod>l<D. Suc (length L) ^ modl l)"
+    by (simp add: Wset_def card_PiE card_lists_length_eq)
+  also have "\<dots> \<le> (\<Prod>l<D. 2 ^ (?K * D * Qb))"
+  proof (intro prod_mono conjI)
+    fix l assume l: "l \<in> {..<D}"
+    have D0: "0 < D" using D2 by simp
+    have "k ^ D < ?K ^ D" using D0 by (intro power_strict_mono) simp_all
+    with Lk have "length L < ?K ^ D" by (rule le_less_trans)
+    then have a: "Suc (length L) \<le> ?K ^ D" by simp
+    have Kle: "?K \<le> 2 ^ ?K" by (rule less_imp_le, rule less_exp)
+    have i1: "?K ^ D \<le> (2 ^ ?K) ^ D" using Kle by (rule power_mono) simp
+    have "Suc (length L) ^ modl l \<le> (?K ^ D) ^ modl l" using a by (rule power_mono) simp
+    also have "\<dots> \<le> (?K ^ D) ^ Qb"
+      using l modl_le by (intro power_increasing) simp_all
+    also have "\<dots> \<le> ((2 ^ ?K) ^ D) ^ Qb" using i1 by (rule power_mono) simp
+    also have "\<dots> = 2 ^ (?K * D * Qb)" by (simp only: power_mult)
+    finally show "Suc (length L) ^ modl l \<le> 2 ^ (?K * D * Qb)" .
+  qed simp
+  also have "\<dots> = 2 ^ (D * (?K * D * Qb))"
+  proof -
+    have "(\<Prod>l<D. (2::nat) ^ (?K * D * Qb)) = (2 ^ (?K * D * Qb)) ^ D" by simp
+    also have "\<dots> = 2 ^ (?K * D * Qb * D)" by (rule power_mult[symmetric])
+    also have "?K * D * Qb * D = D * (?K * D * Qb)" by (rule mult.commute)
+    finally show ?thesis .
+  qed
+  also have "\<dots> < 2 ^ hh" by (simp add: hh_def algebra_simps)
+  finally show ?thesis .
+qed
+
+lemma cover_exists: "\<exists>S\<subseteq>Th t. card S \<le> rr * hh \<and> (\<forall>u\<in>Univ t. \<exists>\<theta>\<in>S. Rel \<theta> u)"
+  by (rule cover) (rule finite_Univ, rule finite_Th, rule aa_pos, erule wit, rule card_Th, rule card_Univ)
+
+definition Sc :: "nat \<Rightarrow> (nat \<Rightarrow> nat list) set" where
+  "Sc t = (SOME S. S \<subseteq> Th t \<and> card S \<le> rr * hh \<and> (\<forall>u\<in>Univ t. \<exists>\<theta>\<in>S. Rel \<theta> u))"
+
+lemma Sc: "Sc t \<subseteq> Th t" "card (Sc t) \<le> rr * hh" "\<forall>u\<in>Univ t. \<exists>\<theta>\<in>Sc t. Rel \<theta> u"
+  using someI_ex[OF cover_exists[of t]] unfolding Sc_def by blast+
+
+lemma finite_Sc: "finite (Sc t)"
+  using Sc(1) finite_Th by (rule finite_subset)
+
+definition scl :: "nat \<Rightarrow> (nat \<Rightarrow> nat list) list" where
+  "scl t = (SOME xs. set xs = Sc t \<and> distinct xs)"
+
+lemma scl: "set (scl t) = Sc t" "distinct (scl t)"
+  using someI_ex[OF finite_distinct_list[OF finite_Sc[of t]]] unfolding scl_def by blast+
+
+lemma length_scl: "length (scl t) \<le> rr * hh"
+  using scl Sc(2)[of t] by (simp add: distinct_card[symmetric])
+
+subsection \<open>\<open>EXACT\<^sub>t\<close> and arbitrary symmetric functions\<close>
+
+definition exactF :: "nat \<Rightarrow> 'v form" where
+  "exactF t = Or (map testF (scl t))"
+
+lemma exactF_SIG: "SIG (Suc D) (exactF t)"
+  by (simp add: exactF_def testF_pi)
+
+lemma exactF_gates: "gates (exactF t) \<le> Suc (rr * hh * Suc (D * (Qb * Qb) * 2 ^ (C * (2 * k + 1))))"
+proof -
+  have "sum_list (map gates (map testF (scl t))) \<le> length (map testF (scl t)) * Suc (D * (Qb * Qb) * 2 ^ (C * (2 * k + 1)))"
+    by (intro sum_list_le_const ballI) (use testF_gates in auto)
+  also have "\<dots> \<le> rr * hh * Suc (D * (Qb * Qb) * 2 ^ (C * (2 * k + 1)))"
+    by (rule mult_right_mono) (simp_all add: length_scl)
+  finally show ?thesis by (simp add: exactF_def comp_def)
+qed
+
+lemma exactF_eval:
+  assumes t: "t \<le> length L"
+  shows "eval \<sigma> (exactF t) \<longleftrightarrow> cnt \<sigma> L = t"
+proof
+  assume "eval \<sigma> (exactF t)"
+  then obtain \<theta> where th: "\<theta> \<in> Sc t" and ev: "eval \<sigma> (testF \<theta>)"
+    by (auto simp: exactF_def scl)
+  have thT: "\<theta> \<in> Th t" using th Sc(1) by blast
+  have len: "\<And>l. l < D \<Longrightarrow> length (\<theta> l) = modl l"
+    using thT by (auto simp: Th_def PiE_iff shifts_def)
+  have ps: "\<forall>l<D. passes (modl l) \<sigma> (blks l) (\<theta> l)" using ev len by (simp add: testF_eval)
+  have cong: "cnt \<sigma> L mod modq D k l = t mod modq D k l" if l: "l < D" for l
+  proof -
+    have "cnt \<sigma> (concat (blks l)) mod modl l = t mod modl l"
+    proof (rule test_sound)
+      show "length (blks l) = modl l" by simp
+      show "length (\<theta> l) = modl l" using len l by blast
+      show "0 < modl l" by (rule modl_pos)
+      show "adm (modl l) t (\<theta> l)" using thT l by (simp add: Th_def)
+      show "passes (modl l) \<sigma> (blks l) (\<theta> l)" using ps l by blast
+    qed
+    then show ?thesis by (simp add: modl_def)
+  qed
+  have D0: "0 < D" using D2 by simp
+  have c1: "cnt \<sigma> L < (\<Prod>i<D. modq D k i)"
+    using D0 cnt_le_length[of \<sigma> L] Lk by (intro modq_prod_gt) simp_all
+  have c2: "t < (\<Prod>i<D. modq D k i)"
+    using D0 t Lk by (intro modq_prod_gt) simp_all
+  show "cnt \<sigma> L = t"
+    by (rule crt_eq[of D "modq D k"]) (simp_all add: modq_coprime cong c1 c2)
+next
+  assume w: "cnt \<sigma> L = t"
+  then have "wv \<sigma> \<in> Univ t" by (auto simp: Univ_def)
+  then obtain \<theta> where th: "\<theta> \<in> Sc t" and R: "Rel \<theta> (wv \<sigma>)" using Sc(3) by blast
+  have thT: "\<theta> \<in> Th t" using th Sc(1) by blast
+  have len: "\<And>l. l < D \<Longrightarrow> length (\<theta> l) = modl l"
+    using thT by (auto simp: Th_def PiE_iff shifts_def)
+  have "eval \<sigma> (testF \<theta>)" using R len by (simp add: testF_eval Rel_wv)
+  then show "eval \<sigma> (exactF t)" using th by (auto simp: exactF_def scl)
+qed
+
+definition symF :: "(nat \<Rightarrow> bool) \<Rightarrow> 'v form" where
+  "symF g = orflat (map exactF (filter g [0..<Suc (length L)]))"
+
+lemma symF_SIG: "SIG (Suc D) (symF g)"
+  unfolding symF_def by (rule orflat_SIG') (auto simp del: SIG.simps simp: exactF_SIG)
+
+lemma symF_eval: "eval \<sigma> (symF g) \<longleftrightarrow> g (cnt \<sigma> L)"
+proof -
+  have ors: "\<forall>f\<in>set (map exactF (filter g [0..<Suc (length L)])). \<exists>gs. f = Or gs"
+    by (auto simp: exactF_def)
+  have "eval \<sigma> (symF g) \<longleftrightarrow> (\<exists>t\<in>set (filter g [0..<Suc (length L)]). eval \<sigma> (exactF t))"
+    unfolding symF_def using ors by (simp add: eval_orflat)
+  also have "\<dots> \<longleftrightarrow> g (cnt \<sigma> L)"
+  proof
+    assume "\<exists>t\<in>set (filter g [0..<Suc (length L)]). eval \<sigma> (exactF t)"
+    then obtain t where t: "t < Suc (length L)" "g t" "eval \<sigma> (exactF t)"
+      by (auto simp del: upt_Suc)
+    then have "cnt \<sigma> L = t" using exactF_eval[of t \<sigma>] by simp
+    with t(2) show "g (cnt \<sigma> L)" by simp
+  next
+    assume g: "g (cnt \<sigma> L)"
+    have c: "cnt \<sigma> L \<le> length L" by (rule cnt_le_length)
+    then have "eval \<sigma> (exactF (cnt \<sigma> L))" using exactF_eval by simp
+    then show "\<exists>t\<in>set (filter g [0..<Suc (length L)]). eval \<sigma> (exactF t)"
+      using g c by (intro bexI[of _ "cnt \<sigma> L"]) (auto simp del: upt_Suc)
+  qed
+  finally show ?thesis .
+qed
+
+lemma symF_gates:
+  "gates (symF g) \<le> Suc (Suc (length L) * Suc (rr * hh * Suc (D * (Qb * Qb) * 2 ^ (C * (2 * k + 1)))))"
+proof -
+  let ?b = "Suc (rr * hh * Suc (D * (Qb * Qb) * 2 ^ (C * (2 * k + 1))))"
+  have "gates (symF g) \<le> Suc (sum_list (map gates (map exactF (filter g [0..<Suc (length L)]))))"
+    unfolding symF_def by (rule gates_orflat)
+  also have "sum_list (map gates (map exactF (filter g [0..<Suc (length L)])))
+      \<le> length (map exactF (filter g [0..<Suc (length L)])) * ?b"
+    by (intro sum_list_le_const ballI) (use exactF_gates in auto)
+  also have "\<dots> \<le> Suc (length L) * ?b"
+  proof (rule mult_right_mono)
+    have "length (filter g [0..<Suc (length L)]) \<le> length [0..<Suc (length L)]"
+      by (rule length_filter_le)
+    then show "length (map exactF (filter g [0..<Suc (length L)])) \<le> Suc (length L)"
+      by (simp del: upt_Suc)
+  qed simp
+  finally show ?thesis by simp
+qed
+
 end
 
 end
