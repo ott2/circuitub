@@ -572,4 +572,107 @@ qed
 
 end
 
+section \<open>The size bound is \<open>2\<^sup>O\<^sup>(\<^sup>k\<^sup>)\<close>\<close>
+
+definition bnd :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where
+  "bnd D C K = 1 + K ^ D * (1 + 3 ^ ((D * Econst D) * K) * (D * (D * K * (Econst D * K)) + 1)
+                 * (1 + D * ((Econst D * K) * (Econst D * K)) * 2 ^ ((2 * C) * K)))"
+
+lemma EB_bnd: "EB (bnd D C)"
+  unfolding bnd_def[abs_def] by (intro EB_intros)
+
+context step
+begin
+
+lemma symF_bnd: "gates (symF g) \<le> bnd D C (k + 1)"
+proof -
+  let ?K = "k + 1"
+  let ?P = "2 ^ (C * (2 * k + 1))" and ?P' = "2 ^ ((2 * C) * ?K)"
+  let ?X = "D * (Qb * Qb)"
+  have P: "(2::nat) ^ (C * (2 * k + 1)) \<le> 2 ^ ((2 * C) * ?K)"
+    by (intro power_increasing) (simp_all add: algebra_simps)
+  have A: "Suc (length L) \<le> ?K ^ D"
+  proof -
+    have "k ^ D < ?K ^ D" using D2 by (intro power_strict_mono) simp_all
+    with Lk have "length L < ?K ^ D" by (rule le_less_trans)
+    then show ?thesis by simp
+  qed
+  have i: "Suc (?X * ?P) \<le> Suc (?X * ?P')" using P by simp
+  have ii: "Suc (rr * hh * Suc (?X * ?P)) \<le> Suc (rr * hh * Suc (?X * ?P'))"
+    using i by simp
+  have iii: "Suc (length L) * Suc (rr * hh * Suc (?X * ?P)) \<le> ?K ^ D * Suc (rr * hh * Suc (?X * ?P'))"
+    using A ii by (rule mult_le_mono)
+  have "gates (symF g) \<le> Suc (Suc (length L) * Suc (rr * hh * Suc (?X * ?P)))"
+    by (rule symF_gates)
+  also have "\<dots> \<le> Suc (?K ^ D * Suc (rr * hh * Suc (?X * ?P')))" using iii by simp
+  also have "\<dots> = bnd D C ?K"
+    by (simp add: bnd_def rr_def hh_def Qb_def algebra_simps)
+  finally show ?thesis .
+qed
+
+end
+
+section \<open>The induction on depth\<close>
+
+theorem depth_step:
+  assumes D2: "2 \<le> D"
+    and IH: "\<exists>C. \<forall>k (L::'v lit list) g. length L \<le> k ^ (D - 1) \<longrightarrow>
+               (\<exists>f. SIG D f \<and> gates f \<le> 2 ^ (C * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L)))"
+  shows "\<exists>C'. \<forall>k (L::'v lit list) g. length L \<le> k ^ D \<longrightarrow>
+               (\<exists>f. SIG (Suc D) f \<and> gates f \<le> 2 ^ (C' * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L)))"
+proof -
+  obtain C where C: "\<forall>k (L::'v lit list) g. length L \<le> k ^ (D - 1) \<longrightarrow>
+      (\<exists>f. SIG D f \<and> gates f \<le> 2 ^ (C * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L)))"
+    using IH by blast
+  define F :: "nat \<Rightarrow> 'v lit list \<Rightarrow> (nat \<Rightarrow> bool) \<Rightarrow> 'v form" where
+    "F k L g = (SOME f. SIG D f \<and> gates f \<le> 2 ^ (C * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L)))"
+    for k L g
+  have Fspec: "SIG D (F k L g) \<and> gates (F k L g) \<le> 2 ^ (C * (k + 1)) \<and>
+                 (\<forall>\<sigma>. eval \<sigma> (F k L g) = g (cnt \<sigma> L))"
+    if "length L \<le> k ^ (D - 1)" for k L g
+  proof -
+    have "\<exists>f. SIG D f \<and> gates f \<le> 2 ^ (C * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L))"
+      using C that by blast
+    then show ?thesis unfolding F_def by (rule someI_ex)
+  qed
+  obtain C' where C': "\<And>K. 1 \<le> K \<Longrightarrow> bnd D C K \<le> 2 ^ (C' * K)"
+    using EB_bnd[of D C] by (auto simp: EB_def)
+  show ?thesis
+  proof (intro exI[of _ C'] allI impI)
+    fix k and L :: "'v lit list" and g assume Lk: "length L \<le> k ^ D"
+    have st: "step D k C L F" by (rule step.intro[OF D2 Lk Fspec])
+    interpret st: step D k C L F by (rule st)
+    show "\<exists>f. SIG (Suc D) f \<and> gates f \<le> 2 ^ (C' * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L))"
+    proof (intro exI[of _ "st.symF g"] conjI allI)
+      show "SIG (Suc D) (st.symF g)" by (rule st.symF_SIG)
+      have "gates (st.symF g) \<le> bnd D C (k + 1)" by (rule st.symF_bnd)
+      also have "\<dots> \<le> 2 ^ (C' * (k + 1))" by (rule C') simp
+      finally show "gates (st.symF g) \<le> 2 ^ (C' * (k + 1))" .
+      show "eval \<sigma> (st.symF g) = g (cnt \<sigma> L)" for \<sigma> by (rule st.symF_eval)
+    qed
+  qed
+qed
+
+theorem symmetric_upper_bound:
+  assumes "2 \<le> d"
+  shows "\<exists>C. \<forall>k (L::'v lit list) g. length L \<le> k ^ (d - 1) \<longrightarrow>
+           (\<exists>f. SIG d f \<and> gates f \<le> 2 ^ (C * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L)))"
+  using assms
+proof (induction d rule: nat_induct_at_least)
+  case base
+  show ?case
+  proof (intro exI[of _ 1] allI impI)
+    fix k and L :: "'v lit list" and g assume "length L \<le> k ^ (2 - 1)"
+    then have "length L \<le> k" by simp
+    then show "\<exists>f. SIG 2 f \<and> gates f \<le> 2 ^ (1 * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L))"
+      using base_case[of L k g] by simp
+  qed
+next
+  case (Suc D)
+  have "\<exists>C'. \<forall>k (L::'v lit list) g. length L \<le> k ^ D \<longrightarrow>
+          (\<exists>f. SIG (Suc D) f \<and> gates f \<le> 2 ^ (C' * (k + 1)) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L)))"
+    using Suc.hyps Suc.IH by (rule depth_step)
+  then show ?case by simp
+qed
+
 end
