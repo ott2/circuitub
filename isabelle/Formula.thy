@@ -27,16 +27,16 @@ fun gates :: "'v form \<Rightarrow> nat" where
 | "gates (Or fs) = Suc (sum_list (map gates fs))"
 
 text \<open>
-  Strictly layered alternating classes: \<open>sig d\<close> (\<open>\<Sigma>\<^sub>d\<close>, output gate OR) and
-  \<open>pi d\<close> (\<open>\<Pi>\<^sub>d\<close>, output gate AND) of depth exactly \<open>d\<close>; depth 0 is a single literal.
-  In particular \<open>sig 2\<close> formulas are DNFs and \<open>pi 2\<close> formulas are CNFs.
+  Strictly layered alternating classes: \<open>SIG d\<close> (\<open>\<Sigma>\<^sub>d\<close>, output gate OR) and
+  \<open>PI d\<close> (\<open>\<Pi>\<^sub>d\<close>, output gate AND) of depth exactly \<open>d\<close>; depth 0 is a single literal.
+  In particular \<open>SIG 2\<close> formulas are DNFs and \<open>PI 2\<close> formulas are CNFs.
 \<close>
 
-fun sig :: "nat \<Rightarrow> 'v form \<Rightarrow> bool" and pi :: "nat \<Rightarrow> 'v form \<Rightarrow> bool" where
-  "sig 0 f = (case f of Lit _ _ \<Rightarrow> True | _ \<Rightarrow> False)"
-| "sig (Suc d) f = (case f of Or fs \<Rightarrow> (\<forall>g\<in>set fs. pi d g) | _ \<Rightarrow> False)"
-| "pi 0 f = (case f of Lit _ _ \<Rightarrow> True | _ \<Rightarrow> False)"
-| "pi (Suc d) f = (case f of And fs \<Rightarrow> (\<forall>g\<in>set fs. sig d g) | _ \<Rightarrow> False)"
+fun SIG :: "nat \<Rightarrow> 'v form \<Rightarrow> bool" and PI :: "nat \<Rightarrow> 'v form \<Rightarrow> bool" where
+  "SIG 0 f = (case f of Lit _ _ \<Rightarrow> True | _ \<Rightarrow> False)"
+| "SIG (Suc d) f = (case f of Or fs \<Rightarrow> (\<forall>g\<in>set fs. PI d g) | _ \<Rightarrow> False)"
+| "PI 0 f = (case f of Lit _ _ \<Rightarrow> True | _ \<Rightarrow> False)"
+| "PI (Suc d) f = (case f of And fs \<Rightarrow> (\<forall>g\<in>set fs. SIG d g) | _ \<Rightarrow> False)"
 
 section \<open>Symmetric functions of a list of literals\<close>
 
@@ -94,7 +94,7 @@ next
   then show ?case by (simp add: comp_def cong: map_cong)
 qed simp
 
-lemma sig_pi_dual: "(sig d f \<longrightarrow> pi d (dual f)) \<and> (pi d f \<longrightarrow> sig d (dual f))"
+lemma sig_pi_dual: "(SIG d f \<longrightarrow> PI d (dual f)) \<and> (PI d f \<longrightarrow> SIG d (dual f))"
 proof (induction d arbitrary: f)
   case 0
   then show ?case by (cases f) auto
@@ -103,8 +103,8 @@ next
   then show ?case by (cases f) auto
 qed
 
-lemma pi_dual: "sig d f \<Longrightarrow> pi d (dual f)"
-  and sig_dual: "pi d f \<Longrightarrow> sig d (dual f)"
+lemma pi_dual: "SIG d f \<Longrightarrow> PI d (dual f)"
+  and sig_dual: "PI d f \<Longrightarrow> SIG d (dual f)"
   using sig_pi_dual by blast+
 
 section \<open>Merging top gates\<close>
@@ -120,31 +120,59 @@ definition andflat :: "'v form list \<Rightarrow> 'v form" where
 definition orflat :: "'v form list \<Rightarrow> 'v form" where
   "orflat fs = Or (concat (map kids fs))"
 
-lemma pi_Suc_And: "pi (Suc d) f \<longleftrightarrow> (\<exists>fs. f = And fs \<and> (\<forall>g\<in>set fs. sig d g))"
+lemma pi_Suc_And: "PI (Suc d) f \<longleftrightarrow> (\<exists>fs. f = And fs \<and> (\<forall>g\<in>set fs. SIG d g))"
   by (cases f) auto
 
-lemma sig_Suc_Or: "sig (Suc d) f \<longleftrightarrow> (\<exists>fs. f = Or fs \<and> (\<forall>g\<in>set fs. pi d g))"
+lemma sig_Suc_Or: "SIG (Suc d) f \<longleftrightarrow> (\<exists>fs. f = Or fs \<and> (\<forall>g\<in>set fs. PI d g))"
   by (cases f) auto
 
 lemma andflat_pi:
-  assumes "\<forall>f\<in>set fs. pi (Suc d) f" shows "pi (Suc d) (andflat fs)"
+  assumes "\<forall>f\<in>set fs. PI (Suc d) f" shows "PI (Suc d) (andflat fs)"
   using assms
 proof (induction fs)
   case (Cons f fs)
-  have "pi (Suc d) f" using Cons.prems by simp
-  then obtain gs where "f = And gs" "\<forall>g\<in>set gs. sig d g" unfolding pi_Suc_And by blast
+  have "PI (Suc d) f" using Cons.prems by simp
+  then obtain gs where "f = And gs" "\<forall>g\<in>set gs. SIG d g" unfolding pi_Suc_And by blast
   with Cons show ?case by (auto simp: andflat_def)
 qed (simp add: andflat_def)
 
 lemma orflat_sig:
-  assumes "\<forall>f\<in>set fs. sig (Suc d) f" shows "sig (Suc d) (orflat fs)"
+  assumes "\<forall>f\<in>set fs. SIG (Suc d) f" shows "SIG (Suc d) (orflat fs)"
   using assms
 proof (induction fs)
   case (Cons f fs)
-  have "sig (Suc d) f" using Cons.prems by simp
-  then obtain gs where "f = Or gs" "\<forall>g\<in>set gs. pi d g" unfolding sig_Suc_Or by blast
+  have "SIG (Suc d) f" using Cons.prems by simp
+  then obtain gs where "f = Or gs" "\<forall>g\<in>set gs. PI d g" unfolding sig_Suc_Or by blast
   with Cons show ?case by (auto simp: orflat_def)
 qed (simp add: orflat_def)
+
+lemma andflat_PI':
+  assumes "0 < d" "\<forall>f\<in>set fs. PI d f" shows "PI d (andflat fs)"
+proof -
+  obtain d' where d: "d = Suc d'" using assms(1) by (cases d) auto
+  show ?thesis using assms(2) unfolding d by (rule andflat_pi)
+qed
+
+lemma orflat_SIG':
+  assumes "0 < d" "\<forall>f\<in>set fs. SIG d f" shows "SIG d (orflat fs)"
+proof -
+  obtain d' where d: "d = Suc d'" using assms(1) by (cases d) auto
+  show ?thesis using assms(2) unfolding d by (rule orflat_sig)
+qed
+
+lemma PI_And:
+  assumes "0 < d" "PI d f" shows "\<exists>gs. f = And gs"
+proof -
+  obtain d' where d: "d = Suc d'" using assms(1) by (cases d) auto
+  show ?thesis using assms(2) unfolding d pi_Suc_And by blast
+qed
+
+lemma SIG_Or:
+  assumes "0 < d" "SIG d f" shows "\<exists>gs. f = Or gs"
+proof -
+  obtain d' where d: "d = Suc d'" using assms(1) by (cases d) auto
+  show ?thesis using assms(2) unfolding d sig_Suc_Or by blast
+qed
 
 lemma eval_andflat:
   assumes "\<forall>f\<in>set fs. \<exists>gs. f = And gs"
@@ -234,7 +262,7 @@ proof -
   qed
 qed
 
-lemma sig2_dnf: "sig 2 (dnf L g)"
+lemma sig2_dnf: "SIG 2 (dnf L g)"
   by (auto simp: dnf_def minterm_def numeral_2_eq_2 split: prod.splits)
 
 lemma gates_dnf: "gates (dnf L g) \<le> Suc (2 ^ length L)"
@@ -253,7 +281,7 @@ qed
 
 theorem base_case:
   assumes "length L \<le> k"
-  shows "\<exists>f. sig 2 f \<and> gates f \<le> 2 ^ (k + 1) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L))"
+  shows "\<exists>f. SIG 2 f \<and> gates f \<le> 2 ^ (k + 1) \<and> (\<forall>\<sigma>. eval \<sigma> f = g (cnt \<sigma> L))"
 proof (intro exI conjI allI)
   have a: "(2::nat) ^ length L \<le> 2 ^ k" using assms by simp
   have b: "(1::nat) \<le> 2 ^ k" by simp
