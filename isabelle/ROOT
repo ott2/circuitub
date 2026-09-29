@@ -1,0 +1,4 @@
+session Majority_AC0 = "HOL-Library" +
+  options [timeout = 1200]
+  theories
+    Formula

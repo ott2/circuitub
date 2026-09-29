@@ -1,0 +1,4 @@
+# build-trajectory corpus location (isabelle-watchdog)
+t/logs
+session: Majority_AC0
+dir: isabelle
