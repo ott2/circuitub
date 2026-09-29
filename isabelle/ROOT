@@ -5,3 +5,5 @@ session Majority_AC0 = "HOL-Library" +
     Test
     Count
     Cover
+    Moduli
+    ExpBound
