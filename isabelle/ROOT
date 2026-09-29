@@ -3,3 +3,5 @@ session Majority_AC0 = "HOL-Library" +
   theories
     Formula
     Test
+    Count
+    Cover
