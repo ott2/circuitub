@@ -1,0 +1,4 @@
+session Oracle_Control = HOL +
+  description "Positive control: the oracle audit used in Majority_AC0/Audit.thy detects sorry."
+  options [quick_and_dirty]
+  theories Oracle_Control
