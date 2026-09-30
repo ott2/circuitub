@@ -1,2 +1,7 @@
 .venv/
 *.tar.gz
+writeup/*.aux
+writeup/*.log
+writeup/*.out
+writeup/*.fls
+writeup/*.fdb_latexmk

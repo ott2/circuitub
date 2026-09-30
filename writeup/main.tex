@@ -1,0 +1,240 @@
+\documentclass[11pt]{article}
+
+\usepackage{paper-style}
+\usepackage{booktabs}
+\usepackage{fancyvrb}
+
+\newcommand{\doi}[1]{\href{https://doi.org/#1}{\nolinkurl{#1}}}
+\newcommand{\isa}[1]{\texttt{#1}}
+\newcommand{\sig}{\mathsf{SIG}}
+\newcommand{\piC}{\mathsf{PI}}
+\newcommand{\gates}{\mathsf{gates}}
+\newcommand{\cnt}{\mathsf{cnt}}
+\newcommand{\EXACT}{\mathsf{EXACT}}
+
+\newtheorem*{maintheoremrestated}{Theorem~1 of \citet{LR26}}
+
+\title{Shallow Circuits for Symmetric Functions,\\ Checked in Isabelle/HOL}
+\author{%
+% TODO: author names and affiliations.
+\textit{[Authors]}%
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\citet{LR26} recently showed that every symmetric function on $n$ variables, and in particular $\Majority$, has depth-$d$ circuits of size $2^{O(n^{1/(d-1)})}$, matching H{\aa}stad's lower bound for $\Parity$.
+We report a complete formalization of this upper bound in Isabelle/HOL. The headline theorem is stated in the paper's own form, for every fixed depth $d \ge 2$ and every symmetric function, with a single constant depending only on $d$; its derivation uses no \isa{sorry}, no \isa{quick\_and\_dirty}, and no oracles.
+The formal proof follows the paper's construction closely, but we reorganized several steps to make them easier to state and check mechanically. We explain what exactly has been verified, what a reader must still trust, and how the formal argument differs from the published one.
+\end{abstract}
+
+\section{Introduction}
+
+For four decades the best known depth-$d$ circuits for $\Majority$ had size $2^{O(n^{1/(d-1)}(\log n)^{1-1/(d-1)})}$, while H{\aa}stad's switching lemma gives only a $2^{\Omega(n^{1/(d-1)})}$ lower bound~\citep{Has86}. \citet{LR26} close this gap from above with a strikingly short argument: they certify the Hamming weight of the input modulo a few small moduli, using \emph{tests} that compare shifted block weights two at a time, and cover all valid inputs with a small random collection of such tests.
+
+A result that resolves a well-studied open problem with a two-page proof invites careful checking. The argument is also a natural candidate for mechanization: it is elementary, combinatorial, and each step is a finite statement about lists, residues, and counts. We therefore formalized the paper's main theorem in Isabelle/HOL. The outcome is simple to state.
+
+\begin{quote}
+\emph{The main theorem of \citet{LR26} is correct.} Its formal counterpart (\Cref{thm:formal-main}) is derived by the Isabelle/HOL kernel from the axioms of higher-order logic, with no gaps.
+\end{quote}
+
+The formal proof is about 2{,}000 lines across nine theories and checks in a few seconds. We found no mathematical errors in the paper. On the other hand, a mechanical proof cannot take the liberties that make the paper pleasant to read (rounding, ``the same argument as before'', implicit constants), so several steps had to be reorganized. \Cref{sec:differences} lists these changes. None of them changes the idea of the proof, and some may be of independent interest as simplifications.
+
+\paragraph{Organization.} \Cref{sec:model} describes the formal model of circuits and symmetric functions; this is the part of the development that a reader has to trust. \Cref{sec:statements} states the verified theorems. \Cref{sec:proof} walks through the formal proof, following the template of the paper. \Cref{sec:differences} explains where and why our argument departs from \citet{LR26}. \Cref{sec:trust} discusses what is and is not covered by the verification.
+
+\section{The formal model}
+\label{sec:model}
+
+A formal proof certifies its statement, and nothing more. The definitions in this section are therefore the \emph{trusted base}: if they faithfully capture the paper's model, the theorems of \Cref{sec:statements} are the paper's theorems. They occupy about forty lines of the development.
+
+\paragraph{Formulas.} We work with \emph{formulas}, that is, circuits whose underlying graph is a tree:
+\begin{Verbatim}[fontsize=\small,xleftmargin=2em]
+datatype 'v form = Lit 'v bool | And "'v form list" | Or "'v form list"
+\end{Verbatim}
+A literal $\mathsf{Lit}\ v\ b$ is the input $x_v$ if $b$ is true and $\neg x_v$ otherwise. Gates have unbounded fan-in. The semantics is the obvious one: under an assignment $\sigma$, the literal $\mathsf{Lit}\ v\ b$ is true iff $\sigma(v) = b$, an $\AND$ gate is true iff all its children are, and an $\OR$ gate iff some child is.
+
+\paragraph{Size.} As in the paper, the size of a formula is its number of $\AND$ and $\OR$ gates; inputs are free. Every formula is a circuit with the same number of gates, so an upper bound on formula size is an upper bound on circuit size. The formal theorem is therefore slightly \emph{stronger} than the paper's.
+
+\paragraph{Depth.} The paper views circuits as alternating layers, calling a depth-$d$ circuit with output $\OR$ (resp.\ $\AND$) a $\Sigma_d$ (resp.\ $\Pi_d$) circuit. We define the corresponding classes $\sig_d$ and $\piC_d$ by mutual recursion:
+\begin{itemize}
+  \item $\sig_0$ and $\piC_0$ consist of the single literals;
+  \item $\sig_{d+1}$ consists of the formulas $\OR(f_1, \dots, f_m)$ with every $f_i \in \piC_d$;
+  \item $\piC_{d+1}$ consists of the formulas $\AND(f_1, \dots, f_m)$ with every $f_i \in \sig_d$.
+\end{itemize}
+These classes are \emph{strictly} layered: every path from the output to an input passes through exactly $d$ gates, alternating in type. In particular $\sig_2$ is the class of DNFs and $\piC_2$ the class of CNFs.
+
+\paragraph{Symmetric functions.} The inputs are $n$ variables $x_0, \dots, x_{n-1}$, and the \emph{weight} of an assignment is $|x| = |\{\, i < n : \sigma(i) \,\}|$. A symmetric function is specified by an arbitrary predicate $g$ on weights, and is the function $x \mapsto g(|x|)$. Every symmetric Boolean function arises this way. $\Majority$ is the special case
+\[ \Majority_n(x) = \mathbf{1}\bigl[\, n \le 2|x| \,\bigr], \]
+which is the paper's $\mathbf{1}[|x| \ge n/2]$.
+
+\section{What has been verified}
+\label{sec:statements}
+
+The main theorem of \citet{LR26} reads as follows.
+
+\begin{maintheoremrestated}
+For any constant $d\geq 2$, every symmetric function on $n$ variables has depth-$d$ circuits of size $2^{O(n^{1/(d-1)})}$.
+\end{maintheoremrestated}
+
+Its formal counterpart makes the quantifiers explicit.
+
+\begin{theorem}[\isa{symmetric\_functions\_big\_O}]\label{thm:formal-main}
+For every $d \ge 2$ there is a constant $C$ such that for every $n \ge 1$ and every predicate $g$ on $\{0, \dots, n\}$, there is a formula $f \in \sig_d$ with
+\[ \gates(f) \le 2^{\,C \cdot n^{1/(d-1)}} \qquad\text{and}\qquad f(x) = g(|x|) \ \text{ for all } x \in \{0,1\}^n. \]
+\end{theorem}
+
+In Isabelle the statement is:
+\begin{Verbatim}[fontsize=\small,xleftmargin=1em]
+theorem symmetric_functions_big_O:
+  assumes "2 <= d"
+  shows "EX C. ALL n >= 1. ALL g. EX f. SIG d f
+           & real (gates f) <= 2 powr (C * real n powr (1 / real (d - 1)))
+           & (ALL sigma. eval sigma f = g (weight n sigma))"
+\end{Verbatim}
+The order of quantifiers matters: a single constant $C$, depending only on $d$, works simultaneously for every $n$ and every symmetric function. This is exactly the content of the paper's ``for any constant $d$''.
+
+Two corollaries are the headline results about $\Majority$.
+
+\begin{corollary}[\isa{majority\_circuits}]
+For every $d \ge 2$ there is a constant $C$ such that for every $n \ge 1$, $\Majority_n$ is computed by a formula in $\sig_d$ with at most $2^{C n^{1/(d-1)}}$ gates.
+\end{corollary}
+
+\begin{corollary}[\isa{majority\_depth3}]
+There is a constant $C$ such that for every $n \ge 1$, $\Majority_n$ is computed by an $\OR$ of CNFs with at most $2^{C\sqrt{n}}$ gates.
+\end{corollary}
+
+Together with H{\aa}stad's lower bound, these determine the depth-$d$ complexity of $\Majority$ up to the constant in the exponent. We stress that the lower bound was \emph{not} formalized (see \Cref{sec:trust}).
+
+Internally, the induction on depth uses a version of the theorem parametrized by an integer $k$ in place of $n^{1/(d-1)}$, and generalized from variables to arbitrary lists of literals.
+
+\begin{theorem}[\isa{symmetric\_upper\_bound}]\label{thm:internal}
+For every $d \ge 2$ there is a constant $C$ with the following property. Let $L$ be any list of literals, possibly negated and possibly repeated, with $|L| \le k^{d-1}$, and let $g$ be any predicate on $\N$. Then there is $f \in \sig_d$ with $\gates(f) \le 2^{C(k+1)}$ that outputs $g(\text{number of true literals in } L)$ on every assignment.
+\end{theorem}
+
+\Cref{thm:formal-main} follows by taking $L = (x_0, \dots, x_{n-1})$ and $k = \ceil{n^{1/(d-1)}}$.
+
+\section{The formal proof}
+\label{sec:proof}
+
+The formal proof follows the paper's two-stage template: construct small \emph{tests} that certify the weight of the input, then show that a few tests cover every input of the right weight. \Cref{tab:map} shows where each step lives.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}p{0.52\textwidth}p{0.40\textwidth}@{}}
+\toprule
+Step of \citet{LR26} & Isabelle theory and lemma \\
+\midrule
+Distinct shifted weights certify $|x| \bmod k$ & \isa{Test}: \isa{test\_sound} \\
+At least $k!$ shift vectors accept each valid input & \isa{Count}: \isa{card\_accepting\_shifts} \\
+$k!/k^{k-1} \ge e^{-k}$ & \isa{Count}: \isa{pow\_le\_3pow\_fact} \\
+Random tests cover every valid input & \isa{Cover}: \isa{cover} \\
+Coprime moduli; Chinese remaindering & \isa{Moduli}: \isa{modq\_coprime}, \isa{crt\_eq} \\
+Pair checks are symmetric in (block $i$, $\neg$block $j$) & \isa{Construction}: \isa{pairF\_facts} \\
+Base case: DNF of size $2^n$ & \isa{Formula}: \isa{base\_case} \\
+Size accounting and induction on $d$ & \isa{Construction}: \isa{depth\_step} \\
+Asymptotic form, $\Majority$ & \isa{Majority\_Circuits} \\
+\bottomrule
+\end{tabular}
+\caption{Correspondence between the steps of the paper and the formal development.}
+\label{tab:map}
+\end{table}
+
+Throughout this section, fix a depth $d \ge 3$ and write $D = d - 1$ for the number of moduli. We assume the induction hypothesis: \Cref{thm:internal} holds at depth $D$ with constant $C$. We are given a list $L$ of $m \le k^{D}$ literals and a predicate $g$.
+
+\paragraph{Moduli.} We use the $D$ moduli
+\[ q_i = 1 + (i+1)\cdot D! \cdot (k+1), \qquad 0 \le i < D. \]
+Each lies between $k+2$ and $(D \cdot D! + 1)(k+1)$, so $q_i = \Theta(k)$ with constants depending only on $d$. They are pairwise coprime: for $i < j$, the identity $(j+1)q_i - (i+1)q_j = j - i$ shows that any common divisor divides $j - i$, hence divides $D!$, hence divides $q_i - 1$, hence divides $1$. Since each $q_i > k$, the product of the moduli exceeds $k^D \ge m$. So the Chinese remainder theorem gives \isa{crt\_eq}: two weights in $[0, m]$ that agree modulo every $q_i$ are equal.
+
+\paragraph{Blocks.} For each modulus $q$, split $L$ into exactly $q$ contiguous blocks of length at most $\ceil{m/q}$, padding with empty blocks if necessary. Because $q > k$, each block has length at most $k^{D-1}$. Write $w_1, \dots, w_q$ for the numbers of true literals in the blocks, so that $\sum_i w_i$ is the weight of $L$.
+
+\paragraph{Tests.} A \emph{shift vector} for $q$ is a list $s \in \{0, \dots, q-1\}^q$. It \emph{passes} on an assignment if the values $w_i + s_i \bmod q$ are pairwise distinct. It is \emph{admissible for $t$} if
+\[ \textstyle\sum_i s_i + t \;\equiv\; 0 + 1 + \cdots + (q-1) \pmod q, \]
+which is the paper's constraint~(3) written without subtraction. The paper's soundness argument goes through verbatim.
+
+\begin{lemma}[\isa{test\_sound}]
+If $s$ is admissible for $t$ and passes, then $\sum_i w_i \equiv t \pmod q$.
+\end{lemma}
+
+\begin{proof}
+The $q$ distinct residues $w_i + s_i \bmod q$ are a permutation of $0, \dots, q-1$, so their sum is $\sum_{j<q} j$. Comparing with the admissibility constraint and cancelling $\sum_i s_i$ gives the claim.
+\end{proof}
+
+\paragraph{Pair formulas.} Passing is the conjunction, over pairs $i < j$, of $w_i + s_i \not\equiv w_j + s_j \pmod q$. Consider the list of literals $P_{ij}$ formed by block $i$ followed by the \emph{negations} of the literals of block $j$. Its number of true literals is $w_i + (|B_j| - w_j)$, and this determines $w_i - w_j$. So each pairwise check is a symmetric function of $P_{ij}$, exactly as in \citet[Section~4]{LR26}. Since $|P_{ij}| \le 2k^{D-1} \le (2k)^{D-1}$, the induction hypothesis (applied with $2k$ in place of $k$) gives a $\sig_D$ formula of size at most $2^{C(2k+1)}$ for the \emph{collision} predicate. Its De~Morgan dual is a $\piC_D$ formula for the pairwise check. The test formula for a tuple of shift vectors, one per modulus, is the $\AND$ of all these pair formulas with the top $\AND$ gates merged, and is again in $\piC_D$.
+
+\paragraph{Counting accepting shift vectors.} Fix an assignment. Every arrangement of the residues, that is, every ordering $(r_1, \dots, r_q)$ of $0, \dots, q-1$, determines the shift vector $s_i = r_i - w_i \bmod q$, which passes. Distinct arrangements give distinct shift vectors, so:
+
+\begin{lemma}[\isa{card\_accepting\_shifts}]
+For every assignment, at least $q!$ of the $q^q$ shift vectors pass.
+\end{lemma}
+
+Moreover, whenever the weight is $t$, every passing shift vector is automatically admissible for $t$ (\isa{passes\_imp\_adm}), by the same permutation argument read in reverse. Finally, $q^q \le 3^q \cdot q!$ (\isa{pow\_le\_3pow\_fact}), proved by induction from $(1 + 1/q)^q \le e < 3$. So a uniformly random shift vector accepts a given input with probability at least $3^{-q}$.
+
+\paragraph{Covering.} The paper completes the argument with the probabilistic method. We replace it by a deterministic statement about an abstract covering problem.
+
+\begin{lemma}[\isa{cover}]
+Let $U$ and $\Theta$ be finite sets and $R \subseteq \Theta \times U$. Suppose every $u \in U$ is related to at least $a > 0$ elements of $\Theta$, that $|\Theta| \le r \cdot a$, and that $|U| < 2^h$. Then some $S \subseteq \Theta$ with $|S| \le r h$ covers $U$.
+\end{lemma}
+
+\begin{proof}
+Double counting shows that some $\theta$ covers at least an $a/|\Theta|$ fraction of $U$. Choosing such elements greedily, after $T$ rounds at most $|U|(1 - a/|\Theta|)^T$ elements remain uncovered. Since $(1 - a/|\Theta|)^r \le e^{-1} \le \tfrac12$, after $rh$ rounds fewer than $|U| \cdot 2^{-h} < 1$ remain.
+\end{proof}
+
+We apply this with $\Theta$ the tuples of admissible shift vectors, $U$ the set of tuples of block-weight vectors realized by inputs of weight $t$, and $R$ the relation ``passes for every modulus''. The bounds are $a = \prod_i q_i!$, $r = 3^{DQ}$ where $Q = (D \cdot D! + 1)(k+1)$ bounds every modulus, and $h = O(k^2)$, the last because each of the at most $DQ$ block weights lies in $[0, m]$ with $m \le k^D$. Hence at most $2^{O(k)}$ tests suffice for each target weight $t$.
+
+\paragraph{Assembling.} The formula for $\EXACT_t$ is the $\OR$ of the chosen tests, a $\sig_{D+1}$ formula. It is sound by \isa{test\_sound} and the Chinese remainder step, and complete because the tests cover $U$. The formula for $g$ is the $\OR$ of $\EXACT_t$ over the at most $m+1$ weights $t$ with $g(t)$, with the top $\OR$ gates merged. Its size is at most
+\[ 1 + (k+1)^D \Bigl(1 + 2^{O(k)} \cdot \bigl(1 + D\,q_{\max}^2 \cdot 2^{C(2k+1)}\bigr)\Bigr) \;=\; 2^{O(k)}, \]
+where the implicit constant depends only on $d$ and $C$ (\isa{symF\_bnd}). The last step is discharged by a small calculus of closure rules for functions bounded by $2^{O(k)}$ (theory \isa{ExpBound}). The base case $d = 2$ is the DNF of size at most $2^m + 1 \le 2^{k+1}$.
+
+\section{How our approach differs from Lecomte--Ramakrishnan}
+\label{sec:differences}
+
+The formal proof uses the construction of \citet{LR26}: the tests, the soundness argument, the counting of accepting shifts, the recursion through the symmetry of pairwise checks, and the Chinese remainder step are all theirs. The differences concern how the pieces are packaged. Some were forced by the need for fully explicit statements. Others were chosen because they made the formal proof shorter.
+
+\paragraph{Formulas rather than circuits.} We bound the size of formulas, not circuits. No step of the construction reuses a subcircuit, so nothing is lost, and the result is formally stronger. It also sidesteps the definition of circuit depth for DAGs whose paths may have different lengths.
+
+\paragraph{One induction for every depth.} The paper treats depth~3 separately as a warm-up, with the consecutive moduli $\ceil{\sqrt n}$ and $\ceil{\sqrt n}+1$, before giving the general induction. We prove only the general induction. The depth-3 result is the instance $d = 3$, where the moduli are $2k+3$ and $4k+5$.
+
+\paragraph{Parametrization by $k$ and by literal lists.} The paper's induction hypothesis is ``symmetric functions on $n$ variables have circuits of size $2^{O(n^{1/(d-2)})}$''. It is applied to functions of the $2\ceil{n/k}$ variables of two blocks, some of them negated. To make this application literal, \Cref{thm:internal} is stated for arbitrary lists of literals: negated, repeated, or both. Replacing $n^{1/(d-1)}$ by an integer parameter $k$ with $|L| \le k^{d-1}$ keeps all the size bookkeeping in integer arithmetic. It also makes the constant explicit and uniform: the statement is $\exists C\, \forall k\, \forall L\, \forall g$, so the induction hypothesis cannot silently let $C$ depend on $n$. Real powers appear only once, in the final translation to \Cref{thm:formal-main}.
+
+\paragraph{Different coprime moduli.} The paper takes $k_i$ to be the smallest power of the $i$-th prime exceeding $n^{1/(d-1)}$, so $k_i \le p_i n^{1/(d-1)}$. We use the moduli $q_i = 1 + (i+1)\cdot D!\cdot(k+1)$ of G\"odel's $\beta$-function lemma. Their pairwise coprimality has a three-line proof (\Cref{sec:proof}) and needs no facts about primes. Any family of pairwise coprime moduli in $[k+1, O(k)]$ would do, so this is purely a matter of convenience.
+
+\paragraph{Sampling shifts from the whole cube.} The paper samples shift vectors uniformly from the admissible subspace, of size $k^{k-1}$, and shows that exactly $k!$ of them accept a given valid input. We take the test family to be the admissible vectors, but count against all $k^k$ vectors. The key observation is that \emph{admissibility is automatic}: whenever a shift vector passes on an input of weight $t$, it is admissible for $t$ (\isa{passes\_imp\_adm}). So the at least $k!$ passing vectors are all in the family, and we only need the easy direction of the paper's bijection, an injection from arrangements into passing vectors. The price is a bound of $k!/k^k$ in place of $k!/k^{k-1}$, a factor of $k$ that is invisible in $2^{O(k)}$. We replaced $e$ by $3$, which is convenient in integer arithmetic.
+
+\paragraph{Covering without probability.} The paper's final step is an expectation argument: $T$ independent random tests leave at most $2^n(1-p)^T < 1$ uncovered inputs in expectation. Formalizing it would require discrete probability on product spaces. We use the equivalent greedy argument (\isa{cover}), which needs only finite sums. It gives the same $O(\log|U|/p)$ bound and makes the chosen tests explicit.
+
+\paragraph{Covering block-weight tuples rather than inputs.} The paper unions over the $2^n$ inputs. We cover the finite set of \emph{block-weight tuples} realized by inputs of weight $t$, since whether a test accepts depends only on these. This matters for the formalization: the literals of \Cref{thm:internal} may range over an arbitrary, possibly infinite, type of variables, so ``all inputs'' need not be a finite set. The universe of tuples has only $2^{O(k^2)}$ elements, comfortably within the budget.
+
+\paragraph{Explicit layering and degenerate gates.} The paper collapses adjacent gates of the same type informally. In the formal proof every merge is a lemma about explicit operations (\isa{andflat}, \isa{orflat}) that preserve the strict layering and do not increase size. Formulas are strictly layered, so constant functions are represented by gates of fan-in zero: an empty $\OR$ is false and an empty $\AND$ is true. These appear only in degenerate cases and could be replaced by gadgets of constant size.
+
+\section{Scope of the verification}
+\label{sec:trust}
+
+\paragraph{What is verified.} \Cref{thm:formal-main}, its corollaries, and every lemma of \Cref{sec:proof} are proved in Isabelle/HOL (Isabelle2025-2), on top of the standard library and \isa{HOL-Library}. The development contains no \isa{sorry} and is built without \isa{quick\_and\_dirty}. As a final check, a theory \isa{Audit} computes the set of oracles on which the headline theorems depend, and fails the build unless this set is empty. A separate session serves as a positive control: it applies the same check to a lemma ``proved'' by \isa{sorry}, and the oracle is detected.
+
+\paragraph{What must be trusted.} Beyond the Isabelle kernel, a reader must check that the definitions of \Cref{sec:model} match their intended meaning: formulas, their evaluation and gate count, the depth classes, the Hamming weight, and $\Majority$. These are deliberately short and use only elementary list and set operations.
+
+\paragraph{What is not verified.} The matching lower bound of H{\aa}stad is taken from the literature. Consequently, the statement ``this settles the asymptotic complexity of $\Majority$'' combines a verified upper bound with an unverified, but classical, lower bound. We also make no claim about the constants in the exponent, which in our construction are far from optimal.
+
+\paragraph{Reproducibility.} The session \isa{Majority\_AC0} builds from scratch in about ten seconds on a laptop. Every build attempt of this session made during the development, with the reasoning written before it and the resulting diff, was recorded with \isa{isabelle-watchdog}.
+
+\paragraph{Acknowledgments.} We thank the authors of \citet{LR26} for a paper whose argument was clear enough to be formalized directly from the text.
+
+\begin{thebibliography}{9}
+
+\bibitem[H{\aa}stad(1986)]{Has86}
+Johan H{\aa}stad.
+\newblock Almost optimal lower bounds for small depth circuits.
+\newblock In \emph{Proceedings of the 18th Annual ACM Symposium on Theory of Computing}, pages 6--20. ACM, 1986.
+\newblock \doi{10.1145/12130.12132}.
+
+\bibitem[Lecomte and Ramakrishnan(2026)]{LR26}
+Victor Lecomte and Prasanna Ramakrishnan.
+\newblock Optimal shallow circuits for majority.
+\newblock arXiv:2609.34029v1, 2026.
+
+\end{thebibliography}
+
+\end{document}

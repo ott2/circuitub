@@ -1,0 +1,113 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{paper-style}[2026/08/18 Compact research-note style]
+
+% Derived from the source of arXiv:2608.06872 (CC BY 4.0).
+
+% Page and type style.
+\RequirePackage[margin=1.1in]{geometry}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{lmodern}
+\RequirePackage{microtype}
+
+% Mathematics and figures.
+\RequirePackage{amsmath,amssymb,mathtools}
+\RequirePackage{amsthm}
+\RequirePackage{complexity-macros}
+\RequirePackage{graphicx}
+\RequirePackage{float}
+\RequirePackage[dvipsnames]{xcolor}
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,backgrounds}
+\RequirePackage{enumitem}
+
+% Inline author comments.
+\newcommand{\victor}[1]{\textcolor{blue}{[Victor: #1]}}
+\newcommand{\pras}[1]{\textcolor{red}{[Pras: #1]}}
+
+% Author-year citations and restrained colored links.
+\RequirePackage[round,authoryear]{natbib}
+\RequirePackage[
+  colorlinks=true,
+  linkcolor=blue!45!black,
+  citecolor=blue!45!black,
+  urlcolor=blue!45!black
+]{hyperref}
+\RequirePackage[nameinlink,capitalize]{cleveref}
+\setcitestyle{authoryear,round}
+
+% Keep each footnote on a single page.
+\interfootnotelinepenalty=10000
+
+\allowdisplaybreaks
+\graphicspath{{figures/}}
+
+% Theorem statements use independent, document-wide theorem and lemma
+% counters. Claims, propositions, facts, and corollaries share the lemma
+% counter, matching the reference paper.
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{claim}[lemma]{Claim}
+\newtheorem{proposition}[lemma]{Proposition}
+\newtheorem{fact}[lemma]{Fact}
+\newtheorem{corollary}[lemma]{Corollary}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{openproblem}{Open Problem}
+\newtheorem{researchproblem}{Research Problem}
+\newtheorem{goal}{Goal}
+
+% Upright-body environments.
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{observation}[theorem]{Observation}
+\newtheorem{notation}{Notation}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{examples}[theorem]{Examples}
+\newtheorem{question}{Question}
+\theoremstyle{plain}
+
+\newenvironment{proofsketch}
+  {\begin{proof}[Proof sketch]}
+  {\end{proof}}
+
+% General-purpose mathematical notation from the reference paper.
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\dif}{\mathop{}\!\mathrm{d}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\supp}{supp}
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+
+% Probability and Boolean-function notation retained from the paper.
+\newcommand{\std}{\operatorname{std}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Varx}{\mathop{{\bf Var}\/}}
+\newcommand{\Ev}{\mathop{\mathbb{E}}}
+\newcommand{\Ex}{\mathop{\mathbb{E}}}
+\newcommand{\Prx}{\mathop{{\Pr}\/}}
+\newcommand{\stdx}{\mathop{{\bf std}\/}}
+\newcommand{\Maj}{\operatorname{Maj}}
+\newcommand{\sgn}{\operatorname{sgn}}
+
+% Reusable version of the paper's effective title block. It keeps the
+% paper's title/author spacing while allowing ordinary \thanks affiliations.
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begingroup
+  \renewcommand{\thefootnote}{\fnsymbol{footnote}}%
+  \begin{center}
+    {\LARGE\bfseries \@title\par}
+    \vspace{1.25em}
+    \begin{NoHyper}{\large \@author\par}\end{NoHyper}
+  \end{center}
+  \@thanks
+  \endgroup
+  \setcounter{footnote}{0}%
+  \vspace{-0.5em}
+}
+\makeatother
