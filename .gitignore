@@ -6,4 +6,5 @@ writeup/*.out
 writeup/*.fls
 writeup/*.fdb_latexmk
 paper/
+t/
 writeup/complexity-macros.sty
