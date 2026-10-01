@@ -51,3 +51,21 @@ simpler:
 - A single induction on depth over arbitrary literal lists.
 
 See `VERDICT.md` and `writeup/main.pdf` for details.
+
+## Attribution
+
+Claude Opus 5.5 (Anthropic, model `claude-opus-5-5`), working in Claude Code, did the
+following in September–October 2026:
+- the Isabelle formalization;
+- the review of the paper and the verdict in `VERDICT.md`;
+- the write-up in `writeup/`.
+
+András Salamon acted as editor: setting the task and the working constraints, and
+reviewing the results.
+
+The development was built with Isabelle2025-2 and with
+[isabelle-watchdog](https://pypi.org/project/isabelle-watchdog/) and
+[isabelle-query](https://pypi.org/project/isabelle-query/).
+
+The mathematics is Lecomte and Ramakrishnan's. Any errors in the formalization or its
+exposition are ours.
