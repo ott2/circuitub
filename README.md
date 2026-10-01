@@ -1,0 +1,53 @@
+# Optimal shallow circuits for symmetric functions, in Isabelle/HOL
+
+A machine-checked proof of the main theorem of
+
+> Victor Lecomte and Prasanna Ramakrishnan, *Optimal Shallow Circuits for Majority*,
+> [arXiv:2609.34029](https://arxiv.org/abs/2609.34029) (2026).
+
+**Theorem.** For every constant d ≥ 2, every symmetric Boolean function on n variables
+has depth-d AND/OR formulas, with negations only on inputs, of size 2^{O(n^{1/(d-1)})}.
+The constant depends only on d.
+
+In particular, Majority has depth-d circuits of size 2^{O(n^{1/(d-1)})}, matching
+Håstad's lower bound. For depth 3, that is 2^{O(√n)}. The lower bound is not formalized
+here.
+
+The Isabelle statement (`isabelle/Majority_Circuits.thy`) is slightly stronger than the
+paper's claim. It bounds formula (tree) size rather than circuit size, and the formulas
+are strictly layered: alternating, with an OR at the top and every literal at depth
+exactly d. No `sorry` is used, and the build fails unless the headline theorems depend
+on no oracles.
+
+## Contents
+
+| Path | |
+|---|---|
+| `isabelle/` | Session `Majority_AC0`: 9 theories, about 2000 lines |
+| `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
+| `control/` | Positive control: the same audit detects a `sorry` |
+| `VERDICT.md` | The verdict, the trusted definitions, and a step-by-step correspondence with the paper |
+| `writeup/main.pdf` | Short exposition, including how the formal proof differs from the paper's |
+
+## Building
+
+Requires [Isabelle2025-2](https://isabelle.in.tum.de/). The session depends only on
+HOL-Library.
+
+```sh
+isabelle build -d isabelle Majority_AC0
+isabelle build -d control Oracle_Control   # positive control for the oracle audit
+```
+
+The main session builds in a few seconds.
+
+## Differences from the paper's proof
+
+The argument is the paper's, but several parts were adapted to make the formalization
+simpler:
+- Gödel-β moduli instead of prime powers.
+- Shifts sampled from the full cube.
+- A greedy covering argument instead of the probabilistic method.
+- A single induction on depth over arbitrary literal lists.
+
+See `VERDICT.md` and `writeup/main.pdf` for details.

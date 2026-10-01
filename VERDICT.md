@@ -97,5 +97,4 @@ WALL_TIMEOUT=40 .venv/bin/isabelle-build --no-record --session Oracle_Control --
 unless the oracle set is empty. `control/Oracle_Control.thy` is the positive control: the
 same check, applied to a lemma proved by `sorry`, does detect the oracle.
 
-Size: 9 theories, ~2000 lines. The build trajectory (every attempt, with its note and
-diff) is recorded in `t/logs/builds.jsonl`.
+Size: 9 theories, ~2000 lines.
