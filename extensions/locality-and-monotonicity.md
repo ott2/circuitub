@@ -10,7 +10,7 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | Part 1: block locality | `isabelle/Block_Local.thy` | Formalized and covered by the oracle audit |
-| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C and D: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))} |
+| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy`, `Monotone_Wide.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C, D and E: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))}; so do block-symmetric tests of any scope once blocks have size ≥ √n |
 
 Notation:
 - n is the number of variables, N = n/2, and Majority means weight ≥ n/2.
@@ -376,10 +376,11 @@ class. A meaningful version must bound the block size. For example, with b ≤ �
 arbitrary monotone pair functions, the cost lemma fails: a pair function can have few
 clauses. Only the PPZ bound 2^{Ω(n/b)} = 2^{Ω(√n)} remains.
 
-**Summary** (including §2.8). Any monotone Σ₃ formula for Majority of size 2^{O(√n)} must
-do at least one of the following:
+**Summary** (including §2.8 and §2.9). Any monotone Σ₃ formula for Majority of size 2^{O(√n)}
+must do at least one of the following:
 - mix about log n or more partitions inside one test (two, as in L-R, is not enough);
-- use block-symmetric constraints on about log n or more blocks;
+- use block-symmetric constraints on about log n or more blocks of size below about
+  √(n/log n)·log log n (with blocks of size ≥ √n, wide constraints do not help, §2.9);
 - give up block symmetry.
 
 ### 2.8 Tests that mix partitions [F]
@@ -482,10 +483,95 @@ Theorem D gives 2^{Ω(√n)}, the known general bound.
 partition. In L-R, the last block of a partition can be shorter. Extending the weighted
 counting to unequal sizes should only change constants, but this has not been checked.
 
-### 2.9 Next steps
+### 2.9 Unbounded scope, large blocks [F]
 
-1. **Many partitions or wide constraints.** The monotone class is now pinned down whenever
-   both m (partitions per test) and r (blocks per constraint) are bounded. Beyond that,
+Section 2.7 (ii) loses a factor r in the exponent, and at r ≈ log n it reaches only the
+general bound 2^{Ω(√n)}. With blocks of size 1, wide constraints are arbitrary clauses, so
+some restriction is needed. This section shows that **block size alone is enough**: once
+b ≥ √n, the number of blocks a constraint reads does not matter. The finite part is
+formalized in `isabelle/Monotone_Wide.thy`.
+
+**The model.** A test is any monotone CNF that is invariant under permuting the variables
+inside each block. Equivalently, it is a monotone predicate G of the block-weight vector,
+and it may read all k blocks at once. Every class in §2.2–2.7 (one partition per test) is a
+special case.
+
+**The idea.** In Theorem B, a coordinate ℓ is decoded once its whole witness scope is
+known. That is wasteful for wide constraints.
+- **The witness.** Let p be accepted and ℓ tight. Take a maximal false weight vector v
+  above p − e_ℓ (`max_false`). Then v_ℓ = p_ℓ − 1 and v_i ≥ p_i for i ≠ ℓ.
+- **Filling unknowns.** Fix a window [lo, hi] of typical weights. The decoder fills every
+  unknown typical coordinate with hi, then takes the least x such that G accepts.
+  - This never overshoots, because the fill lies above p.
+  - It is exact as soon as every typical i with v_i < hi is known (`wdec_eq`).
+  - These are the *light* coordinates of the witness. Atypical coordinates are recorded
+    explicitly.
+- **Determination (`wfree_determined`).** Order the coordinates. Then p is determined by its
+  free set and its values there, as in Theorem B.
+- **Light coordinates are expensive (`wide_maxfalse`, `wide_cost`).** Every input with block
+  weights exactly v is a maximal false point of the CNF. So the CNF has at least
+  ∏_i C(b, v_i) clauses.
+  - ℓ itself and each light coordinate i have v_i in [lo − 1, hi). So each contributes a
+    factor β = min_{lo−1 ≤ x < hi} C(b, x).
+  - A CNF with fewer than β^{w+1} clauses therefore has witnesses with fewer than w light
+    coordinates.
+  - Blocks that the clause reads "cheaply" are those with v_i ≥ hi, i.e. above the typical
+    cap. Those need not be decoded.
+- **The count (`wide_compress`, `wide_cover`).** Average over the w^k colourings as in §2.7
+  (ii). Suppose a sound test's CNF has fewer than β^{w+1} clauses. Then it accepts at most
+
+    (2w)^k · (2^b)^{k−y} · C(b, ⌊b/2⌋)^y,   y = ⌊(k−a)(w−1)^{w−1}/w^w⌋ ≥ ⌊(k−a)/(ew)⌋
+
+  inputs of weight N with at most a atypical blocks.
+
+**Theorem E (pen and paper, from `wide_cover`).** Let F be a monotone Σ₃ formula for
+Majority on n variables. Suppose every test of F is a monotone CNF invariant under
+permutations inside the blocks of a partition into k blocks of size b ≥ √n. The number of
+blocks a clause reads is unrestricted. Then F has size 2^{Ω(√(n log n))}.
+
+For √n ≤ b ≤ √(n log n), the KPPY construction of §2.5 lies in the class. So the class has
+complexity exactly 2^{Θ(√(n log n))}.
+
+*Proof sketch.* Let F have size 2^z.
+- **Window.** Take [lo, hi] = [b/2 − √(2b), b/2 + √(2b)].
+  - Since H(½ + x) ≥ 1 − 4x², we get log₂ β ≥ b − log₂(b+1) − 9.
+  - By Hoeffding, a block of a uniformly random input is atypical with probability at most
+    2e^{−4}. So the inputs with more than k/2 atypical blocks are at most a
+    (n+1)·2^k·(2e^{−4})^{k/2} ≤ (n+1)e^{−k/2} fraction of the slice.
+  - So at least half of the slice has at most a = k/2 atypical blocks.
+- **Cost.** A test covering such a point has a typical tight block, whose witness alone costs
+  β clauses. So z ≥ log₂ β ≈ b. Put w = ⌊z / log₂ β⌋ ≥ 1; every test has fewer than
+  β^{w+1} clauses.
+- **Coverage.** By `wide_cover` and C(b, b/2) ≤ 2^b/√(πb/2), each test covers at most
+  (n+1)(2w)^k(πb/2)^{−y/2} of the slice, where y ≥ k/(2ew) − 1. Hence
+
+    z ≥ (y/2)·log₂(πb/2) − k·log₂(2w) − log₂(2(n+1)).
+
+- **Optimizing.** Suppose z ≤ c√(n log n) with c small.
+  - Then b ≤ 2z, w ≤ 2z/b and y ≥ n/(4ez) − 1.
+  - Since b ≥ √n, the first term is at least (1 − o(1))·n log₂ n/(16ez).
+  - The overhead is k log₂(2w) ≤ √n·log₂(4c√(log₂ n)) = o(n log n / z).
+  - So z² ≥ (1 − o(1))·n log₂ n/(16e), which contradicts c < 1/7. ∎
+
+**Where it stops.** The proof uses b ≥ √n twice: log b ≥ ½ log n, and the colouring overhead
+k log w must be o(n log b / z). The second condition holds down to
+b ≈ √(n/log n)·log log n. Below that, the gain of ½ log b bits per decoded block no longer
+pays for the colouring. With b = 1 the class is everything (§2.10).
+
+**Why this is natural.** In a block-symmetric CNF, a clause that ties ℓ to a typical block i
+contains all C(b, v_i) ≈ 2^b ways of choosing the zeros of i. So wide coupling costs about b
+bits of size per coupled block. That is exactly the exchange rate of the KPPY threshold
+groups: tying r blocks costs 2^{rb} and buys coverage b^{−k/(2r)}. Theorem E says nothing
+beats that rate.
+
+### 2.10 Next steps
+
+1. **Small blocks with wide constraints, or many partitions.** Theorems C–E pin down the
+   monotone class whenever either
+   - blocks are large (b ≥ √n, any scope: Theorem E), or
+   - both m (partitions per test) and r (blocks per constraint) are bounded (Theorems C, D).
+
+   What remains is small blocks with wide constraints, or many partitions per test. There
    the block-symmetric classes stop being restrictions:
    - with blocks of size 1, an r-ary block-symmetric constraint is just a monotone clause of
      width r, so the r-ary class contains every monotone Σ₃ formula of bottom fan-in r;
@@ -494,9 +580,11 @@ counting to unequal sizes should only change constants, but this has not been ch
 
    By PPZ, a monotone Σ₃ formula of size 2^{O(√n)} must have clauses of width Ω(√n). So for
    r or m around √n, the question "is there a formula of size 2^{O(√n)} in the class?" is the
-   general open question of the monotone depth-3 complexity of Majority. The arguments here
-   show that any such formula must use constraints that are far from "few blocks of one
-   partition". They do not decide whether such a formula exists.
+   general open question of the monotone depth-3 complexity of Majority.
+
+   The gap between Theorem E (b ≳ √(n/log n)·log log n) and b = 1 is the natural next
+   target. Small blocks make the light-width argument cheap (a light block costs only
+   C(b, b/2) ≈ 2^b), so a different exchange rate is needed there.
 2. **Sharper formal constants for (ii).** `hyper_compress` has exponent about k/(4er). The
    pen-and-paper k/(2r) needs averaging of ρ^{−|F|} over orders, i.e. convexity.
 3. **The rest of Theorems C and D.** The parts still on paper:

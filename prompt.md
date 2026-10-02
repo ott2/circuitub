@@ -45,8 +45,18 @@ We are now extending the ideas in new directions. The live document is
   - `good_colorings` and `average_free`: averaging over the r^k colourings, Jensen-free.
   - `hyper_compress`: the count, with exponent about k/(4er).
   - `hyper_sound_tight`, `hyper_lower_nontight`.
+- `isabelle/Monotone_Wide.thy`: a test is any monotone predicate `G` of the block weights
+  (a block-symmetric monotone CNF), with no scope bound.
+  - `atyp` (blocks outside a window [lo, hi]), `wtight`, `wdec`, `wfree`, `wfill`.
+  - `wdec_eq`, `wfree_determined`: decoding fills unknowns with `hi`, so only *light*
+    coordinates (typical, with witness value below `hi`) must come earlier.
+  - `max_false`, `wide_maxfalse`, `wide_cost`: a maximal false weight vector v forces
+    ∏ C(b, v_i) clauses.
+  - `wide_compress`, `wide_cover`: the count with w colours, when the CNF has fewer than
+    β^(w+1) clauses.
+  - Pitfall: `max_false[OF …]` looped in unification; instantiate with `of` first.
 
-The session is `Majority_AC0` (15 theories, ~5100 lines). `isabelle/Audit.thy` lists every
+The session is `Majority_AC0` (16 theories, ~5700 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -70,13 +80,17 @@ and kept uncommitted.
   - **Theorem D** (pen and paper): if tests mix m partitions, the size is
     2^{Ω(√(n log n / m))}. So the L-R shape (m = 2) without negations is
     2^{Θ(√(n log n))}.
+- **Unbounded scope (§2.9):** **Theorem E** (pen and paper, from `wide_cover`): if every
+  test is a block-symmetric monotone CNF with blocks of size b ≥ √n, the size is
+  2^{Ω(√(n log n))}, whatever the scopes. The proof works down to
+  b ≈ √(n/log n)·log log n, where the (2w)^k colouring overhead takes over.
 
-## Suggested next steps (§2.9 of the document)
+## Suggested next steps (§2.10 of the document)
 
-1. **Many partitions or wide constraints.** For unbounded r or m, the class contains every
-   monotone Σ₃ formula of bounded width (with b = 1, r-ary constraints are just clauses).
-   So this item is the general open monotone question. Do not expect to settle it; look
-   for intermediate classes instead.
+1. **Small blocks with wide constraints, or many partitions.** For b = 1 the class is
+   everything, so this is the general open monotone question. Theorem E settles large b.
+   The natural target is the gap between b ≈ √(n/log n) and b = 1. There, a light block
+   costs only about 2^b, which is too little.
 2. **Sharper constants in `hyper_compress`:** k/(2r) instead of k/(4er), which needs
    convexity.
 3. **The analytic rest of Theorems C and D:** Hoeffding, binomial estimates, PPZ for

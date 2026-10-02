@@ -80,17 +80,29 @@ On paper, this gives Theorem D: monotone formulas whose tests mix m partitions n
 2^{Ω(√(n log n / m))}. So the construction cannot be made monotone without changing its
 shape. In this shape, the negations account for the whole √(log n) saving over KPPY.
 
+`isabelle/Monotone_Wide.thy` removes the bound on the scope when blocks are large. A test
+may be any block-symmetric monotone CNF:
+- **Only light blocks need decoding** (`wdec_eq`, `wfree_determined`). Unknown blocks are
+  filled with the top of a typical window.
+- **Light blocks are expensive** (`wide_cost`). Each typical block that a witness ties to
+  the decoded one multiplies the clause count by about 2^b.
+- **The count** (`wide_cover`).
+
+On paper, this gives Theorem E: with blocks of size at least √n, such formulas need
+2^{Ω(√(n log n))}, however many blocks a clause reads.
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 15 theories, about 5100 lines |
+| `isabelle/` | Session `Majority_AC0`: 16 theories, about 5700 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
 | `isabelle/Monotone_Cost.thy` | One clause per maximal false point; the cost of a test; the number of tests needed to cover the slice |
 | `isabelle/Monotone_Mixed.thy` | Tests mixing two partitions: tight coordinates compress, every one lies in a tight block, coverage of a mixed test, cost of a tight coordinate |
 | `isabelle/Monotone_Hyper.thy` | Constraints on r blocks: Theorem B by averaging over colourings |
+| `isabelle/Monotone_Wide.thy` | Block-symmetric tests of any scope: decoding waits only for light blocks, which cost about 2^b clauses each |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
