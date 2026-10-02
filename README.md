@@ -61,19 +61,31 @@ is tests that are ANDs of monotone functions of two block weights. Its formal pa
   divided by the bound of Theorem B.
 
 With some binomial estimates on paper, these give Theorem C: monotone formulas of this
-shape need size 2^{Θ(√(n log n))}. So the construction cannot
-be made monotone without changing its shape; in this shape, the negations account for
-the whole √(log n) saving over KPPY.
+shape need size 2^{Θ(√(n log n))}.
+
+`isabelle/Monotone_Mixed.thy` extends this to tests that mix two partitions, as the L-R
+tests do:
+- **Tight coordinates compress** (`tight_compress`): Theorem B's decoding works for the
+  tight coordinates of any accepted weight vector, without a validity assumption.
+- **Every one is in a tight block** (`mixed_tight`, `mixed_cover`): in a sound mixed test,
+  each one of a covered input lies in a tight block of one of the partitions. So one
+  partition compresses, and coverage stays b^{−Ω(k)}.
+- **Tight coordinates cost clauses** (`tight_cost`).
+
+On paper, this gives Theorem D: monotone formulas whose tests mix m partitions need
+2^{Ω(√(n log n / m))}. So the construction cannot be made monotone without changing its
+shape. In this shape, the negations account for the whole √(log n) saving over KPPY.
 
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 13 theories, about 4000 lines |
+| `isabelle/` | Session `Majority_AC0`: 14 theories, about 4600 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
 | `isabelle/Monotone_Cost.thy` | One clause per maximal false point; the cost of a test; the number of tests needed to cover the slice |
+| `isabelle/Monotone_Mixed.thy` | Tests mixing two partitions: tight coordinates compress, every one lies in a tight block, coverage of a mixed test, cost of a tight coordinate |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |

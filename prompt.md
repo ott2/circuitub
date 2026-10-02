@@ -28,8 +28,18 @@ We are now extending the ideas in new directions. The live document is
   - `pair_cost` and `test_cost`: a sound test covering p with p_l ≥ 1 has a pair CNF with
     C(b, p_l − 1) clauses.
   - `tests_needed`: covering the slice needs C(kb, N) / (Theorem B bound) tests.
+  - `boundary_cost`, `fib_card`, `inputs_count`: reusable pieces.
+- `isabelle/Monotone_Mixed.thy`: tests mixing two partitions.
+  - `tight`, `th`, `tfree`: tight coordinates, thresholds, and free sets, defined from the
+    test's constraints.
+  - `tight_compress` (Lemma 5): Theorem B for the tight coordinates of any accepted vector.
+    No validity is assumed.
+  - `mixed_tight` and `mixed_weight` (Lemma 6): every one lies in a tight block of one of
+    the two partitions.
+  - `mixed_cover`: coverage of a sound mixed test.
+  - `tight_cost` (Lemma 7).
 
-The session is `Majority_AC0` (13 theories, ~4000 lines). `isabelle/Audit.thy` lists every
+The session is `Majority_AC0` (14 theories, ~4600 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -47,14 +57,22 @@ and kept uncommitted.
   - Each test may use its own partition.
   - Constraints on r blocks give 2^{Ω(√(n log n / r))}.
   - Block symmetry cannot simply be dropped.
+- **Mixed partitions (§2.8):**
+  - A sound test mixing two partitions still covers only b^{−Ω(k)} of the slice
+    (`mixed_cover`, formal).
+  - **Theorem D** (pen and paper): if tests mix m partitions, the size is
+    2^{Ω(√(n log n / m))}. So the L-R shape (m = 2) without negations is
+    2^{Θ(√(n log n))}.
 
-## Suggested next steps (§2.8 of the document)
+## Suggested next steps (§2.9 of the document)
 
-1. **Mixed partitions.** One test with pair constraints on two partitions, as in L-R. Can a
-   monotone test of this kind cover more than b^{−Ω(k)} of the slice?
+1. **Many partitions or wide constraints.** Is there a monotone Σ₃ formula for Majority of
+   size 2^{O(√n)} with about log n partitions per test, or with constraints on about log n
+   blocks? Or is there a lower bound of 2^{ω(√n)} in that regime?
 2. **Formalize the r-ary generalization of Theorem B.** This needs averaging over all orders,
    i.e. convexity.
-3. **The analytic rest of Theorem C:** Hoeffding, binomial estimates, PPZ for small b.
+3. **The analytic rest of Theorems C and D:** Hoeffding, binomial estimates, PPZ for
+   small b.
 4. **The fixed-point form** (§2.3).
 
 ## Working rules

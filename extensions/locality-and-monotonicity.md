@@ -10,7 +10,7 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | Part 1: block locality | `isabelle/Block_Local.thy` | Formalized and covered by the oracle audit |
-| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main result is Theorem C: in the shape of the L-R tests, monotone formulas need 2^{Θ(√(n log n))} |
+| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C and D: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))} |
 
 Notation:
 - n is the number of variables, N = n/2, and Majority means weight ≥ n/2.
@@ -294,10 +294,11 @@ in this class of size 2^{O(√(n log n))} exist, so the class has complexity
 
 ### 2.6 What this says about the L-R construction
 
-The L-R tests have this shape, with negations: each clause reads two blocks of a fixed
-partition (Part 1), through block-symmetric pair checks. Theorem C says that without
-negations, the same shape cannot beat KPPY. So **in this shape, the negations are
-responsible for the entire √(log n) saving**. Amano's results point the same way at
+The L-R tests have this shape, with negations: each clause reads two blocks of one of two
+partitions (Part 1), through block-symmetric pair checks. Theorem C, extended to tests that
+mix two partitions by Theorem D (§2.8), says that without negations the same shape cannot
+beat KPPY. So **in this shape, the negations are responsible for the entire √(log n)
+saving**. Amano's results point the same way at
 bounded fan-in: negations help there too, but only slightly.
 
 Theorem C does not settle the monotone depth-3 complexity of Majority: the gap between
@@ -316,9 +317,9 @@ Let test t use a partition into blocks of size b_t.
 - **So expensive tests pay.** The expensive tests cover the rest. Each pays at least
   2^{Ω(√(n log n))} clauses per unit of coverage, whatever its b_t.
 
-So the fixed partition is not needed. What is needed is that each *test* uses a single
-partition. The L-R tests are not of this kind: one test contains pair checks for both
-moduli, i.e. for both partitions.
+So the fixed partition is not needed. The argument above still uses a single partition per
+*test*. The L-R tests are not of this kind: one test contains pair checks for both moduli,
+i.e. for both partitions. Section 2.8 handles that case.
 
 **(ii) Clauses may read r blocks.** Let each test be an AND of monotone block-symmetric
 functions of r block weights. The proof of Theorem B generalizes as follows:
@@ -351,26 +352,123 @@ class. A meaningful version must bound the block size. For example, with b ≤ �
 arbitrary monotone pair functions, the cost lemma fails: a pair function can have few
 clauses. Only the PPZ bound 2^{Ω(n/b)} = 2^{Ω(√n)} remains.
 
-**Summary.** Any monotone Σ₃ formula for Majority of size 2^{O(√n)} must do at least one of
-the following:
-- mix several partitions inside one test, as L-R do with negations;
+**Summary** (including §2.8). Any monotone Σ₃ formula for Majority of size 2^{O(√n)} must
+do at least one of the following:
+- mix about log n or more partitions inside one test (two, as in L-R, is not enough);
 - use block-symmetric constraints on about log n or more blocks;
 - give up block symmetry.
 
-### 2.8 Next steps
+### 2.8 Tests that mix partitions [F]
 
-1. **Mixed partitions.** This is the case that matters for L-R: a single test with pair
-   constraints on two partitions with coprime block sizes.
-   - The constraints then do not live on a common set of coordinates.
-   - On the common refinement, each constraint reads many cells, so Theorem B does not
-     apply directly.
-   - A first question: can a monotone test mixing two partitions cover more than
-     b^{−Ω(k)} of the slice?
+The L-R tests contain pair checks for two partitions at once. Section 2.7 (i) allows each
+test its own partition, but not several partitions within one test. This section removes
+that restriction. The finite part is formalized in `isabelle/Monotone_Mixed.thy`.
+
+**The model.** A test now has two partitions:
+- A, into k_A blocks of size a;
+- B, into k_B blocks of size b.
+
+It accepts x iff the A-weight vector u of x passes up-closed pair constraints P and the
+B-weight vector v of x passes up-closed pair constraints Q. The two weight vectors are
+linked through x, so the slice reformulation of §2.3 does not apply. The argument below
+works with the constraints directly.
+
+**Tight coordinates.** Let u be accepted. Call coordinate ℓ *tight* if lowering u_ℓ by one
+violates a constraint between ℓ and some i, its *witness*.
+- Let th_ℓi(y) be the least x such that (x, y) passes both constraints between ℓ and i.
+  Then u_ℓ = th_ℓi(u_i) for a witness i (`th_eq`), and th_ℓj(u_j) ≤ u_ℓ for every j
+  (`th_le`). These are Lemma 3 and the first step of Theorem B, with the test in place of H.
+- So Theorem B's decoding applies to the tight coordinates of *any* accepted vector. The
+  decoder records the non-tight coordinates and the tight coordinates that are free for
+  the order (`tfree_determined`). A tight coordinate is not free both in an order and in
+  its reverse (`tfree_small`).
+
+**Lemma 5 (`tight_compress`) [F].** Take any up-closed pair constraints on k blocks of size
+b, and t ≤ k. The inputs whose weight vector is accepted and has at least t tight
+coordinates number at most
+
+  2^{k+1} · (2^b)^{k−⌈t/2⌉} · C(b, ⌊b/2⌋)^{⌈t/2⌉}.
+
+Soundness is not assumed. This is the weighted Theorem B with "every coordinate" replaced
+by "the tight coordinates".
+
+**Lemma 6 (`mixed_tight`, `mixed_weight`) [F].** Let the test be sound and accept x of
+weight N. Then every one of x lies in a tight A-block or a tight B-block. Hence
+N ≤ |T_A|·a + |T_B|·b, where T_A and T_B are the sets of tight coordinates.
+
+*Proof.* Suppose a one e of x lies in a non-tight A-block and a non-tight B-block. Then
+x − e still passes both families of constraints (`lower_nontight`), and it has weight
+N − 1. That contradicts soundness. ∎
+
+**Theorem (`mixed_cover`) [F].** Suppose (t_A − 1)·a + (t_B − 1)·b < N. Then a sound test
+accepts at most
+
+  2^{k_A+1}(2^a)^{k_A−⌈t_A/2⌉}C(a,⌊a/2⌋)^{⌈t_A/2⌉} + 2^{k_B+1}(2^b)^{k_B−⌈t_B/2⌉}C(b,⌊b/2⌋)^{⌈t_B/2⌉}
+
+inputs of weight N. Take t_A = ⌈k_A/4⌉ and t_B = ⌈k_B/4⌉. Then the test covers at most
+
+  ν ≤ (2^{k_A+1}(πa/2)^{−k_A/16} + 2^{k_B+1}(πb/2)^{−k_B/16}) · √(2n)   (D)
+
+of the slice. **Mixing two partitions does not improve coverage beyond constants in the
+exponent**: it is still b^{−Ω(k)}.
+
+**Lemma 7 (`tight_cost`) [F].** If coordinate ℓ of an accepted vector u is tight, one pair
+CNF of the test has at least C(b, u_ℓ − 1) clauses. This is the cost lemma of §2.5, again
+without soundness.
+
+**Theorem D (pen and paper, from the formalized ingredients).** Fix m. Let F be a monotone
+Σ₃ formula for Majority with the following structure:
+- each test chooses at most m partitions of the variables, each into blocks of equal size;
+- each test is an AND of monotone block-symmetric pair functions, each reading two blocks of
+  one of its partitions.
+
+Then F has size 2^{Ω(√(n log n / m))}.
+
+*Proof sketch.* The proof follows Theorem C and §2.7 (i), with Lemma 6 in place of "every
+coordinate is tight".
+- **Split.** Lemma 6 extends to m partitions. So for a covered x, some partition q of the
+  test has at least N/m ones in its tight blocks, and therefore at least k_q/(2m) tight
+  blocks. Assign x to such a q. This splits the coverage of each test into at most m
+  parts.
+- **Coverage of a part.** Let the part's partition have block size s, so k = n/s.
+  - By Lemma 5 with t = ⌈k/(2m)⌉, the part covers at most 2^{k+1}(πs/2)^{−k/(8m)}√(2n) of
+    the slice.
+  - For small s, use PPZ instead. Each of the N/m ones in tight blocks has a critical clause
+    of width at most 2s. So the part covers at most (n+1)·2^{−N/(2ms)}.
+- **Cost of a part.** Suppose the part contains a point with a tight block of weight w,
+  where s/4 ≤ w − 1 ≤ 3s/4. Then by Lemma 7 the test has at least
+  C(s, ⌈s/4⌉) ≥ 2^{0.81s}/(s+1) clauses.
+- **Atypical points.** Otherwise, every point in the part has at least k/(2m) tight blocks,
+  all of weight outside the window. By Hoeffding, these points are at most a
+  2^k (2e^{−2(s/4−1)²/s})^{k/(2m)}·(n+1) fraction of the slice. That is 2^{−Ω(n/m)} once s
+  exceeds a constant.
+- **Combining**, as in Theorem C. Either F has 2^{Ω(n/m)} tests, or the typical parts with
+  large s cover half the slice. Each such part pays 2^{0.81s} clauses for at most
+  2^{−c(n/s) log s / m} coverage. Optimizing over s gives 2^{Ω(√(n log n / m))}. ∎
+
+For m = 2, which is the L-R shape, the class has complexity 2^{Θ(√(n log n))}. The upper
+bound is the KPPY-style construction of §2.5, which uses a single partition.
+
+**What m measures.** If m is unbounded, the class contains every monotone Σ₃ formula
+with clause width at most 2b. Each clause can be given its own partition, with the clause's
+variables in two blocks. Then only the PPZ bound 2^{Ω(n/b)} remains. At m ≈ log n,
+Theorem D gives 2^{Ω(√n)}, the known general bound.
+
+**Caveat.** Both the formal model and Theorem D assume equal block sizes within each
+partition. In L-R, the last block of a partition can be shorter. Extending the weighted
+counting to unequal sizes should only change constants, but this has not been checked.
+
+### 2.9 Next steps
+
+1. **Many partitions or wide constraints.** The monotone class is now pinned down whenever
+   both m (partitions per test) and r (blocks per constraint) are bounded. Is there a
+   monotone Σ₃ formula for Majority of size 2^{O(√n)} with m or r about log n? Or does a
+   different argument give 2^{ω(√n)} there? This is where the monotone question now sits.
 2. **Formalize (ii).** Generalize Theorem B to r-ary constraints. The averaging over all
    orders needs a convexity argument; for r = 2 an order and its reverse suffice.
-3. **The rest of Theorem C.** The parts still on paper:
-   - the Hoeffding estimate for cheap tests;
-   - the binomial estimates that turn (B) into a power of b;
+3. **The rest of Theorems C and D.** The parts still on paper:
+   - the Hoeffding estimates for cheap tests and atypical points;
+   - the binomial estimates that turn (B) and (D) into powers of b;
    - the PPZ case for small b;
    - the optimization over b.
    Formalizing them would need real analysis rather than counting.
