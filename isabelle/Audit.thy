@@ -1,5 +1,5 @@
 theory Audit
-  imports Block_Local Monotone_Pairs
+  imports Block_Local Monotone_Cost
 begin
 
 text \<open>
@@ -20,6 +20,8 @@ ML \<open>
      @{thm exchange}, @{thm determination},
      @{thm pairwise_count}, @{thm pairwise_weight}, @{thm three_blocks},
      @{thm free_determined}, @{thm free_small}, @{thm sharp_bounds(1)}, @{thm sharp_bounds(2)},
+     @{thm clause_per_maxfalse}, @{thm pair_cost}, @{thm test_cost}, @{thm slice_count},
+     @{thm tests_needed},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =

@@ -12,4 +12,5 @@ session Majority_AC0 = "HOL-Library" +
     Bounded_Width
     Block_Local
     Monotone_Pairs
+    Monotone_Cost
     Audit

@@ -224,18 +224,32 @@ see this difference.
 
 ### 2.5 The cost of a test, and the class lower bound
 
-**Lemma 4 (monotone only; not yet formalized).** A monotone CNF needs a distinct clause for
-every maximal false point. Two such points cannot share a clause, because their join would
-also falsify it.
+The finite ingredients are formalized in `isabelle/Monotone_Cost.thy`.
 
-**Consequence.** Suppose a test covers p, and 1 ≤ p_ℓ.
-- p − e_ℓ has weight N − 1, so the test rejects it. Some pair function P_ℓj rejects it.
-- Going up in the j coordinate, P_ℓj has a maximal false weight pair (p_ℓ − 1, t). As a
-  Boolean function on 2b variables, that pair gives at least C(b, p_ℓ − 1) maximal false
-  points.
-- So the test has at least C(b, p_ℓ − 1) clauses.
+**Lemma 4 (`clause_per_maxfalse`) [F].** A monotone CNF needs a distinct clause for every
+maximal false point. Two such points cannot share a clause, because their join would also
+falsify it.
 
-**Theorem C (pen and paper).** Let F be a monotone Σ₃ formula (an OR of monotone CNFs) for
+**Consequence (`pair_cost`, `test_cost`) [F].** Suppose a sound test covers p, and
+1 ≤ p_ℓ.
+- p − e_ℓ has weight N − 1, so the test rejects it. Some pair function involving ℓ changes
+  value there (`test_boundary`).
+- Going up in the other coordinate, that pair function has a maximal false weight pair
+  (p_ℓ − 1, t) (`boundary`). As a Boolean function on 2b variables, it has at least
+  C(b, p_ℓ − 1) maximal false points, namely the inputs with these block weights
+  (`pair_maxfalse`).
+- So one pair CNF of the test has at least C(b, p_ℓ − 1) clauses.
+
+**Number of tests (`tests_needed`) [F].** A family of sound tests that accepts every
+weight vector of the slice has at least
+
+  C(kb, N) / (2^{k+1} · (2^b)^{⌊k/2⌋} · C(b, ⌊b/2⌋)^{⌈k/2⌉})
+
+members. The proof combines Theorem B with `slice_count`: the slice's weight vectors account
+for all C(kb, N) inputs of weight N. Only the inequality is needed, and it avoids the
+Vandermonde identity.
+
+**Theorem C (pen and paper, from the formalized ingredients above).** Let F be a monotone Σ₃ formula (an OR of monotone CNFs) for
 Majority on n variables. Fix a partition of the variables into k blocks of size b. Suppose
 each test's clauses can be grouped by pairs of blocks, so that each group computes a
 block-symmetric function of its two blocks. Then F has size 2^{Ω(√(n log n))}. Formulas
@@ -296,9 +310,12 @@ following:
 
 ### 2.7 Next steps
 
-1. **Formalize the cost lemma.** Formalize Lemma 4, its consequence, and the finite core of
-   Theorem C. The core statement: a family of sound tests covering the slice has at least
-   (1/2)/ν_max expensive members. The asymptotic optimization over b can stay on paper.
+1. **The rest of Theorem C.** The parts still on paper:
+   - the Hoeffding estimate for cheap tests;
+   - the binomial estimates that turn (B) into a power of b;
+   - the PPZ case for small b;
+   - the optimization over b.
+   Formalizing them would need real analysis rather than counting.
 2. **Several partitions.** Theorem B uses one partition. With two partitions, the pair
    functions no longer live on a common set of block weights. A first case: two
    partitions, where each test uses one of them.

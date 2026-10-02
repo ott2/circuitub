@@ -53,8 +53,15 @@ is tests that are ANDs of monotone functions of two block weights. Its formal pa
 - **Tightness** (`matching_valid`, `matching_card`, `matching_weight`): pairing the blocks
   with complementary weights achieves b^{−k/4}.
 
-With a cost lemma for monotone CNFs (on paper, not yet formalized), this gives Theorem C:
-monotone formulas of this shape need size 2^{Θ(√(n log n))}. So the construction cannot
+`isabelle/Monotone_Cost.thy` adds two finite ingredients:
+- **The cost of a test** (`clause_per_maxfalse`, `test_cost`): a monotone CNF needs one
+  clause per maximal false point. So a test covering a point with a block of weight w has
+  a pair CNF with at least C(b, w−1) clauses.
+- **The number of tests** (`tests_needed`): covering the slice needs at least C(kb, kb/2)
+  divided by the bound of Theorem B.
+
+With some binomial estimates on paper, these give Theorem C: monotone formulas of this
+shape need size 2^{Θ(√(n log n))}. So the construction cannot
 be made monotone without changing its shape; in this shape, the negations account for
 the whole √(log n) saving over KPPY.
 
@@ -62,10 +69,11 @@ the whole √(log n) saving over KPPY.
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 12 theories, about 3600 lines |
+| `isabelle/` | Session `Majority_AC0`: 13 theories, about 4000 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
+| `isabelle/Monotone_Cost.thy` | One clause per maximal false point; the cost of a test; the number of tests needed to cover the slice |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
