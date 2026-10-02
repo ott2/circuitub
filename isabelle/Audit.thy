@@ -1,5 +1,5 @@
 theory Audit
-  imports Block_Local
+  imports Block_Local Monotone_Pairs
 begin
 
 text \<open>
@@ -15,7 +15,11 @@ ML \<open>
      @{thm symmetric_functions_big_O}, @{thm majority_circuits}, @{thm majority_depth3},
      @{thm symmetric_or_of_cnfs}, @{thm symmetric_or_of_cnfs_width},
      @{thm majority_or_of_cnfs}, @{thm enum_output_lower_bound},
-     @{thm symmetric_or_of_cnfs_local}, @{thm one_block_tests}, @{thm one_block_tests_equal}];
+     @{thm symmetric_or_of_cnfs_local}, @{thm one_block_tests}, @{thm one_block_tests_equal},
+     @{thm test_valid}, @{thm valid_test(1)}, @{thm valid_test(2)}, @{thm valid_test(3)},
+     @{thm exchange}, @{thm determination},
+     @{thm pairwise_count}, @{thm pairwise_weight}, @{thm graph_weight(1)}, @{thm graph_weight(2)}, @{thm three_blocks},
+     @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

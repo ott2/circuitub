@@ -31,9 +31,9 @@ algorithm for the local enumeration problem Enum(k′, t) of Gurumukhani et al.
 A second document,
 [`extensions/locality-and-monotonicity.md`](extensions/locality-and-monotonicity.md), takes
 the work in new directions. It asks which restricted circuit classes can still reach
-2^{O(√n)}. Its formalized part is `isabelle/Block_Local.thy`. Its analysis of a monotone
-version of the construction is pen and paper, and ends in a conjecture. The formalized
-part records which structure the construction needs:
+2^{O(√n)}. It has two parts.
+
+The first part, `isabelle/Block_Local.thy`, records which structure the construction needs:
 - **Two blocks suffice.** Every clause of those CNFs reads variables from at most two blocks
   of one of two fixed partitions into consecutive blocks of size at most ⌈n/k⌉
   (`symmetric_or_of_cnfs_local`).
@@ -43,13 +43,26 @@ part records which structure the construction needs:
   (`one_block_tests`). That is at least (b+1)^{m/2} tests for m blocks of size b
   (`one_block_tests_equal`), or 2^{Ω(√n log n)} when b = m = √n.
 
+The second part asks whether the construction can be made monotone. The class it studies
+is tests that are ANDs of monotone functions of two block weights. Its formal part is
+`isabelle/Monotone_Pairs.thy`:
+- **Theorem A** (`pairwise_count`, `pairwise_weight`): with k blocks of size b, every such
+  test covers at most a (k−1)^k·b^{−k/4} fraction of the Majority slice, up to constants.
+- **Tightness** (`matching_valid`, `matching_card`, `matching_weight`): pairing the blocks
+  with complementary weights achieves b^{−k/4}.
+
+Whether the (k−1)^k factor can be removed is an open conjecture. If it can, then monotone
+formulas of this shape need 2^{Ω(√(n log n))}, so the construction cannot be made
+monotone without changing its shape.
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 11 theories, about 2800 lines |
+| `isabelle/` | Session `Majority_AC0`: 12 theories, about 3500 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
+| `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorem A (counting and weighted), tightness via matching tests |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
