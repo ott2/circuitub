@@ -38,8 +38,15 @@ We are now extending the ideas in new directions. The live document is
     the two partitions.
   - `mixed_cover`: coverage of a sound mixed test.
   - `tight_cost` (Lemma 7).
+- `isabelle/Monotone_Hyper.thy`: constraints whose scopes have at most r blocks.
+  - `hyper`, `hacc`, `htight`, `hfree`: generic local monotone constraints, given by
+    scopes `S j` and predicates `G j`.
+  - `hfree_determined`: decoding needs no injectivity.
+  - `good_colorings` and `average_free`: averaging over the r^k colourings, Jensen-free.
+  - `hyper_compress`: the count, with exponent about k/(4er).
+  - `hyper_sound_tight`, `hyper_lower_nontight`.
 
-The session is `Majority_AC0` (14 theories, ~4600 lines). `isabelle/Audit.thy` lists every
+The session is `Majority_AC0` (15 theories, ~5100 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -66,11 +73,12 @@ and kept uncommitted.
 
 ## Suggested next steps (§2.9 of the document)
 
-1. **Many partitions or wide constraints.** Is there a monotone Σ₃ formula for Majority of
-   size 2^{O(√n)} with about log n partitions per test, or with constraints on about log n
-   blocks? Or is there a lower bound of 2^{ω(√n)} in that regime?
-2. **Formalize the r-ary generalization of Theorem B.** This needs averaging over all orders,
-   i.e. convexity.
+1. **Many partitions or wide constraints.** For unbounded r or m, the class contains every
+   monotone Σ₃ formula of bounded width (with b = 1, r-ary constraints are just clauses).
+   So this item is the general open monotone question. Do not expect to settle it; look
+   for intermediate classes instead.
+2. **Sharper constants in `hyper_compress`:** k/(2r) instead of k/(4er), which needs
+   convexity.
 3. **The analytic rest of Theorems C and D:** Hoeffding, binomial estimates, PPZ for
    small b.
 4. **The fixed-point form** (§2.3).

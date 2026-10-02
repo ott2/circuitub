@@ -10,7 +10,7 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | Part 1: block locality | `isabelle/Block_Local.thy` | Formalized and covered by the oracle audit |
-| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C and D: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))} |
+| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C and D: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))} |
 
 Notation:
 - n is the number of variables, N = n/2, and Majority means weight ≥ n/2.
@@ -339,6 +339,30 @@ functions of r block weights. The proof of Theorem B generalizes as follows:
   Grouping the blocks r at a time, with a threshold on each group's weight, shows this is
   tight up to 2^{O(k)}.
 
+**Formal version (`isabelle/Monotone_Hyper.thy`) [F].** The formal proof avoids Jensen. It
+works with the test directly, as in §2.8, and uses tight coordinates and thresholds for
+constraints with arbitrary scopes of at most r blocks.
+- **Colourings instead of a random order.** Order the coordinates by a colouring
+  c : {..<k} → {..<r}, breaking ties by index.
+- **Each tight coordinate is often decoded.** A tight coordinate ℓ is decoded whenever its
+  witness scope gets strictly smaller colours than ℓ. Giving ℓ the top colour and the rest
+  of the scope lower colours already accounts for (r−1)^{r−1}·r^{k−r} of the r^k colourings
+  (`good_colorings`).
+- **So some colouring leaves few free coordinates.** Integer averaging (`average_free`)
+  gives a colouring with at most k − ⌊t(r−1)^{r−1}/r^r⌋ free coordinates, where t is the
+  number of tight coordinates. Note (r−1)^{r−1}/r^r ≥ 1/(er).
+- **The count (`hyper_compress`).** The inputs whose weight vector is accepted and has at
+  least t tight coordinates number at most
+
+    (2r)^k · (2^b)^{k−y} · C(b, ⌊b/2⌋)^y,   y = ⌊t(r−1)^{r−1}/r^r⌋.
+
+- **Soundness gives tightness (`hyper_sound_tight`).** For a sound test, every positive
+  coordinate of a slice point is tight.
+
+So the formal bound has exponent about k/(4er) instead of k/(2r), and a factor (2r)^k
+instead of 2^k. That is enough for 2^{Ω(√(n log n / r))} while r log r = o(log n). The
+pen-and-paper version above covers all r.
+
 The cost lemma is unchanged: some r-ary constraint has a maximal false point with
 ℓ-coordinate p_ℓ − 1, so it has at least C(b, p_ℓ − 1) clauses. Optimizing as before gives
 size 2^{Ω(√(n log n / r))}.
@@ -461,11 +485,20 @@ counting to unequal sizes should only change constants, but this has not been ch
 ### 2.9 Next steps
 
 1. **Many partitions or wide constraints.** The monotone class is now pinned down whenever
-   both m (partitions per test) and r (blocks per constraint) are bounded. Is there a
-   monotone Σ₃ formula for Majority of size 2^{O(√n)} with m or r about log n? Or does a
-   different argument give 2^{ω(√n)} there? This is where the monotone question now sits.
-2. **Formalize (ii).** Generalize Theorem B to r-ary constraints. The averaging over all
-   orders needs a convexity argument; for r = 2 an order and its reverse suffice.
+   both m (partitions per test) and r (blocks per constraint) are bounded. Beyond that,
+   the block-symmetric classes stop being restrictions:
+   - with blocks of size 1, an r-ary block-symmetric constraint is just a monotone clause of
+     width r, so the r-ary class contains every monotone Σ₃ formula of bottom fan-in r;
+   - with unbounded m, the class contains every monotone Σ₃ formula of clause width 2b
+     (§2.8).
+
+   By PPZ, a monotone Σ₃ formula of size 2^{O(√n)} must have clauses of width Ω(√n). So for
+   r or m around √n, the question "is there a formula of size 2^{O(√n)} in the class?" is the
+   general open question of the monotone depth-3 complexity of Majority. The arguments here
+   show that any such formula must use constraints that are far from "few blocks of one
+   partition". They do not decide whether such a formula exists.
+2. **Sharper formal constants for (ii).** `hyper_compress` has exponent about k/(4er). The
+   pen-and-paper k/(2r) needs averaging of ρ^{−|F|} over orders, i.e. convexity.
 3. **The rest of Theorems C and D.** The parts still on paper:
    - the Hoeffding estimates for cheap tests and atypical points;
    - the binomial estimates that turn (B) and (D) into powers of b;
