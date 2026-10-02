@@ -15,8 +15,9 @@ text \<open>
 
   Main results: every point of a valid \<open>H\<close> has, for each coordinate \<open>l\<close>, a witness coordinate
   \<open>i\<close> (\<open>exchange\<close>) which determines \<open>p l\<close> from \<open>p i\<close> (\<open>determination\<close>), and hence
-  \<open>|H| \<le> (k-1)\<^sup>k (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close> (\<open>pairwise_count\<close>), with \<open>|H| \<le> 2(b+1)\<close> for \<open>k = 3\<close>
-  (\<open>three_blocks\<close>).  The matching test (pair up blocks, require complementary weights) is valid
+  \<open>|H| \<le> (k-1)\<^sup>k (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close> (\<open>pairwise_count\<close>, Theorem A), with \<open>|H| \<le> 2(b+1)\<close> for
+  \<open>k = 3\<close> (\<open>three_blocks\<close>).  Decoding in a fixed order removes the need to record witnesses:
+  \<open>|H| \<le> 2\<^sup>k\<^sup>+\<^sup>1 (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close>, and likewise for the number of inputs (\<open>sharp_bounds\<close>, Theorem B).  The matching test (pair up blocks, require complementary weights) is valid
   with \<open>|H| \<ge> (b+1)\<^sup>k\<^sup>/\<^sup>2\<close> (\<open>matching_valid\<close>, \<open>matching_card\<close>), so the exponent \<open>k/2\<close> is optimal.
 \<close>
 
@@ -267,48 +268,181 @@ proof -
 qed
 
 text \<open>
-  The counting only uses the witness maps: if every point has a witness map in a family \<open>F\<close>,
-  then \<open>|H| \<le> |F| (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close>.
+  Counting by classes.  If \<open>H\<close> is covered by the classes \<open>Cl a\<close>, \<open>a \<in> I\<close>, and each class is
+  determined by its values on a set \<open>R a\<close> of at most \<open>k div 2\<close> coordinates, then
+  \<open>|H| \<le> |I| (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close>, and similarly for the number of inputs.  Theorem A takes the classes
+  to be the witness maps; Theorem B below needs only \<open>2\<^sup>k\<^sup>+\<^sup>1\<close> classes.
 \<close>
 
-lemma count_via:
+lemma class_bounds:
+  fixes k :: nat
+  assumes box: "S \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" and R: "R \<subseteq> {..<k}"
+    and inj: "inj_on (\<lambda>p. restrict p R) S"
+  shows "card S \<le> (b + 1) ^ card R"
+    and "(\<Sum>p\<in>S. \<Prod>i\<in>R. b choose p i) \<le> (2 ^ b) ^ card R"
+proof -
+  let ?r = "\<lambda>p. restrict p R"
+  have finR: "finite R" using R by (rule finite_subset) simp
+  have img: "?r ` S \<subseteq> R \<rightarrow>\<^sub>E {..b}"
+  proof
+    fix r assume "r \<in> ?r ` S"
+    then obtain p where p: "p \<in> S" "r = ?r p" by blast
+    then have "p \<in> {..<k} \<rightarrow>\<^sub>E {..b}" using box by blast
+    then show "r \<in> R \<rightarrow>\<^sub>E {..b}" using p(2) R by (auto simp: restrict_PiE_iff)
+  qed
+  have "card S = card (?r ` S)" using inj by (simp add: card_image)
+  also have "\<dots> \<le> card (R \<rightarrow>\<^sub>E {..b})" using img finR by (intro card_mono finite_PiE) auto
+  also have "\<dots> = (b + 1) ^ card R" using finR by (simp add: card_PiE)
+  finally show "card S \<le> (b + 1) ^ card R" .
+  have rr: "(\<Prod>i\<in>R. b choose ?r p i) = (\<Prod>i\<in>R. b choose p i)" for p
+    by (rule prod.cong) simp_all
+  have "(\<Sum>p\<in>S. \<Prod>i\<in>R. b choose p i) = (\<Sum>r\<in>?r ` S. \<Prod>i\<in>R. b choose r i)"
+    using inj by (simp add: sum.reindex rr)
+  also have "\<dots> \<le> (\<Sum>r\<in>R \<rightarrow>\<^sub>E {..b}. \<Prod>i\<in>R. b choose r i)"
+    using img finR by (intro sum_mono2 finite_PiE) auto
+  also have "\<dots> = (\<Prod>i\<in>R. \<Sum>x\<le>b. b choose x)"
+    using finR by (subst prod_sum_PiE) simp_all
+  also have "\<dots> = (2 ^ b) ^ card R" by (simp add: choose_row_sum)
+  finally show "(\<Sum>p\<in>S. \<Prod>i\<in>R. b choose p i) \<le> (2 ^ b) ^ card R" .
+qed
+
+lemma trade:
+  fixes M B :: nat
+  assumes a: "M \<le> B" "r \<le> r'" "r' \<le> k"
+  shows "M ^ (k - r) * B ^ r \<le> B ^ r' * M ^ (k - r')"
+proof -
+  have e: "k - r = (k - r') + (r' - r)" using a by simp
+  have "M ^ (k - r) * B ^ r = M ^ (k - r') * (M ^ (r' - r) * B ^ r)"
+    by (simp add: e power_add mult_ac)
+  also have "\<dots> \<le> M ^ (k - r') * (B ^ (r' - r) * B ^ r)"
+    by (intro mult_left_mono mult_right_mono power_mono) (simp_all add: a)
+  also have "B ^ (r' - r) * B ^ r = B ^ r'"
+    using a by (simp add: power_add[symmetric])
+  finally show ?thesis by (simp add: mult_ac)
+qed
+
+lemma classes:
+  assumes box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" and I: "finite I"
+    and cover: "H \<subseteq> (\<Union>a\<in>I. Cl a)" and sub: "\<forall>a\<in>I. Cl a \<subseteq> H"
+    and R: "\<forall>a\<in>I. R a \<subseteq> {..<k} \<and> card (R a) \<le> k div 2"
+    and inj: "\<forall>a\<in>I. inj_on (\<lambda>p. restrict p (R a)) (Cl a)"
+  shows "card H \<le> card I * (b + 1) ^ (k div 2)"
+    and "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+proof -
+  define M where "M = b choose (b div 2)"
+  define wt where "wt p = (\<Prod>i<k. b choose p i)" for p :: "nat \<Rightarrow> nat"
+  have finH: "finite H" using box by (rule finite_subset) (intro finite_PiE; simp)
+  have boxa: "Cl a \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" if "a \<in> I" for a using sub box that by blast
+  have Ra: "R a \<subseteq> {..<k}" "card (R a) \<le> k div 2" if "a \<in> I" for a using R that by auto
+  have injs: "inj_on (\<lambda>p. restrict p (R a)) (Cl a)" if "a \<in> I" for a using inj that by blast
+  have finU: "finite (\<Union>a\<in>I. Cl a)" using sub by (intro finite_subset[OF _ finH]) blast
+  have "card H \<le> card (\<Union>a\<in>I. Cl a)" using cover finU by (rule card_mono[rotated])
+  also have "\<dots> \<le> (\<Sum>a\<in>I. card (Cl a))" by (rule card_UN_le[OF I])
+  also have "\<dots> \<le> (\<Sum>a\<in>I. (b + 1) ^ (k div 2))"
+  proof (rule sum_mono)
+    fix a assume a: "a \<in> I"
+    have "card (Cl a) \<le> (b + 1) ^ card (R a)"
+      by (rule class_bounds(1)[OF boxa[OF a] Ra(1)[OF a] injs[OF a]])
+    also have "\<dots> \<le> (b + 1) ^ (k div 2)" using Ra(2)[OF a] by (intro power_increasing) simp_all
+    finally show "card (Cl a) \<le> (b + 1) ^ (k div 2)" .
+  qed
+  also have "\<dots> = card I * (b + 1) ^ (k div 2)" by simp
+  finally show "card H \<le> card I * (b + 1) ^ (k div 2)" .
+  have M2: "M \<le> 2 ^ b"
+  proof -
+    have "b choose (b div 2) \<le> (\<Sum>x\<le>b. b choose x)" by (rule member_le_sum) simp_all
+    then show ?thesis by (simp add: M_def choose_row_sum)
+  qed
+  have each: "(\<Sum>p\<in>Cl a. wt p) \<le> (2 ^ b) ^ (k div 2) * M ^ (k - k div 2)" if a: "a \<in> I" for a
+  proof -
+    have finR: "finite (R a)" using Ra(1)[OF a] by (rule finite_subset) simp
+    have split: "wt p \<le> (\<Prod>i\<in>R a. b choose p i) * M ^ (k - card (R a))" for p
+    proof -
+      have eq: "wt p = (\<Prod>i\<in>R a. b choose p i) * (\<Prod>i\<in>{..<k} - R a. b choose p i)"
+        unfolding wt_def using Ra(1)[OF a] prod.subset_diff[of "R a" "{..<k}" "\<lambda>i. b choose p i"]
+        by (simp add: mult.commute)
+      have "(\<Prod>i\<in>{..<k} - R a. b choose p i) \<le> (\<Prod>i\<in>{..<k} - R a. M)"
+        by (rule prod_mono) (simp add: M_def binomial_maximum)
+      also have "\<dots> = M ^ (k - card (R a))"
+        using Ra(1)[OF a] finR by (simp add: card_Diff_subset)
+      finally show ?thesis using eq by (simp add: mult_left_mono)
+    qed
+    have S: "(\<Sum>p\<in>Cl a. \<Prod>i\<in>R a. b choose p i) \<le> (2 ^ b) ^ card (R a)"
+      by (rule class_bounds(2)[OF boxa[OF a] Ra(1)[OF a] injs[OF a]])
+    have "(\<Sum>p\<in>Cl a. wt p) \<le> (\<Sum>p\<in>Cl a. (\<Prod>i\<in>R a. b choose p i) * M ^ (k - card (R a)))"
+      by (rule sum_mono) (rule split)
+    also have "\<dots> = M ^ (k - card (R a)) * (\<Sum>p\<in>Cl a. \<Prod>i\<in>R a. b choose p i)"
+      by (simp add: sum_distrib_left mult.commute)
+    also have "\<dots> \<le> M ^ (k - card (R a)) * (2 ^ b) ^ card (R a)" using S by (rule mult_left_mono) simp
+    also have "\<dots> \<le> (2 ^ b) ^ (k div 2) * M ^ (k - k div 2)"
+      using M2 Ra(2)[OF a] by (intro trade) simp_all
+    finally show ?thesis .
+  qed
+  have "(\<Sum>p\<in>H. wt p) \<le> (\<Sum>p\<in>H. \<Sum>a\<in>I. if p \<in> Cl a then wt p else 0)"
+  proof (rule sum_mono)
+    fix p assume "p \<in> H"
+    then obtain a where a: "a \<in> I" "p \<in> Cl a" using cover by blast
+    have "wt p = (if p \<in> Cl a then wt p else 0)" using a by simp
+    also have "\<dots> \<le> (\<Sum>a\<in>I. if p \<in> Cl a then wt p else 0)"
+      by (rule member_le_sum) (use a I in auto)
+    finally show "wt p \<le> (\<Sum>a\<in>I. if p \<in> Cl a then wt p else 0)" .
+  qed
+  also have "\<dots> = (\<Sum>a\<in>I. \<Sum>p\<in>H. if p \<in> Cl a then wt p else 0)" by (rule sum.swap)
+  also have "\<dots> = (\<Sum>a\<in>I. \<Sum>p\<in>Cl a. wt p)"
+  proof (rule sum.cong[OF refl])
+    fix a assume a: "a \<in> I"
+    have "(\<Sum>p\<in>H. if p \<in> Cl a then wt p else 0) = sum wt (H \<inter> Cl a)"
+      by (rule sum.inter_restrict[OF finH, symmetric])
+    also have "H \<inter> Cl a = Cl a" using sub a by blast
+    finally show "(\<Sum>p\<in>H. if p \<in> Cl a then wt p else 0) = (\<Sum>p\<in>Cl a. wt p)" .
+  qed
+  also have "\<dots> \<le> (\<Sum>a\<in>I. (2 ^ b) ^ (k div 2) * M ^ (k - k div 2))"
+    using each by (intro sum_mono) blast
+  also have "\<dots> = card I * ((2 ^ b) ^ (k div 2) * M ^ (k - k div 2))" by simp
+  finally show "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+    by (simp add: wt_def M_def)
+qed
+
+text \<open>
+  Theorem A only uses the witness maps: if every point has a witness map in a family \<open>F\<close>,
+  then \<open>|H| \<le> |F| (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close>, and similarly for the number of inputs.
+\<close>
+
+lemma witness_classes:
   assumes box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" and F: "F \<subseteq> fpf k" "finite F"
     and wit: "\<forall>p\<in>H. \<exists>f\<in>F. witf H k f p"
   shows "card H \<le> card F * (b + 1) ^ (k div 2)"
+    and "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> card F * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
 proof -
   define Hf where "Hf f = {p \<in> H. witf H k f p}" for f
-  have finH: "finite H" using box by (rule finite_subset) (intro finite_PiE; simp)
   have cover: "H \<subseteq> (\<Union>f\<in>F. Hf f)" using wit by (auto simp: Hf_def)
-  have each: "card (Hf f) \<le> (b + 1) ^ (k div 2)" if f: "f \<in> fpf k" for f
-  proof -
-    let ?r = "\<lambda>p. restrict p (Rs k f)"
-    have inj: "inj_on ?r (Hf f)"
+  have sub: "\<forall>f\<in>F. Hf f \<subseteq> H" by (auto simp: Hf_def)
+  have R: "\<forall>f\<in>F. Rs k f \<subseteq> {..<k} \<and> card (Rs k f) \<le> k div 2"
+    using F(1) Rs_sub Rs_card by blast
+  have inj: "\<forall>f\<in>F. inj_on (\<lambda>p. restrict p (Rs k f)) (Hf f)"
+  proof
+    fix f assume "f \<in> F"
+    then have f: "f \<in> fpf k" using F(1) by blast
+    show "inj_on (\<lambda>p. restrict p (Rs k f)) (Hf f)"
     proof (rule inj_onI)
-      fix p q assume pq: "p \<in> Hf f" "q \<in> Hf f" and eq: "?r p = ?r q"
+      fix p q assume pq: "p \<in> Hf f" "q \<in> Hf f"
+        and eq: "restrict p (Rs k f) = restrict q (Rs k f)"
       have "\<forall>l\<in>Rs k f. p l = q l" using eq by (metis restrict_apply')
       then show "p = q" using pq box by (intro determined[OF f]) (auto simp: Hf_def)
     qed
-    have finR: "finite (Rs k f)" using Rs_sub finite_subset by blast
-    have img: "?r ` Hf f \<subseteq> Rs k f \<rightarrow>\<^sub>E {..b}"
-    proof
-      fix r assume "r \<in> ?r ` Hf f"
-      then obtain p where p: "p \<in> H" "r = ?r p" by (auto simp: Hf_def)
-      then have "p \<in> {..<k} \<rightarrow>\<^sub>E {..b}" using box by blast
-      then show "r \<in> Rs k f \<rightarrow>\<^sub>E {..b}" using p(2) Rs_sub by (auto simp: restrict_PiE_iff)
-    qed
-    have "card (Hf f) = card (?r ` Hf f)" using inj by (simp add: card_image)
-    also have "\<dots> \<le> card (Rs k f \<rightarrow>\<^sub>E {..b})" using img finR by (intro card_mono finite_PiE) auto
-    also have "\<dots> = (b + 1) ^ card (Rs k f)" using finR by (simp add: card_PiE)
-    also have "\<dots> \<le> (b + 1) ^ (k div 2)" using Rs_card[OF f] by (intro power_increasing) simp_all
-    finally show ?thesis .
   qed
-  have "card H \<le> card (\<Union>f\<in>F. Hf f)"
-    using cover finH by (intro card_mono) (auto simp: Hf_def intro: finite_subset)
-  also have "\<dots> \<le> (\<Sum>f\<in>F. card (Hf f))" by (rule card_UN_le[OF F(2)])
-  also have "\<dots> \<le> (\<Sum>f\<in>F. (b + 1) ^ (k div 2))" using each F(1) by (intro sum_mono) blast
-  also have "\<dots> = card F * (b + 1) ^ (k div 2)" by simp
-  finally show ?thesis .
+  show "card H \<le> card F * (b + 1) ^ (k div 2)"
+    by (rule classes(1)[OF box F(2) cover sub R inj])
+  show "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> card F * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+    by (rule classes(2)[OF box F(2) cover sub R inj])
 qed
+
+lemmas count_via = witness_classes(1)
+lemmas weight_via = witness_classes(2)
 
 theorem pairwise_count:
   assumes v: "valid k N H" and k: "2 \<le> k" and box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}"
@@ -327,114 +461,6 @@ text \<open>
   binomial estimates turn it into \<open>(k-1)\<^sup>k (\<pi>b/2)\<^sup>-\<^sup>k\<^sup>/\<^sup>4 \<surd>(2kb)\<close>.
 \<close>
 
-lemma trade:
-  fixes M B :: nat
-  assumes a: "M \<le> B" "r \<le> r'" "r' \<le> k"
-  shows "M ^ (k - r) * B ^ r \<le> B ^ r' * M ^ (k - r')"
-proof -
-  have e: "k - r = (k - r') + (r' - r)" using a by simp
-  have "M ^ (k - r) * B ^ r = M ^ (k - r') * (M ^ (r' - r) * B ^ r)"
-    by (simp add: e power_add mult_ac)
-  also have "\<dots> \<le> M ^ (k - r') * (B ^ (r' - r) * B ^ r)"
-    by (intro mult_left_mono mult_right_mono power_mono) (simp_all add: a)
-  also have "B ^ (r' - r) * B ^ r = B ^ r'"
-    using a by (simp add: power_add[symmetric])
-  finally show ?thesis by (simp add: mult_ac)
-qed
-
-lemma weight_via:
-  assumes box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" and F: "F \<subseteq> fpf k" "finite F"
-    and wit: "\<forall>p\<in>H. \<exists>f\<in>F. witf H k f p"
-  shows "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
-           \<le> card F * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
-proof -
-  define M where "M = b choose (b div 2)"
-  define wt where "wt p = (\<Prod>i<k. b choose p i)" for p :: "nat \<Rightarrow> nat"
-  define Hf where "Hf f = {p \<in> H. witf H k f p}" for f
-  have finH: "finite H" using box by (rule finite_subset) (intro finite_PiE; simp)
-  have finF: "finite F" by (rule F(2))
-  have cover: "H \<subseteq> (\<Union>f\<in>F. Hf f)" using wit by (auto simp: Hf_def)
-  have sub: "Hf f \<subseteq> H" for f by (auto simp: Hf_def)
-  have M2: "M \<le> 2 ^ b"
-  proof -
-    have "b choose (b div 2) \<le> (\<Sum>x\<le>b. b choose x)" by (rule member_le_sum) simp_all
-    then show ?thesis by (simp add: M_def choose_row_sum)
-  qed
-  have each: "(\<Sum>p\<in>Hf f. wt p) \<le> (2 ^ b) ^ (k div 2) * M ^ (k - k div 2)" if f: "f \<in> fpf k" for f
-  proof -
-    let ?R = "Rs k f"
-    let ?r = "\<lambda>p. restrict p ?R"
-    have finR: "finite ?R" using Rs_sub finite_subset by blast
-    have split: "wt p \<le> (\<Prod>i\<in>?R. b choose p i) * M ^ (k - card ?R)" for p
-    proof -
-      have eq: "wt p = (\<Prod>i\<in>?R. b choose p i) * (\<Prod>i\<in>{..<k} - ?R. b choose p i)"
-        unfolding wt_def using Rs_sub prod.subset_diff[of ?R "{..<k}" "\<lambda>i. b choose p i"]
-        by (simp add: mult.commute)
-      have "(\<Prod>i\<in>{..<k} - ?R. b choose p i) \<le> (\<Prod>i\<in>{..<k} - ?R. M)"
-        by (rule prod_mono) (simp add: M_def binomial_maximum)
-      also have "\<dots> = M ^ (k - card ?R)"
-        using Rs_sub finR by (simp add: card_Diff_subset)
-      finally show ?thesis using eq by (simp add: mult_left_mono)
-    qed
-    have inj: "inj_on ?r (Hf f)"
-    proof (rule inj_onI)
-      fix p q assume pq: "p \<in> Hf f" "q \<in> Hf f" and eq: "?r p = ?r q"
-      have "\<forall>l\<in>?R. p l = q l" using eq by (metis restrict_apply')
-      then show "p = q" using pq box by (intro determined[OF f]) (auto simp: Hf_def)
-    qed
-    have img: "?r ` Hf f \<subseteq> ?R \<rightarrow>\<^sub>E {..b}"
-    proof
-      fix r assume "r \<in> ?r ` Hf f"
-      then obtain p where p: "p \<in> H" "r = ?r p" by (auto simp: Hf_def)
-      then have "p \<in> {..<k} \<rightarrow>\<^sub>E {..b}" using box by blast
-      then show "r \<in> ?R \<rightarrow>\<^sub>E {..b}" using p(2) Rs_sub by (auto simp: restrict_PiE_iff)
-    qed
-    have rr: "(\<Prod>i\<in>?R. b choose ?r p i) = (\<Prod>i\<in>?R. b choose p i)" for p
-      by (rule prod.cong) simp_all
-    have S: "(\<Sum>p\<in>Hf f. \<Prod>i\<in>?R. b choose p i) \<le> (2 ^ b) ^ card ?R"
-    proof -
-      have "(\<Sum>p\<in>Hf f. \<Prod>i\<in>?R. b choose p i) = (\<Sum>r\<in>?r ` Hf f. \<Prod>i\<in>?R. b choose r i)"
-        using inj by (simp add: sum.reindex rr)
-      also have "\<dots> \<le> (\<Sum>r\<in>?R \<rightarrow>\<^sub>E {..b}. \<Prod>i\<in>?R. b choose r i)"
-        using img finR by (intro sum_mono2 finite_PiE) auto
-      also have "\<dots> = (\<Prod>i\<in>?R. \<Sum>x\<le>b. b choose x)"
-        using finR by (subst prod_sum_PiE) simp_all
-      also have "\<dots> = (2 ^ b) ^ card ?R" by (simp add: choose_row_sum)
-      finally show ?thesis .
-    qed
-    have "(\<Sum>p\<in>Hf f. wt p) \<le> (\<Sum>p\<in>Hf f. (\<Prod>i\<in>?R. b choose p i) * M ^ (k - card ?R))"
-      by (rule sum_mono) (rule split)
-    also have "\<dots> = M ^ (k - card ?R) * (\<Sum>p\<in>Hf f. \<Prod>i\<in>?R. b choose p i)"
-      by (simp add: sum_distrib_left mult.commute)
-    also have "\<dots> \<le> M ^ (k - card ?R) * (2 ^ b) ^ card ?R" using S by (rule mult_left_mono) simp
-    also have "\<dots> \<le> (2 ^ b) ^ (k div 2) * M ^ (k - k div 2)"
-      using M2 Rs_card[OF f] by (intro trade) simp_all
-    finally show ?thesis .
-  qed
-  have "(\<Sum>p\<in>H. wt p) \<le> (\<Sum>p\<in>H. \<Sum>f\<in>F. if p \<in> Hf f then wt p else 0)"
-  proof (rule sum_mono)
-    fix p assume "p \<in> H"
-    then obtain f where f: "f \<in> F" "p \<in> Hf f" using cover by blast
-    have "wt p = (if p \<in> Hf f then wt p else 0)" using f by simp
-    also have "\<dots> \<le> (\<Sum>f\<in>F. if p \<in> Hf f then wt p else 0)"
-      by (rule member_le_sum) (use f finF in auto)
-    finally show "wt p \<le> (\<Sum>f\<in>F. if p \<in> Hf f then wt p else 0)" .
-  qed
-  also have "\<dots> = (\<Sum>f\<in>F. \<Sum>p\<in>H. if p \<in> Hf f then wt p else 0)" by (rule sum.swap)
-  also have "\<dots> = (\<Sum>f\<in>F. \<Sum>p\<in>Hf f. wt p)"
-  proof (rule sum.cong[OF refl])
-    fix f
-    have "(\<Sum>p\<in>H. if p \<in> Hf f then wt p else 0) = sum wt (H \<inter> Hf f)"
-      by (rule sum.inter_restrict[OF finH, symmetric])
-    also have "H \<inter> Hf f = Hf f" using sub by blast
-    finally show "(\<Sum>p\<in>H. if p \<in> Hf f then wt p else 0) = (\<Sum>p\<in>Hf f. wt p)" .
-  qed
-  also have "\<dots> \<le> (\<Sum>f\<in>F. (2 ^ b) ^ (k div 2) * M ^ (k - k div 2))"
-    using each F(1) by (intro sum_mono) blast
-  also have "\<dots> = card F * ((2 ^ b) ^ (k div 2) * M ^ (k - k div 2))" by simp
-  finally show ?thesis by (simp add: wt_def M_def)
-qed
-
 theorem pairwise_weight:
   assumes v: "valid k N H" and k: "2 \<le> k" and box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}"
   shows "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
@@ -445,47 +471,158 @@ proof -
   show ?thesis using weight_via[OF box subset_refl fin wit] by (simp add: card_fpf)
 qed
 
-subsection \<open>Witness graphs of bounded degree\<close>
+subsection \<open>Theorem B: \<open>|H| \<le> 2\<^sup>k\<^sup>+\<^sup>1 (b+1)\<^sup>k \<^sup>d\<^sup>i\<^sup>v \<^sup>2\<close>\<close>
 
 text \<open>
-  If the witnesses can always be chosen along the edges of a fixed digraph \<open>G\<close> with out-degree
-  at most \<open>D\<close>, the factor \<open>(k-1)\<^sup>k\<close> drops to \<open>D\<^sup>k\<close>.  This is where Conjecture Q would need a
-  structural argument: the remaining loss is only the choice of witnesses.
+  The witness map need not be recorded.  Decode the coordinates of \<open>p\<close> in a fixed order \<open>r\<close>,
+  and call \<open>l\<close> \<^emph>\<open>free\<close> if every witness for \<open>(p, l)\<close> comes after \<open>l\<close>.  If some witness \<open>i\<close>
+  comes before \<open>l\<close>, then \<open>p l = mu H i l (p i)\<close>, while \<open>mu H j l (p j) \<le> p l\<close> for every \<open>j\<close>;
+  so \<open>p l\<close> is the largest value \<open>mu H j l (p j)\<close> over earlier \<open>j\<close>.  Hence \<open>p\<close> is determined
+  by its free set and its values there (\<open>free_determined\<close>).  No coordinate is free both in an
+  order and in its reverse, so one of the two free sets has at most \<open>k div 2\<close> elements
+  (\<open>free_small\<close>).  This replaces the \<open>(k-1)\<^sup>k\<close> witness maps of Theorem A by \<open>2\<^sup>k\<^sup>+\<^sup>1\<close> classes.
 \<close>
 
-lemma card_PiE_le:
-  assumes "\<forall>l<k. card (G l) \<le> D"
-  shows "card (\<Pi>\<^sub>E l\<in>{..<k}. G l) \<le> D ^ k"
+definition wit :: "(nat \<Rightarrow> nat) set \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
+  "wit H p i l \<longleftrightarrow> (\<forall>h\<in>H. h l < p l \<longrightarrow> p i < h i)"
+
+definition free :: "(nat \<Rightarrow> nat) set \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> (nat \<Rightarrow> nat) \<Rightarrow> nat set" where
+  "free H k r p = {l. l < k \<and> (\<forall>i<k. i \<noteq> l \<longrightarrow> wit H p i l \<longrightarrow> r l < r i)}"
+
+lemma mu_le: "q \<in> H \<Longrightarrow> mu H i l (q i) \<le> q l"
+  unfolding mu_def by (rule Least_le) blast
+
+lemma free_determined:
+  assumes r: "inj_on r {..<k}" and p: "p \<in> H" and q: "q \<in> H"
+    and box: "p \<in> {..<k} \<rightarrow>\<^sub>E {..b}" "q \<in> {..<k} \<rightarrow>\<^sub>E {..b}"
+    and F: "free H k r p = free H k r q" and agree: "\<forall>l\<in>free H k r p. p l = q l"
+  shows "p = q"
 proof -
-  have "card (\<Pi>\<^sub>E l\<in>{..<k}. G l) = (\<Prod>l<k. card (G l))" by (simp add: card_PiE)
-  also have "\<dots> \<le> (\<Prod>l<k. D)" using assms by (intro prod_mono) simp
-  also have "\<dots> = D ^ k" by simp
-  finally show ?thesis .
+  have earlier: "\<exists>i<k. r i < r l \<and> wit H s i l"
+    if s: "s = p \<or> s = q" and l: "l < k" "l \<notin> free H k r p" for s l
+  proof -
+    have "l \<notin> free H k r s" using s l F by auto
+    then obtain i where i: "i < k" "i \<noteq> l" "wit H s i l" "\<not> r l < r i"
+      using l(1) by (auto simp: free_def)
+    have "r i \<noteq> r l" using r i(1,2) l(1) by (auto dest: inj_onD)
+    then show ?thesis using i by auto
+  qed
+  have all: "\<forall>l<k. r l = m \<longrightarrow> p l = q l" for m
+  proof (induction m rule: less_induct)
+    case (less m)
+    show ?case
+    proof (intro allI impI)
+      fix l assume l: "l < k" "r l = m"
+      show "p l = q l"
+      proof (cases "l \<in> free H k r p")
+        case True
+        then show ?thesis using agree by blast
+      next
+        case False
+        obtain i where i: "i < k" "r i < r l" "wit H p i l" using earlier[of p l] l False by blast
+        obtain j where j: "j < k" "r j < r l" "wit H q j l" using earlier[of q l] l False by blast
+        have pi: "p i = q i" using less.IH[of "r i"] i l by simp
+        have pj: "p j = q j" using less.IH[of "r j"] j l by simp
+        have "p l = mu H i l (p i)"
+          by (rule determination[OF p]) (use i(3) in \<open>simp add: wit_def\<close>)
+        also have "\<dots> = mu H i l (q i)" using pi by simp
+        also have "\<dots> \<le> q l" by (rule mu_le[OF q])
+        finally have le1: "p l \<le> q l" .
+        have "q l = mu H j l (q j)"
+          by (rule determination[OF q]) (use j(3) in \<open>simp add: wit_def\<close>)
+        also have "\<dots> = mu H j l (p j)" using pj by simp
+        also have "\<dots> \<le> p l" by (rule mu_le[OF p])
+        finally have "q l \<le> p l" .
+        with le1 show ?thesis by simp
+      qed
+    qed
+  qed
+  have "p l = q l" if "l \<in> {..<k}" for l using all[of "r l"] that by blast
+  then show "p = q" using box by (intro PiE_ext[of p "{..<k}" "\<lambda>_. {..b}" q]) auto
 qed
 
-theorem graph_weight:
-  assumes box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}"
-    and G: "\<forall>l<k. G l \<subseteq> {..<k} - {l} \<and> card (G l) \<le> D"
-    and wit: "\<forall>p\<in>H. \<exists>f\<in>(\<Pi>\<^sub>E l\<in>{..<k}. G l). witf H k f p"
-  shows "card H \<le> D ^ k * (b + 1) ^ (k div 2)"
-    and "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
-           \<le> D ^ k * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+lemma free_small:
+  assumes v: "valid k N H" and k: "2 \<le> k" and p: "p \<in> H"
+  shows "card (free H k (\<lambda>i. i) p) \<le> k div 2 \<or> card (free H k (\<lambda>i. k - i) p) \<le> k div 2"
 proof -
-  let ?F = "\<Pi>\<^sub>E l\<in>{..<k}. G l"
-  have F: "?F \<subseteq> fpf k" using G unfolding fpf_def by (intro PiE_mono) auto
-  have finG: "finite (G l)" if "l < k" for l using G that finite_subset by blast
-  have finF: "finite ?F" using finG by (intro finite_PiE) auto
-  have cF: "card ?F \<le> D ^ k" using G by (intro card_PiE_le) simp
-  have "card H \<le> card ?F * (b + 1) ^ (k div 2)" by (rule count_via[OF box F finF wit])
-  also have "\<dots> \<le> D ^ k * (b + 1) ^ (k div 2)" using cF by (rule mult_right_mono) simp
-  finally show "card H \<le> D ^ k * (b + 1) ^ (k div 2)" .
+  let ?A = "free H k (\<lambda>i. i) p" and ?B = "free H k (\<lambda>i. k - i) p"
+  have disj: "?A \<inter> ?B = {}"
+  proof (rule ccontr)
+    assume "?A \<inter> ?B \<noteq> {}"
+    then obtain l where l: "l \<in> ?A" "l \<in> ?B" by blast
+    then have lk: "l < k" by (simp add: free_def)
+    obtain i where i: "i < k" "i \<noteq> l" "\<forall>h\<in>H. h l < p l \<longrightarrow> p i < h i"
+      using exchange[OF v k p lk] by blast
+    have w: "wit H p i l" using i(3) by (simp add: wit_def)
+    have "l < i" using l(1) i(1,2) w by (simp add: free_def)
+    moreover have "k - l < k - i" using l(2) i(1,2) w by (simp add: free_def)
+    ultimately show False by simp
+  qed
+  have finA: "finite ?A" by (rule finite_subset[of _ "{..<k}"]) (auto simp: free_def)
+  have finB: "finite ?B" by (rule finite_subset[of _ "{..<k}"]) (auto simp: free_def)
+  have "card (?A \<union> ?B) \<le> card {..<k}" by (rule card_mono) (auto simp: free_def)
+  then have "card ?A + card ?B \<le> k" using card_Un_disjoint[OF finA finB disj] by simp
+  moreover have "k = 2 * (k div 2) + k mod 2" "k mod 2 < 2" by simp_all
+  ultimately show ?thesis by linarith
+qed
+
+theorem sharp_bounds:
+  assumes v: "valid k N H" and k: "2 \<le> k" and box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}"
+  shows "card H \<le> 2 ^ (k + 1) * (b + 1) ^ (k div 2)"
+    and "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> 2 ^ (k + 1) * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+proof -
+  define r where "r d = (if d then (\<lambda>i. i) else (\<lambda>i. k - i))" for d :: bool
+  define I where "I = (UNIV :: bool set) \<times> {S. S \<subseteq> {..<k} \<and> card S \<le> k div 2}"
+  define Cl where "Cl a = {p \<in> H. free H k (r (fst a)) p = snd a}" for a :: "bool \<times> nat set"
+  have rinj: "inj_on (r d) {..<k}" for d by (cases d) (auto simp: r_def inj_on_def)
+  have I_sub: "I \<subseteq> UNIV \<times> Pow {..<k}" by (auto simp: I_def)
+  have finI: "finite I" using I_sub by (rule finite_subset) simp
+  have cardI: "card I \<le> 2 ^ (k + 1)"
+  proof -
+    have "card I \<le> card ((UNIV :: bool set) \<times> Pow {..<k})" by (rule card_mono[OF _ I_sub]) simp
+    also have "\<dots> = 2 ^ (k + 1)" by (simp add: card_cartesian_product card_Pow)
+    finally show ?thesis .
+  qed
+  have cover: "H \<subseteq> (\<Union>a\<in>I. Cl a)"
+  proof
+    fix p assume p: "p \<in> H"
+    have "card (free H k (r True) p) \<le> k div 2 \<or> card (free H k (r False) p) \<le> k div 2"
+      using free_small[OF v k p] by (simp add: r_def)
+    then obtain d where d: "card (free H k (r d) p) \<le> k div 2" by blast
+    have "free H k (r d) p \<subseteq> {..<k}" by (auto simp: free_def)
+    then have "(d, free H k (r d) p) \<in> I" using d by (simp add: I_def)
+    moreover have "p \<in> Cl (d, free H k (r d) p)" using p by (simp add: Cl_def)
+    ultimately show "p \<in> (\<Union>a\<in>I. Cl a)" by blast
+  qed
+  have sub: "\<forall>a\<in>I. Cl a \<subseteq> H" by (auto simp: Cl_def)
+  have R: "\<forall>a\<in>I. snd a \<subseteq> {..<k} \<and> card (snd a) \<le> k div 2" by (auto simp: I_def)
+  have inj: "\<forall>a\<in>I. inj_on (\<lambda>p. restrict p (snd a)) (Cl a)"
+  proof
+    fix a assume "a \<in> I"
+    show "inj_on (\<lambda>p. restrict p (snd a)) (Cl a)"
+    proof (rule inj_onI)
+      fix p q assume p: "p \<in> Cl a" and q: "q \<in> Cl a"
+        and eq: "restrict p (snd a) = restrict q (snd a)"
+      have pH: "p \<in> H" and qH: "q \<in> H" using p q by (auto simp: Cl_def)
+      have Sp: "free H k (r (fst a)) p = snd a" and Sq: "free H k (r (fst a)) q = snd a"
+        using p q by (simp_all add: Cl_def)
+      have "\<forall>l\<in>snd a. p l = q l" using eq by (metis restrict_apply')
+      then have ag: "\<forall>l\<in>free H k (r (fst a)) p. p l = q l" using Sp by simp
+      have bp: "p \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and bq: "q \<in> {..<k} \<rightarrow>\<^sub>E {..b}" using pH qH box by blast+
+      show "p = q" by (rule free_determined[OF rinj pH qH bp bq _ ag]) (simp add: Sp Sq)
+    qed
+  qed
+  have "card H \<le> card I * (b + 1) ^ (k div 2)" by (rule classes(1)[OF box finI cover sub R inj])
+  also have "\<dots> \<le> 2 ^ (k + 1) * (b + 1) ^ (k div 2)" using cardI by (rule mult_right_mono) simp
+  finally show "card H \<le> 2 ^ (k + 1) * (b + 1) ^ (k div 2)" .
   have "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
-           \<le> card ?F * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
-    by (rule weight_via[OF box F finF wit])
-  also have "\<dots> \<le> D ^ k * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
-    using cF by (rule mult_right_mono) simp
+           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+    by (rule classes(2)[OF box finI cover sub R inj])
+  also have "\<dots> \<le> 2 ^ (k + 1) * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+    using cardI by (rule mult_right_mono) simp
   finally show "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
-           \<le> D ^ k * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))" .
+           \<le> 2 ^ (k + 1) * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))" .
 qed
 
 subsection \<open>Three blocks: \<open>|H| \<le> 2(b+1)\<close>\<close>

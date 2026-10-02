@@ -18,7 +18,8 @@ ML \<open>
      @{thm symmetric_or_of_cnfs_local}, @{thm one_block_tests}, @{thm one_block_tests_equal},
      @{thm test_valid}, @{thm valid_test(1)}, @{thm valid_test(2)}, @{thm valid_test(3)},
      @{thm exchange}, @{thm determination},
-     @{thm pairwise_count}, @{thm pairwise_weight}, @{thm graph_weight(1)}, @{thm graph_weight(2)}, @{thm three_blocks},
+     @{thm pairwise_count}, @{thm pairwise_weight}, @{thm three_blocks},
+     @{thm free_determined}, @{thm free_small}, @{thm sharp_bounds(1)}, @{thm sharp_bounds(2)},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =

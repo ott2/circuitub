@@ -10,7 +10,7 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | Part 1: block locality | `isabelle/Block_Local.thy` | Formalized and covered by the oracle audit |
-| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy` | Formalized results are marked **[F]**; the rest is pen and paper. Part 2 ends with an open conjecture |
+| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main result is Theorem C: in the shape of the L-R tests, monotone formulas need 2^{Θ(√(n log n))} |
 
 Notation:
 - n is the number of variables, N = n/2, and Majority means weight ≥ n/2.
@@ -141,35 +141,59 @@ So **Q(k,b) is the largest slice mass of the fixed points of an antitone "max of
 maps" network on [0,b]^k whose up-set lies above the hyperplane.** This links the problem
 to fixed points of Boolean and q-ary networks. Bounds there in terms of feedback vertex
 sets (Aracena and others; recalled, not checked here) give only (b+1)^{k−1} for complete
-interaction graphs. The max structure is what brings this down to k/2 per pattern
-(Theorem A).
+interaction graphs. The max structure is what brings this down to (b+1)^{k/2}, up to a
+2^{O(k)} factor (Theorem B).
 
-### 2.4 Theorem A and its tightness [F]
+### 2.4 Theorems A and B, and tightness [F]
 
-Theorem A comes in two forms, both for valid H ⊆ {..<k} →ₑ {..b} with k ≥ 2:
+Both theorems hold for valid H ⊆ {..<k} →ₑ {..b} with k ≥ 2.
+
+**Theorem A** (`pairwise_count`, `pairwise_weight`) is the first version:
 
 | Theorem | Statement |
 |---|---|
 | `pairwise_count` | \|H\| ≤ (k−1)^k (b+1)^{⌊k/2⌋} |
 | `pairwise_weight` | Σ_{p∈H} ∏_i C(b, p_i) ≤ (k−1)^k · (2^b)^{⌊k/2⌋} · C(b, ⌊b/2⌋)^{⌈k/2⌉} |
 
-Dividing the weighted form by C(kb, kb/2) gives
-ν(H) ≤ (k−1)^k · (πb/2)^{−k/4} · O(√n).
+*Proof.* Choose a witness for every coordinate of p. This gives a fixed-point-free map f_p.
+By Lemma 3, p is determined by f_p and its values on the smaller of the descent and ascent
+sets of f_p, which has at most k/2 elements. Recording f_p costs the factor (k−1)^k. ∎
 
-*Proof.*
-1. Choose a witness for every coordinate of p. This gives a map f_p with no fixed points.
-2. By Lemma 3, p is determined by f_p together with its values on R. Here R is the smaller
-   of the descent set {ℓ : f(ℓ) < ℓ} and the ascent set {ℓ : ℓ < f(ℓ)}. Both sets meet every
-   cycle of f, and the smaller has at most k/2 elements.
-3. For the weighted form, sum the binomial weights freely over R, and bound every other
-   factor by C(b, b/2). ∎
+The factor (k−1)^k made Theorem A vacuous in the decisive regime b ≈ k. Theorem B removes it.
 
-The proof only uses the witness maps (`count_via`, `weight_via`). In particular:
+**Theorem B** (`sharp_bounds`):
 
-| Theorem | Statement |
+| Part | Statement |
 |---|---|
-| `graph_weight` | If the witnesses can always be chosen along a fixed digraph of out-degree ≤ D, then (k−1)^k improves to D^k, in both forms |
-| `three_blocks` | For k = 3, \|H\| ≤ 2(b+1). Each point is determined by its witness coordinate |
+| (1) | \|H\| ≤ 2^{k+1} (b+1)^{⌊k/2⌋} |
+| (2) | Σ_{p∈H} ∏_i C(b, p_i) ≤ 2^{k+1} · (2^b)^{⌊k/2⌋} · C(b, ⌊b/2⌋)^{⌈k/2⌉} |
+
+*Proof.* The point is that the decoder does not need to know which coordinate is the
+witness.
+1. For every p ∈ H and all j ≠ ℓ, μ_jℓ(p_j) ≤ p_ℓ (take h = p in the definition of μ).
+   Equality holds when j is a witness (Lemma 3).
+2. Fix an order on the coordinates. Call ℓ *free* for p if every witness of (p, ℓ) comes
+   after ℓ. Otherwise some witness comes earlier, and then p_ℓ = max_{j earlier} μ_jℓ(p_j).
+3. So p is determined by its free set S and its values on S (`free_determined`). The proof
+   is by induction along the order.
+4. No coordinate is free both for an order and for its reverse, since every coordinate has
+   a witness (Lemma 2). So for one of the two orders, |S| ≤ k/2 (`free_small`).
+5. That gives at most 2 · 2^k classes (order, S), each determined by at most k/2 values.
+   For the weighted form, sum the binomial weights freely over S and bound the rest by
+   C(b, b/2). ∎
+
+Both theorems are instances of one counting lemma, `classes`.
+
+**Coverage.** Take b and k even, and use C(b, b/2) ≤ 2^b/√(πb/2) and C(n, n/2) ≥ 2^n/√(2n).
+Theorem B then gives, for every sound test,
+
+  ν(H) ≤ 2^{k+1} · (πb/2)^{−k/4} · √(2n).   (B)
+
+So Q(k,b) ≤ C^k · b^{−k/4} · poly(n) with C = 2·(2/π)^{1/4} ≈ 1.79. An earlier version of
+this document stated this bound as an open conjecture ("Conjecture Q").
+
+**Three blocks** (`three_blocks`). For k = 3, |H| ≤ 2(b+1): each point is determined by
+its witness coordinate.
 
 **Tightness.** The *matching test* pairs up the blocks and requires
 w_{2q−1} + w_{2q} ≥ b for each pair.
@@ -180,94 +204,108 @@ w_{2q−1} + w_{2q} ≥ b for each pair.
 | `matching_card` | It covers (b+1)^{k/2} weight vectors |
 | `matching_weight` | It covers at least C(2b,b)^{k/2} inputs, i.e. ν ≈ (πb)^{−k/4} √(πkb/2) |
 
-So the counting and weighted forms of Theorem A are both tight up to (k−1)^k · O(1)^k.
-The matching test is divide-and-conquer over blocks of size 2b.
+So Theorem B is tight up to a factor 2^{O(k)}, in both forms. Matching tests are optimal
+monotone pairwise tests, up to C^k.
 
-**Small groups cannot beat matching** (pen and paper).
-- Split the blocks into groups of g, each with its own valid test, and fix each group's sum.
-- Fixing a group sum costs a factor about b^{−1/2}. By Theorem A, the best within-group
-  coverage is about g^g b^{−(g/4 − 1/2)}.
-- The cost per block is then b^{−1/4}, the same as matching, for every bounded g.
+**Connection to PPZ.** Theorem B is a block-level version of the satisfiability coding
+lemma of Paturi, Pudlák and Zane. There, a solution of a k-CNF that is isolated in many
+directions is encoded by writing bits in a random order and skipping the bits forced by a
+clause. Here, coordinates are skipped when an earlier coordinate witnesses them. Two
+features are specific to this setting:
+- The forcing value is computed as a maximum, so the witness need not be named.
+- An order and its reverse suffice; no random order is needed.
 
-With b = 1 (blocks are single variables), Q(k,1) is the monotone 2-CNF case. There the
-matching (2^{n/2} minimum vertex covers) is optimal at threshold n/2. This is the k = 2
-case resolved by Gurumukhani, Künnemann and Paturi (arXiv:2412.20493). At other
-thresholds, Moon–Moser-type triangle constructions win: for example, at threshold 2n/3
-there are 3^{n/3} minimum vertex covers. So the matching's optimality is specific to
-Majority.
+With b = 1 (blocks are single variables), H is a set of minimal satisfying assignments of a
+monotone 2-CNF, and the matching (2^{n/2} minimum vertex covers) is optimal at threshold
+n/2. This is the k = 2 case of Gurumukhani, Künnemann and Paturi (arXiv:2412.20493). At
+other thresholds, Moon–Moser-type triangle constructions win: for example, at threshold
+2n/3 there are 3^{n/3} minimum vertex covers. Theorem B's factor 2^{k+1} is too large to
+see this difference.
 
-### 2.5 Cost of a test
+### 2.5 The cost of a test, and the class lower bound
 
 **Lemma 4 (monotone only; not yet formalized).** A monotone CNF needs a distinct clause for
 every maximal false point. Two such points cannot share a clause, because their join would
 also falsify it.
 
-**Consequence.** Let a test cover p, with p_ℓ near b/2.
-- p − e_ℓ has weight N − 1, so it must be rejected, by some P_ℓj.
-- So P_ℓj has a maximal false point with first coordinate p_ℓ − 1.
-- Therefore it needs at least C(b, p_ℓ − 1) ≥ 2^b/poly(b) clauses.
+**Consequence.** Suppose a test covers p, and 1 ≤ p_ℓ.
+- p − e_ℓ has weight N − 1, so the test rejects it. Some pair function P_ℓj rejects it.
+- Going up in the j coordinate, P_ℓj has a maximal false weight pair (p_ℓ − 1, t). As a
+  Boolean function on 2b variables, that pair gives at least C(b, p_ℓ − 1) maximal false
+  points.
+- So the test has at least C(b, p_ℓ − 1) clauses.
 
-Up to polynomial factors, every formula in the class has size at least
+**Theorem C (pen and paper).** Let F be a monotone Σ₃ formula (an OR of monotone CNFs) for
+Majority on n variables. Fix a partition of the variables into k blocks of size b. Suppose
+each test's clauses can be grouped by pairs of blocks, so that each group computes a
+block-symmetric function of its two blocks. Then F has size 2^{Ω(√(n log n))}. Formulas
+in this class of size 2^{O(√(n log n))} exist, so the class has complexity
+2^{Θ(√(n log n))}.
 
-  min over b of  max( 2^b, 1/Q(n/b, b) ).   (★)
+*Proof of the lower bound.* Let b₀ be a suitable absolute constant.
+- **Small blocks, b ≤ b₀.**
+  - Every clause has width at most 2b.
+  - An input of weight N accepted by a sound test is *isolated* in N directions: each of
+    its N neighbours of weight N − 1 is rejected.
+  - By the PPZ coding lemma, a CNF of width 2b accepts at most 2^{n − N/(2b)} such inputs.
+  - The slice has C(n, N) ≥ 2^n/(n+1) points, so F has at least 2^{n/(4b)}/(n+1) tests.
+    That is 2^{Ω(n)}.
+- **Large blocks, b > b₀.** Call a test *expensive* if it covers a point p with some
+  coordinate p_ℓ such that b/4 ≤ p_ℓ − 1 ≤ 3b/4.
+  - **Each expensive test is large.** By the consequence of Lemma 4, it has at least
+    C(b, ⌈b/4⌉) ≥ 2^{0.81b}/(b+1) clauses.
+  - **Cheap tests cover little.** The other tests cover only points whose coordinates all
+    satisfy |p_ℓ − b/2| ≥ b/4 − 1. By Hoeffding, at most 2^{b+1} e^{−2(b/4−1)²/b}
+    subsets of one block have such a weight. So these points are at most a
+    (n+1) · (2 e^{−2(b/4−1)²/b})^k ≤ (n+1) e^{−n/10} fraction of the slice. That is
+    below 1/2 for large n.
+  - **So there are many expensive tests.** The expensive tests cover at least half the
+    slice, and by (B) each covers at most 2^{k+1}(πb/2)^{−k/4}√(2n) of it.
+  - **Combining.** Writing k = n/b,
 
-### 2.6 Where the argument stops
+      log₂ size(F) ≥ 0.81 b + (n/b) · (¼ log₂(πb/2) − 1) − O(log n).
 
-In the regime that decides the question, b ≈ k ≈ √n, Theorem A says nothing. The (k−1)^k
-factor counts witness patterns, and it beats the (πb/2)^{−k/4} gain unless b ≳ k^{4+ε}.
-In that regime, the 2^b term in (★) already dominates.
+  - **Optimizing over b.** For b > b₀, the bracket is at least ⅛ log₂ b. If b ≥ √(n log n),
+    the first term is Ω(√(n log n)). Otherwise, since log b / b decreases, the second term
+    is at least (n/(8b)) log₂ b ≥ Ω(√(n log n)). ∎
 
-The obstruction is real:
-- The local consequence of Lemmas 2–3 is that each coordinate is a decreasing function of
-  some other coordinate. When k ≫ √b, most of the slice has that property.
-- Any proof must therefore use the *global* exchange condition: a single witness must
-  work against all of H.
-- Every construction we tried that let witnesses vary from point to point fell back to a
-  fixed matching or a one-parameter family:
-  - sorted complementary pairing;
-  - linear constraints w_i + w_j ≥ c_ij on denser graphs;
-  - complete bipartite sum structures;
-  - "every coordinate is complemented by its minimum partner". With complete-graph
-    complements, this leaves one point.
+*Upper bound inside the class.*
+- **The tests.** Pair up the blocks. For every profile c with Σ_q c_q = N, take the test
+  ⋀_q [w_{2q−1} + w_{2q} ≥ c_q]. Every slice point passes the test given by its own pair
+  sums, so the OR of these tests computes Majority.
+- **Size.** Each conjunct is a threshold function of 2b variables, with at most 4^b
+  clauses. There are at most (2b+1)^{k/2} profiles.
+- **Choice of b.** Take b = √(n log n). The size is then 2^{O((n/b) log b + b)} =
+  2^{O(√(n log n))}. This is essentially KPPY's divide-and-conquer.
 
-`graph_weight` reduces the conjecture to a structural statement about witness patterns
-(Section 2.8).
+### 2.6 What this says about the L-R construction
 
-### 2.7 Conjecture
+The L-R tests have this shape, with negations: each clause reads two blocks of a fixed
+partition (Part 1), through block-symmetric pair checks. Theorem C says that without
+negations, the same shape cannot beat KPPY. So **in this shape, the negations are
+responsible for the entire √(log n) saving**. Amano's results point the same way at
+bounded fan-in: negations help there too, but only slightly.
 
-**Conjecture Q.** Q(k,b) ≤ C^k · b^{−k/4} · poly(n). That is, matching tests are optimal up
-to C^k, for all k and b. A weaker form, (cb)^{−c′k}, suffices for the consequences below.
+Theorem C does not settle the monotone depth-3 complexity of Majority: the gap between
+2^{Ω(√n)} and 2^{O(√(n log n))} remains open. It rules out one route to closing it. Any
+monotone 2^{O(√n)} construction must leave the class, by doing at least one of the
+following:
+- using pair functions that are not block-symmetric;
+- using several partitions (L-R use two);
+- using tests whose clauses read three or more blocks (counting constraints).
 
-- **Known cases:**
-  - Theorem A proves it when b ≥ k^{4+ε}.
-  - Section 2.4 proves it for product tests over groups of bounded size.
-  - For b = 1 it follows from the k = 2 result of Gurumukhani–Künnemann–Paturi, as
-    summarized; we have not checked their proof.
-- **If true:** by (★), monotone, block-symmetric, pairwise Σ₃ formulas over a fixed
-  partition need size 2^{Ω(√(n log n))}. KPPY is then optimal in this class, and the L-R
-  construction cannot be made monotone without changing its shape.
-- **If false:** a monotone pairwise test family with coverage e^{−O(k)} at b ≈ k would
-  give monotone depth-3 Majority formulas of size 2^{O(√n)}. That would close the monotone
-  gap from above.
+### 2.7 Next steps
 
-**Outside the scope of this conjecture:**
-- pair functions that are not block-symmetric;
-- several partitions;
-- tests that read more than two blocks.
+1. **Formalize the cost lemma.** Formalize Lemma 4, its consequence, and the finite core of
+   Theorem C. The core statement: a family of sound tests covering the slice has at least
+   (1/2)/ν_max expensive members. The asymptotic optimization over b can stay on paper.
+2. **Several partitions.** Theorem B uses one partition. With two partitions, the pair
+   functions no longer live on a common set of block weights. A first case: two
+   partitions, where each test uses one of them.
+3. **Beyond block symmetry.** Without block symmetry, a test is an AND of monotone
+   functions of pairs of blocks, viewed as points of {0,1}^b. The exchange lemma lowers a
+   coordinate to the join of the counterexamples. In a Boolean lattice, that join need not
+   lie below p_ℓ. So the analogue of Lemma 2 needs a new argument.
+4. **The fixed-point form.** Formalize the reformulation in Section 2.3. It is no longer
+   needed for Theorem B, but it links the problem to fixed points of networks.
 
-Counting tests can produce sum constraints, e.g. "the sorted block weights dominate a fixed
-profile". Pairwise tests cannot: they cannot count.
-
-### 2.8 Next steps
-
-1. **Sparsify witnesses.** Show that any valid H loses only a 2^{O(k)} factor in ν when its
-   witnesses are restricted to one digraph of bounded out-degree D. By `graph_weight`, this
-   would prove Conjecture Q.
-   - The fixed-point form (Section 2.3) suggests a candidate: keep, for each ℓ, the partners
-     j whose φ_ℓj is not dominated on the bulk window [b/2 − C√b, b/2 + C√b].
-2. **Cost lemma.** Formalize Lemma 4 and the bound (★).
-3. **Beyond block symmetry.** Remove the assumption by symmetrizing pair functions over
-   permutations inside each block. Monotonicity is preserved, but the AND of the
-   symmetrized functions may not be sound.
-4. **Small cases.** Exact values of Q(k,b) for small k, b would need a search over antichains.
-   We have not done this, preferring proofs to experiments.

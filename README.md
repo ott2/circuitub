@@ -46,23 +46,26 @@ The first part, `isabelle/Block_Local.thy`, records which structure the construc
 The second part asks whether the construction can be made monotone. The class it studies
 is tests that are ANDs of monotone functions of two block weights. Its formal part is
 `isabelle/Monotone_Pairs.thy`:
-- **Theorem A** (`pairwise_count`, `pairwise_weight`): with k blocks of size b, every such
-  test covers at most a (k−1)^k·b^{−k/4} fraction of the Majority slice, up to constants.
+- **Theorem B** (`sharp_bounds`): with k blocks of size b, every such test covers at most a
+  2^{k+1}·(πb/2)^{−k/4}·√(2n) fraction of the Majority slice. The proof is a block-level
+  analogue of the PPZ satisfiability coding lemma. It improves an earlier
+  (k−1)^k·b^{−k/4} bound (Theorem A: `pairwise_count`, `pairwise_weight`).
 - **Tightness** (`matching_valid`, `matching_card`, `matching_weight`): pairing the blocks
   with complementary weights achieves b^{−k/4}.
 
-Whether the (k−1)^k factor can be removed is an open conjecture. If it can, then monotone
-formulas of this shape need 2^{Ω(√(n log n))}, so the construction cannot be made
-monotone without changing its shape.
+With a cost lemma for monotone CNFs (on paper, not yet formalized), this gives Theorem C:
+monotone formulas of this shape need size 2^{Θ(√(n log n))}. So the construction cannot
+be made monotone without changing its shape; in this shape, the negations account for
+the whole √(log n) saving over KPPY.
 
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 12 theories, about 3500 lines |
+| `isabelle/` | Session `Majority_AC0`: 12 theories, about 3600 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
-| `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorem A (counting and weighted), tightness via matching tests |
+| `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
