@@ -19,11 +19,21 @@ are strictly layered: alternating, with an OR at the top and every literal at de
 exactly d. No `sorry` is used, and the build fails unless the headline theorems depend
 on no oracles.
 
+`isabelle/Bounded_Width.thy` also formalizes Remark 1 of the paper's v2. For every k with
+k² ≥ n, every symmetric function, and in particular Majority, is an OR of 2^{O(k)}
+CNFs with clauses of width k′ = 2⌈n/k⌉. For k ≤ n this is 2^{O(n/k′)} CNFs. By
+pigeonhole, for every t ≤ n some k′-CNF in the cover accepts only inputs of weight t,
+and accepts at least C(n,t)/2^{O(n/k′)} of them (`enum_output_lower_bound`). Any
+algorithm for the local enumeration problem Enum(k′, t) of Gurumukhani et al.
+(CCC 2024) must list all of them. So the hypothetical algorithm with running time
+2^{(1−Ω(log k/k))n} cannot exist.
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 9 theories, about 2000 lines |
+| `isabelle/` | Session `Majority_AC0`: 10 theories, about 2300 lines |
+| `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `VERDICT.md` | The verdict, the trusted definitions, and a step-by-step correspondence with the paper |

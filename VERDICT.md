@@ -97,4 +97,21 @@ WALL_TIMEOUT=40 .venv/bin/isabelle-build --no-record --session Oracle_Control --
 unless the oracle set is empty. `control/Oracle_Control.thy` is the positive control: the
 same check, applied to a lemma proved by `sorry`, does detect the oracle.
 
-Size: 9 theories, ~2000 lines.
+Size: 10 theories, ~2300 lines.
+
+## Addendum: Remark 1 of v2 (local enumeration)
+
+v2 of the paper adds Remark 1: the depth-3 construction refutes the
+Σ₃ᵏ lower bound 2^{Ω(n log k/k)} for Majority that Gurumukhani, Paturi, Pudlák, Saks
+and Talebanfard (CCC 2024) derive from a hypothetical local enumeration algorithm. This
+is formalized in `isabelle/Bounded_Width.thy` and covered by the audit:
+
+| Theorem | Statement |
+|---|---|
+| `symmetric_or_of_cnfs` | k² ≥ n ⇒ every symmetric g is an OR of ≤ 2^{Ck} CNFs of clause width `width n k` = 2⌈n/k⌉ |
+| `symmetric_or_of_cnfs_width`, `majority_or_of_cnfs` | if also k ≤ n: ≤ 2^{C·n/k′} such CNFs, with k′ = `width n k` |
+| `enum_output_lower_bound` | for t ≤ n, some k′-CNF F accepts only weight-t inputs, and C(n,t) ≤ 2^{C·n/k′} · #{weight-t inputs accepted by F} |
+
+The last theorem is a lower bound on the *output size* of Enum(k′, t), so it holds
+whatever is assumed about SSETH. The construction reuses `Construction.thy`, with the
+induction hypothesis instantiated to the explicit DNF (locale `step3`).

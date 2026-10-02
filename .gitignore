@@ -8,3 +8,5 @@ writeup/*.fdb_latexmk
 paper/
 t/
 writeup/complexity-macros.sty
+paper-v2/
+/*.pdf
