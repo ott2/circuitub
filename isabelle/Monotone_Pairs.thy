@@ -321,40 +321,29 @@ proof -
   finally show ?thesis by (simp add: mult_ac)
 qed
 
-lemma classes:
+text \<open>
+  The weighted count, for classes determined by their values on at most \<open>m\<close> coordinates.
+\<close>
+
+lemma classes_gen:
   assumes box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" and I: "finite I"
     and cover: "H \<subseteq> (\<Union>a\<in>I. Cl a)" and sub: "\<forall>a\<in>I. Cl a \<subseteq> H"
-    and R: "\<forall>a\<in>I. R a \<subseteq> {..<k} \<and> card (R a) \<le> k div 2"
+    and R: "\<forall>a\<in>I. R a \<subseteq> {..<k} \<and> card (R a) \<le> m" and m: "m \<le> k"
     and inj: "\<forall>a\<in>I. inj_on (\<lambda>p. restrict p (R a)) (Cl a)"
-  shows "card H \<le> card I * (b + 1) ^ (k div 2)"
-    and "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
-           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+  shows "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i) \<le> card I * ((2 ^ b) ^ m * (b choose (b div 2)) ^ (k - m))"
 proof -
   define M where "M = b choose (b div 2)"
   define wt where "wt p = (\<Prod>i<k. b choose p i)" for p :: "nat \<Rightarrow> nat"
   have finH: "finite H" using box by (rule finite_subset) (intro finite_PiE; simp)
   have boxa: "Cl a \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" if "a \<in> I" for a using sub box that by blast
-  have Ra: "R a \<subseteq> {..<k}" "card (R a) \<le> k div 2" if "a \<in> I" for a using R that by auto
+  have Ra: "R a \<subseteq> {..<k}" "card (R a) \<le> m" if "a \<in> I" for a using R that by auto
   have injs: "inj_on (\<lambda>p. restrict p (R a)) (Cl a)" if "a \<in> I" for a using inj that by blast
-  have finU: "finite (\<Union>a\<in>I. Cl a)" using sub by (intro finite_subset[OF _ finH]) blast
-  have "card H \<le> card (\<Union>a\<in>I. Cl a)" using cover finU by (rule card_mono[rotated])
-  also have "\<dots> \<le> (\<Sum>a\<in>I. card (Cl a))" by (rule card_UN_le[OF I])
-  also have "\<dots> \<le> (\<Sum>a\<in>I. (b + 1) ^ (k div 2))"
-  proof (rule sum_mono)
-    fix a assume a: "a \<in> I"
-    have "card (Cl a) \<le> (b + 1) ^ card (R a)"
-      by (rule class_bounds(1)[OF boxa[OF a] Ra(1)[OF a] injs[OF a]])
-    also have "\<dots> \<le> (b + 1) ^ (k div 2)" using Ra(2)[OF a] by (intro power_increasing) simp_all
-    finally show "card (Cl a) \<le> (b + 1) ^ (k div 2)" .
-  qed
-  also have "\<dots> = card I * (b + 1) ^ (k div 2)" by simp
-  finally show "card H \<le> card I * (b + 1) ^ (k div 2)" .
   have M2: "M \<le> 2 ^ b"
   proof -
     have "b choose (b div 2) \<le> (\<Sum>x\<le>b. b choose x)" by (rule member_le_sum) simp_all
     then show ?thesis by (simp add: M_def choose_row_sum)
   qed
-  have each: "(\<Sum>p\<in>Cl a. wt p) \<le> (2 ^ b) ^ (k div 2) * M ^ (k - k div 2)" if a: "a \<in> I" for a
+  have each: "(\<Sum>p\<in>Cl a. wt p) \<le> (2 ^ b) ^ m * M ^ (k - m)" if a: "a \<in> I" for a
   proof -
     have finR: "finite (R a)" using Ra(1)[OF a] by (rule finite_subset) simp
     have split: "wt p \<le> (\<Prod>i\<in>R a. b choose p i) * M ^ (k - card (R a))" for p
@@ -375,8 +364,8 @@ proof -
     also have "\<dots> = M ^ (k - card (R a)) * (\<Sum>p\<in>Cl a. \<Prod>i\<in>R a. b choose p i)"
       by (simp add: sum_distrib_left mult.commute)
     also have "\<dots> \<le> M ^ (k - card (R a)) * (2 ^ b) ^ card (R a)" using S by (rule mult_left_mono) simp
-    also have "\<dots> \<le> (2 ^ b) ^ (k div 2) * M ^ (k - k div 2)"
-      using M2 Ra(2)[OF a] by (intro trade) simp_all
+    also have "\<dots> \<le> (2 ^ b) ^ m * M ^ (k - m)"
+      using M2 Ra(2)[OF a] m by (intro trade) simp_all
     finally show ?thesis .
   qed
   have "(\<Sum>p\<in>H. wt p) \<le> (\<Sum>p\<in>H. \<Sum>a\<in>I. if p \<in> Cl a then wt p else 0)"
@@ -397,12 +386,43 @@ proof -
     also have "H \<inter> Cl a = Cl a" using sub a by blast
     finally show "(\<Sum>p\<in>H. if p \<in> Cl a then wt p else 0) = (\<Sum>p\<in>Cl a. wt p)" .
   qed
-  also have "\<dots> \<le> (\<Sum>a\<in>I. (2 ^ b) ^ (k div 2) * M ^ (k - k div 2))"
+  also have "\<dots> \<le> (\<Sum>a\<in>I. (2 ^ b) ^ m * M ^ (k - m))"
     using each by (intro sum_mono) blast
-  also have "\<dots> = card I * ((2 ^ b) ^ (k div 2) * M ^ (k - k div 2))" by simp
+  also have "\<dots> = card I * ((2 ^ b) ^ m * M ^ (k - m))" by simp
   finally show "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
-           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+           \<le> card I * ((2 ^ b) ^ m * (b choose (b div 2)) ^ (k - m))"
     by (simp add: wt_def M_def)
+qed
+
+lemma classes:
+  assumes box: "H \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" and I: "finite I"
+    and cover: "H \<subseteq> (\<Union>a\<in>I. Cl a)" and sub: "\<forall>a\<in>I. Cl a \<subseteq> H"
+    and R: "\<forall>a\<in>I. R a \<subseteq> {..<k} \<and> card (R a) \<le> k div 2"
+    and inj: "\<forall>a\<in>I. inj_on (\<lambda>p. restrict p (R a)) (Cl a)"
+  shows "card H \<le> card I * (b + 1) ^ (k div 2)"
+    and "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+proof -
+  have finH: "finite H" using box by (rule finite_subset) (intro finite_PiE; simp)
+  have boxa: "Cl a \<subseteq> {..<k} \<rightarrow>\<^sub>E {..b}" if "a \<in> I" for a using sub box that by blast
+  have Ra: "R a \<subseteq> {..<k}" "card (R a) \<le> k div 2" if "a \<in> I" for a using R that by auto
+  have injs: "inj_on (\<lambda>p. restrict p (R a)) (Cl a)" if "a \<in> I" for a using inj that by blast
+  have finU: "finite (\<Union>a\<in>I. Cl a)" using sub by (intro finite_subset[OF _ finH]) blast
+  have "card H \<le> card (\<Union>a\<in>I. Cl a)" using cover finU by (rule card_mono[rotated])
+  also have "\<dots> \<le> (\<Sum>a\<in>I. card (Cl a))" by (rule card_UN_le[OF I])
+  also have "\<dots> \<le> (\<Sum>a\<in>I. (b + 1) ^ (k div 2))"
+  proof (rule sum_mono)
+    fix a assume a: "a \<in> I"
+    have "card (Cl a) \<le> (b + 1) ^ card (R a)"
+      by (rule class_bounds(1)[OF boxa[OF a] Ra(1)[OF a] injs[OF a]])
+    also have "\<dots> \<le> (b + 1) ^ (k div 2)" using Ra(2)[OF a] by (intro power_increasing) simp_all
+    finally show "card (Cl a) \<le> (b + 1) ^ (k div 2)" .
+  qed
+  also have "\<dots> = card I * (b + 1) ^ (k div 2)" by simp
+  finally show "card H \<le> card I * (b + 1) ^ (k div 2)" .
+  show "(\<Sum>p\<in>H. \<Prod>i<k. b choose p i)
+           \<le> card I * ((2 ^ b) ^ (k div 2) * (b choose (b div 2)) ^ (k - k div 2))"
+    by (rule classes_gen[OF box I cover sub R _ inj]) simp
 qed
 
 text \<open>

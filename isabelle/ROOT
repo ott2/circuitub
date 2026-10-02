@@ -13,4 +13,5 @@ session Majority_AC0 = "HOL-Library" +
     Block_Local
     Monotone_Pairs
     Monotone_Cost
+    Monotone_Mixed
     Audit

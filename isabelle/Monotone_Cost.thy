@@ -208,24 +208,25 @@ text \<open>
   accepts a slice point \<open>p\<close> with \<open>p l \<ge> 1\<close>, one of these CNFs has \<open>C(b, p l - 1)\<close> clauses.
 \<close>
 
-theorem test_cost:
-  assumes up: "\<forall>i j. upclosed (P i j)" and sound: "\<forall>z. accepts k P z \<longrightarrow> N \<le> (\<Sum>i<k. z i)"
+text \<open>
+  If the pair constraint between \<open>l\<close> and \<open>j\<close> holds at \<open>p\<close> but fails when \<open>p l\<close> is lowered by
+  one, the CNF computing it has at least \<open>C(b, p l - 1)\<close> clauses.
+\<close>
+
+lemma boundary_cost:
+  assumes up: "\<forall>i j. upclosed (P i j)"
     and blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
     and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}"
     and cs: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> finite (cs i j) \<and>
                (\<forall>X\<subseteq>blk i \<union> blk j. pairfun (blk i) (blk j) (P i j) X = cnf_val (cs i j) X)"
-    and p: "accepts k P p" "(\<Sum>i<k. p i) = N" "\<forall>i<k. p i \<le> b"
-    and l: "l < k" "0 < p l"
+    and l: "l < k" "0 < p l" and j: "j < k" "j \<noteq> l" and pj: "p j \<le> b"
+    and c: "((p l - 1, p j) \<notin> P l j \<and> (p l, p j) \<in> P l j)
+            \<or> ((p j, p l - 1) \<notin> P j l \<and> (p j, p l) \<in> P j l)"
   shows "\<exists>i<k. \<exists>j<k. i \<noteq> j \<and> b choose (p l - 1) \<le> card (cs i j)"
 proof -
   have sl: "Suc (p l - 1) = p l" using l(2) by simp
-  obtain j where j: "j < k" "j \<noteq> l"
-    and c: "((p l - 1, p j) \<notin> P l j \<and> (p l, p j) \<in> P l j)
-            \<or> ((p j, p l - 1) \<notin> P j l \<and> (p j, p l) \<in> P j l)"
-    using test_boundary[OF sound p(1,2) l] by blast
   have Bl: "finite (blk l)" "card (blk l) = b" and Bj: "finite (blk j)" "card (blk j) = b"
     using blk l(1) j(1) by auto
-  have pj: "p j \<le> b" using p(3) j(1) by blast
   from c show ?thesis
   proof
     assume c1: "(p l - 1, p j) \<notin> P l j \<and> (p l, p j) \<in> P l j"
@@ -256,6 +257,24 @@ proof -
   qed
 qed
 
+theorem test_cost:
+  assumes up: "\<forall>i j. upclosed (P i j)" and sound: "\<forall>z. accepts k P z \<longrightarrow> N \<le> (\<Sum>i<k. z i)"
+    and blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
+    and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}"
+    and cs: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> finite (cs i j) \<and>
+               (\<forall>X\<subseteq>blk i \<union> blk j. pairfun (blk i) (blk j) (P i j) X = cnf_val (cs i j) X)"
+    and p: "accepts k P p" "(\<Sum>i<k. p i) = N" "\<forall>i<k. p i \<le> b"
+    and l: "l < k" "0 < p l"
+  shows "\<exists>i<k. \<exists>j<k. i \<noteq> j \<and> b choose (p l - 1) \<le> card (cs i j)"
+proof -
+  obtain j where j: "j < k" "j \<noteq> l"
+    and c: "((p l - 1, p j) \<notin> P l j \<and> (p l, p j) \<in> P l j)
+            \<or> ((p j, p l - 1) \<notin> P j l \<and> (p j, p l) \<in> P j l)"
+    using test_boundary[OF sound p(1,2) l] by blast
+  have pj: "p j \<le> b" using p(3) j(1) by blast
+  show ?thesis by (rule boundary_cost[OF up blk disj cs l j pj c])
+qed
+
 subsection \<open>The number of tests\<close>
 
 text \<open>
@@ -276,6 +295,57 @@ proof -
     using blk disj by (intro card_UN_disjoint) auto
   also have "\<dots> = (\<Sum>i<k. b)" using blk by (intro sum.cong) auto
   finally show ?thesis by simp
+qed
+
+definition bw :: "(nat \<Rightarrow> 'a set) \<Rightarrow> nat \<Rightarrow> 'a set \<Rightarrow> nat \<Rightarrow> nat" where
+  "bw blk k X = (\<lambda>i\<in>{..<k}. card (X \<inter> blk i))"
+
+text \<open>An input is determined by its intersections with the blocks.\<close>
+
+lemma fib_card:
+  assumes blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b" and V: "V = (\<Union>i<k. blk i)"
+  shows "card {X. X \<subseteq> V \<and> bw blk k X = w} \<le> (\<Prod>i<k. b choose w i)"
+proof -
+  let ?F = "{X. X \<subseteq> V \<and> bw blk k X = w}"
+  let ?C = "\<Pi>\<^sub>E i\<in>{..<k}. {T. T \<subseteq> blk i \<and> card T = w i}"
+  let ?g = "\<lambda>X. \<lambda>i\<in>{..<k}. X \<inter> blk i"
+  have inj: "inj_on ?g ?F"
+  proof (rule inj_onI)
+    fix X Y assume X: "X \<in> ?F" and Y: "Y \<in> ?F" and eq: "?g X = ?g Y"
+    have XV: "X \<subseteq> V" "Y \<subseteq> V" using X Y by simp_all
+    have "X \<inter> blk i = Y \<inter> blk i" if "i < k" for i
+      using fun_cong[OF eq, of i] that by simp
+    then have "(\<Union>i<k. X \<inter> blk i) = (\<Union>i<k. Y \<inter> blk i)" by simp
+    moreover have "X = (\<Union>i<k. X \<inter> blk i)" "Y = (\<Union>i<k. Y \<inter> blk i)"
+      using XV by (auto simp: V)
+    ultimately show "X = Y" by simp
+  qed
+  have img: "?g ` ?F \<subseteq> ?C"
+  proof
+    fix G assume "G \<in> ?g ` ?F"
+    then obtain X where X: "X \<in> ?F" "G = ?g X" by blast
+    have "card (X \<inter> blk i) = w i" if "i < k" for i
+      using X(1) that by (auto simp: bw_def)
+    then show "G \<in> ?C" using X(2) by auto
+  qed
+  have finC: "finite ?C" using blk by (intro finite_PiE) auto
+  have "card ?F = card (?g ` ?F)" using inj by (simp add: card_image)
+  also have "\<dots> \<le> card ?C" using img finC by (rule card_mono[rotated])
+  also have "\<dots> = (\<Prod>i<k. card {T. T \<subseteq> blk i \<and> card T = w i})" by (simp add: card_PiE)
+  also have "\<dots> = (\<Prod>i<k. b choose w i)" using blk by (intro prod.cong) (auto simp: n_subsets)
+  finally show ?thesis .
+qed
+
+lemma inputs_count:
+  assumes blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b" and V: "V = (\<Union>i<k. blk i)"
+    and U: "finite U"
+  shows "card {X. X \<subseteq> V \<and> bw blk k X \<in> U} \<le> (\<Sum>w\<in>U. \<Prod>i<k. b choose w i)"
+proof -
+  have e: "{X. X \<subseteq> V \<and> bw blk k X \<in> U} = (\<Union>w\<in>U. {X. X \<subseteq> V \<and> bw blk k X = w})" by blast
+  have "card (\<Union>w\<in>U. {X. X \<subseteq> V \<and> bw blk k X = w})
+          \<le> (\<Sum>w\<in>U. card {X. X \<subseteq> V \<and> bw blk k X = w})" by (rule card_UN_le[OF U])
+  also have "\<dots> \<le> (\<Sum>w\<in>U. \<Prod>i<k. b choose w i)" by (rule sum_mono) (rule fib_card[OF blk V])
+  finally show ?thesis unfolding e .
 qed
 
 lemma slice_count:
@@ -306,32 +376,11 @@ proof -
   qed
   have each: "card (fib w) \<le> (\<Prod>i<k. b choose w i)" for w
   proof -
-    let ?C = "\<Pi>\<^sub>E i\<in>{..<k}. {T. T \<subseteq> blk i \<and> card T = w i}"
-    let ?g = "\<lambda>X. \<lambda>i\<in>{..<k}. X \<inter> blk i"
-    have inj: "inj_on ?g (fib w)"
-    proof (rule inj_onI)
-      fix X Y assume X: "X \<in> fib w" and Y: "Y \<in> fib w" and eq: "?g X = ?g Y"
-      have XV: "X \<subseteq> V" "Y \<subseteq> V" using X Y by (simp_all add: fib_def Xs_def)
-      have "X \<inter> blk i = Y \<inter> blk i" if "i < k" for i
-        using fun_cong[OF eq, of i] that by simp
-      then have "(\<Union>i<k. X \<inter> blk i) = (\<Union>i<k. Y \<inter> blk i)" by simp
-      moreover have "X = (\<Union>i<k. X \<inter> blk i)" "Y = (\<Union>i<k. Y \<inter> blk i)"
-        using XV by (auto simp: V_def)
-      ultimately show "X = Y" by simp
-    qed
-    have img: "?g ` fib w \<subseteq> ?C"
-    proof
-      fix G assume "G \<in> ?g ` fib w"
-      then obtain X where X: "X \<in> fib w" "G = ?g X" by blast
-      have "card (X \<inter> blk i) = w i" if "i < k" for i
-        using X(1) that by (auto simp: fib_def wv_def)
-      then show "G \<in> ?C" using X(2) by auto
-    qed
-    have finC: "finite ?C" using blk by (intro finite_PiE) auto
-    have "card (fib w) = card (?g ` fib w)" using inj by (simp add: card_image)
-    also have "\<dots> \<le> card ?C" using img finC by (rule card_mono[rotated])
-    also have "\<dots> = (\<Prod>i<k. card {T. T \<subseteq> blk i \<and> card T = w i})" by (simp add: card_PiE)
-    also have "\<dots> = (\<Prod>i<k. b choose w i)" using blk by (intro prod.cong) (auto simp: n_subsets)
+    have "fib w \<subseteq> {X. X \<subseteq> V \<and> bw blk k X = w}" by (auto simp: fib_def Xs_def wv_def bw_def)
+    moreover have "finite {X. X \<subseteq> V \<and> bw blk k X = w}"
+      using finV by (auto intro: finite_subset[of _ "Pow V"])
+    ultimately have "card (fib w) \<le> card {X. X \<subseteq> V \<and> bw blk k X = w}" by (rule card_mono[rotated])
+    also have "\<dots> \<le> (\<Prod>i<k. b choose w i)" by (rule fib_card[OF blk V_def])
     finally show ?thesis .
   qed
   have "(k * b) choose N = card Xs" using finV cV by (simp add: Xs_def n_subsets)
