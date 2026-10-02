@@ -1,5 +1,5 @@
 theory Audit
-  imports Block_Local Monotone_Mixed Monotone_Hyper
+  imports Block_Local Monotone_Mixed Monotone_Wide
 begin
 
 text \<open>
@@ -26,6 +26,8 @@ ML \<open>
      @{thm mixed_weight}, @{thm mixed_cover}, @{thm tight_cost},
      @{thm hfree_determined}, @{thm good_colorings}, @{thm average_free},
      @{thm hyper_sound_tight}, @{thm hyper_lower_nontight}, @{thm hyper_compress},
+     @{thm wdec_eq}, @{thm wfree_determined}, @{thm max_false}, @{thm wide_maxfalse},
+     @{thm wide_cost}, @{thm wide_compress}, @{thm wide_cover},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
