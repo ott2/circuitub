@@ -1,5 +1,5 @@
 theory Audit
-  imports Bounded_Width
+  imports Block_Local
 begin
 
 text \<open>
@@ -14,7 +14,8 @@ ML \<open>
     [@{thm symmetric_upper_bound}, @{thm symmetric_functions},
      @{thm symmetric_functions_big_O}, @{thm majority_circuits}, @{thm majority_depth3},
      @{thm symmetric_or_of_cnfs}, @{thm symmetric_or_of_cnfs_width},
-     @{thm majority_or_of_cnfs}, @{thm enum_output_lower_bound}];
+     @{thm majority_or_of_cnfs}, @{thm enum_output_lower_bound},
+     @{thm symmetric_or_of_cnfs_local}, @{thm one_block_tests}, @{thm one_block_tests_equal}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

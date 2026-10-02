@@ -28,14 +28,31 @@ algorithm for the local enumeration problem Enum(k′, t) of Gurumukhani et al.
 (CCC 2024) must list all of them. So the hypothetical algorithm with running time
 2^{(1−Ω(log k/k))n} cannot exist.
 
+A second document,
+[`extensions/locality-and-monotonicity.md`](extensions/locality-and-monotonicity.md), takes
+the work in new directions. It asks which restricted circuit classes can still reach
+2^{O(√n)}. Its formalized part is `isabelle/Block_Local.thy`. Its analysis of a monotone
+version of the construction is pen and paper, and ends in a conjecture. The formalized
+part records which structure the construction needs:
+- **Two blocks suffice.** Every clause of those CNFs reads variables from at most two blocks
+  of one of two fixed partitions into consecutive blocks of size at most ⌈n/k⌉
+  (`symmetric_or_of_cnfs_local`).
+- **One block does not.** Consider a formula for Majority that is an OR of tests, where
+  each test is an AND of subformulas that each read a single block of one fixed partition.
+  It needs at least one test per block-weight vector of total weight n/2
+  (`one_block_tests`). That is at least (b+1)^{m/2} tests for m blocks of size b
+  (`one_block_tests_equal`), or 2^{Ω(√n log n)} when b = m = √n.
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 10 theories, about 2300 lines |
+| `isabelle/` | Session `Majority_AC0`: 11 theories, about 2800 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
+| `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
+| `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
 | `VERDICT.md` | The verdict, the trusted definitions, and a step-by-step correspondence with the paper |
 | `writeup/main.pdf` | Short exposition, including how the formal proof differs from the paper's |
 

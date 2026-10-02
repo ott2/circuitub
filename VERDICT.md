@@ -97,7 +97,7 @@ WALL_TIMEOUT=40 .venv/bin/isabelle-build --no-record --session Oracle_Control --
 unless the oracle set is empty. `control/Oracle_Control.thy` is the positive control: the
 same check, applied to a lemma proved by `sorry`, does detect the oracle.
 
-Size: 10 theories, ~2300 lines.
+Size: 11 theories, ~2800 lines.
 
 ## Addendum: Remark 1 of v2 (local enumeration)
 
@@ -115,3 +115,11 @@ is formalized in `isabelle/Bounded_Width.thy` and covered by the audit:
 The last theorem is a lower bound on the *output size* of Enum(k′, t), so it holds
 whatever is assumed about SSETH. The construction reuses `Construction.thy`, with the
 induction hypothesis instantiated to the explicit DNF (locale `step3`).
+
+## Beyond the paper
+
+`isabelle/Block_Local.thy` proves results that go beyond the paper: what block structure the
+construction needs, and a lower bound for tests built from one-block pieces. These are
+covered by the audit. They are described in
+[`extensions/locality-and-monotonicity.md`](extensions/locality-and-monotonicity.md), together
+with an analysis of whether the construction can be made monotone.

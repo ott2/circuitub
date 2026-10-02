@@ -10,4 +10,5 @@ session Majority_AC0 = "HOL-Library" +
     Construction
     Majority_Circuits
     Bounded_Width
+    Block_Local
     Audit
