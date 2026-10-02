@@ -1,4 +1,4 @@
-# Handoff: continue work on Conjecture Q (monotone pairwise tests for Majority)
+# Handoff: monotone tests for Majority, after Theorems B and C
 
 ## Context
 
@@ -16,52 +16,46 @@ We are now extending the ideas in new directions. The live document is
   - `valid k N H`: the closure condition characterizing covered sets
     (`test_valid`, `valid_test`).
   - `exchange` and `determination`.
-  - Theorem A: `pairwise_count`, `pairwise_weight`, and the general forms `count_via`,
-    `weight_via`, `graph_weight`.
-  - `three_blocks`.
-  - The matching test: `matching_valid`, `matching_card`, `matching_weight`.
+  - The generic counting lemma `classes`.
+  - Theorem A (`pairwise_count`, `pairwise_weight`), with the (k−1)^k factor.
+  - **Theorem B** (`sharp_bounds`): |H| ≤ 2^{k+1}(b+1)^{k/2}, and the weighted form. Decode
+    in a fixed order, so the witness map need not be recorded (`free_determined`). An
+    order and its reverse have disjoint free sets (`free_small`).
+  - The matching test, which shows tightness (`matching_valid`, `matching_card`,
+    `matching_weight`).
+- `isabelle/Monotone_Cost.thy`:
+  - `clause_per_maxfalse` (Lemma 4).
+  - `pair_cost` and `test_cost`: a sound test covering p with p_l ≥ 1 has a pair CNF with
+    C(b, p_l − 1) clauses.
+  - `tests_needed`: covering the slice needs C(kb, N) / (Theorem B bound) tests.
 
-The session is `Majority_AC0` (12 theories, ~3500 lines). `isabelle/Audit.thy` lists every
+The session is `Majority_AC0` (13 theories, ~4000 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
 Literature summaries written by subagents are in `notes/summaries/`, which is git-ignored
-and kept uncommitted:
-- `monotone-depth3-majority.md`
-- `2601.04072-GKPRST26.md`
-- `gppst24-ccc2024.md`
-- `amano-isaac2023.md`
+and kept uncommitted.
 
-Local PDFs in the repo root, also ignored: the L-R paper (v1, v2), GPPST24
-(LIPIcs.CCC.2024.17.pdf), Amano 2023 (LIPIcs.ISAAC.2023.7.pdf), and Ja'Ja' 1983
-(2402.2403.pdf). The v2 LaTeX source is in `paper-v2/`, also ignored.
+## State of the mathematics
 
-## The open problem
+- **Conjecture Q is proved** (Theorem B, with C ≈ 1.79).
+- **Theorem C** (pen and paper, from the formal ingredients): monotone Σ₃ formulas for
+  Majority whose tests are ANDs of block-symmetric pair functions over one partition have
+  size 2^{Θ(√(n log n))}. The upper bound is KPPY-style matching tests. So in the L-R
+  shape, negations account for the whole √(log n) saving.
+- **Widening (§2.7, pen and paper):**
+  - Each test may use its own partition.
+  - Constraints on r blocks give 2^{Ω(√(n log n / r))}.
+  - Block symmetry cannot simply be dropped.
 
-**Conjecture Q.** Q(k,b) ≤ C^k · b^{−k/4} · poly(n), where Q(k,b) is the largest fraction of
-the Majority slice covered by one valid H (block-weight vectors in [0,b]^k, weighted by
-∏ C(b, w_i)).
+## Suggested next steps (§2.8 of the document)
 
-- **What is proved:** Theorem A gives (k−1)^k · b^{−k/4}, which is tight up to (k−1)^k
-  (matching test).
-- **Why that is not enough:** the bound is vacuous in the decisive regime b ≈ k ≈ √n.
-- **The reduction:** `graph_weight` shows it suffices to restrict witnesses to one digraph
-  of bounded out-degree, at a cost of 2^{O(k)}.
-
-## Suggested next steps
-
-See §2.8 of the extensions document.
-
-1. **Sparsify witnesses.** Use the fixed-point form: covered points are the slice fixed
-   points of the antitone map T(z)_ℓ = max_j φ_ℓj(z_j). Candidate: for each ℓ, keep only the
-   partners whose φ_ℓj is not dominated on the bulk window. Prove the 2^{O(k)} loss, or find
-   a counterexample. A counterexample, i.e. a monotone pairwise family with coverage
-   e^{−O(k)} at b ≈ k, would give monotone depth-3 Majority of size 2^{O(√n)}.
-2. **Formalize the fixed-point reformulation.** Prove that the minimal elements of W are
-   exactly the fixed points of T.
-3. **Formalize the cost lemma.** A monotone CNF needs one clause per maximal false point.
-   Combined with Q, this gives the size bound (★).
-4. **Remove block symmetry,** or handle two partitions (the L-R construction uses two).
+1. **Mixed partitions.** One test with pair constraints on two partitions, as in L-R. Can a
+   monotone test of this kind cover more than b^{−Ω(k)} of the slice?
+2. **Formalize the r-ary generalization of Theorem B.** This needs averaging over all orders,
+   i.e. convexity.
+3. **The analytic rest of Theorem C:** Hoeffding, binomial estimates, PPZ for small b.
+4. **The fixed-point form** (§2.3).
 
 ## Working rules
 
@@ -71,12 +65,16 @@ The user's preferences are also stored in Claude memory.
   with `WALL_TIMEOUT=60 WATCHDOG_TIMEOUT=20`.
   - Do not pipe the output through `tail`.
   - Full errors: `sed -n '/full error/,$p' t/logs/last-build.log`.
+  - Slow commands: `grep "running for" t/logs/last-build.log`.
   - Sorry check: `.venv/bin/isabelle-query -R isabelle sorry`.
 - **Proof style:** no exhaustive or brute-force searches (Python or otherwise) to test
   circuit claims. Prove by hand, then formalize.
 - **Tool use:** Edit/Write for file changes, simple one-line Bash, nothing in `/tmp`.
 - **Isabelle pitfalls met so far:**
-  - Annotate types of existentially bound functions, e.g. `(s :: nat ⇒ nat)`.
+  - Annotate types of existentially bound functions and of index variables, e.g.
+    `fixes k :: nat`, when nothing else forces them.
+  - `finite_subset by blast` and `auto` with maximality facts can loop; use
+    `by (rule finite_subset) simp` and explicit facts.
   - Avoid `auto dest: PiE_mem` and guessed `metis` calls; they looped.
   - Supply higher-order instances explicitly with `spec[OF …, of "λw. …"]`.
   - `rule_format` reorders variables.

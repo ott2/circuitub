@@ -301,28 +301,79 @@ responsible for the entire √(log n) saving**. Amano's results point the same w
 bounded fan-in: negations help there too, but only slightly.
 
 Theorem C does not settle the monotone depth-3 complexity of Majority: the gap between
-2^{Ω(√n)} and 2^{O(√(n log n))} remains open. It rules out one route to closing it. Any
-monotone 2^{O(√n)} construction must leave the class, by doing at least one of the
-following:
-- using pair functions that are not block-symmetric;
-- using several partitions (L-R use two);
-- using tests whose clauses read three or more blocks (counting constraints).
+2^{Ω(√n)} and 2^{O(√(n log n))} remains open. Theorem C rules out one route to closing it.
+Section 2.7 shows how far the class can be widened.
 
-### 2.7 Next steps
+### 2.7 Widening the class (pen and paper)
 
-1. **The rest of Theorem C.** The parts still on paper:
+**(i) Each test may choose its own partition.** The proof of Theorem C works test by test.
+Let test t use a partition into blocks of size b_t.
+- **Few tests suffice for the bound.** If there are at least 2^{n/(8b₀)} tests, the size is
+  already 2^{Ω(n)}. So assume there are fewer.
+- **Small-block and cheap tests cover little.** Tests with b_t ≤ b₀ cover at most
+  (n+1)·2^{−n/(4b₀)} of the slice each (PPZ). Cheap tests cover at most (n+1)·e^{−n/10}
+  each. With fewer than 2^{n/(8b₀)} tests, together they cover less than half the slice.
+- **So expensive tests pay.** The expensive tests cover the rest. Each pays at least
+  2^{Ω(√(n log n))} clauses per unit of coverage, whatever its b_t.
+
+So the fixed partition is not needed. What is needed is that each *test* uses a single
+partition. The L-R tests are not of this kind: one test contains pair checks for both
+moduli, i.e. for both partitions.
+
+**(ii) Clauses may read r blocks.** Let each test be an AND of monotone block-symmetric
+functions of r block weights. The proof of Theorem B generalizes as follows:
+- **Validity.** Validity now asks every r-set of coordinates to be dominated.
+- **Exchange.** Every coordinate ℓ of p ∈ H has a witness *set* E of r − 1 other
+  coordinates: no h ∈ H has h_ℓ < p_ℓ and h_E ≤ p_E. The proof is as for Lemma 2: lower
+  p_ℓ to the maximum over the counterexamples.
+- **Determination.** p_ℓ = μ_E(p_E), and μ_{E′}(p_{E′}) ≤ p_ℓ for every E′. So
+  coordinate ℓ is determined once some witness set lies entirely before it.
+- **Free coordinates.** In a uniformly random order, ℓ is free with probability at most
+  1 − 1/r (ℓ comes last among E ∪ {ℓ} with probability 1/r).
+- **Averaging.** For each fixed order σ, Σ_p wt(p)·ρ^{−|F_σ(p)|} ≤ 2^k C(b, b/2)^k, where
+  ρ = 2^b/C(b, b/2). Average over σ and apply Jensen. This gives
+
+  ν(H) ≤ 2^k · (πb/2)^{−k/(2r)} · √(2n).
+
+  Grouping the blocks r at a time, with a threshold on each group's weight, shows this is
+  tight up to 2^{O(k)}.
+
+The cost lemma is unchanged: some r-ary constraint has a maximal false point with
+ℓ-coordinate p_ℓ − 1, so it has at least C(b, p_ℓ − 1) clauses. Optimizing as before gives
+size 2^{Ω(√(n log n / r))}.
+- For constant r, the class still has complexity 2^{Θ(√(n log n))}.
+- At r ≈ log n the bound reaches 2^{Ω(√n)}, the known general lower bound. So
+  block-symmetric tests that read about log n blocks are not excluded by this argument.
+
+**(iii) Block symmetry cannot simply be dropped.** Without it, take k = 2 blocks of size
+n/2. Then every clause reads at most two blocks, so every monotone Σ₃ formula is in the
+class. A meaningful version must bound the block size. For example, with b ≤ √n and
+arbitrary monotone pair functions, the cost lemma fails: a pair function can have few
+clauses. Only the PPZ bound 2^{Ω(n/b)} = 2^{Ω(√n)} remains.
+
+**Summary.** Any monotone Σ₃ formula for Majority of size 2^{O(√n)} must do at least one of
+the following:
+- mix several partitions inside one test, as L-R do with negations;
+- use block-symmetric constraints on about log n or more blocks;
+- give up block symmetry.
+
+### 2.8 Next steps
+
+1. **Mixed partitions.** This is the case that matters for L-R: a single test with pair
+   constraints on two partitions with coprime block sizes.
+   - The constraints then do not live on a common set of coordinates.
+   - On the common refinement, each constraint reads many cells, so Theorem B does not
+     apply directly.
+   - A first question: can a monotone test mixing two partitions cover more than
+     b^{−Ω(k)} of the slice?
+2. **Formalize (ii).** Generalize Theorem B to r-ary constraints. The averaging over all
+   orders needs a convexity argument; for r = 2 an order and its reverse suffice.
+3. **The rest of Theorem C.** The parts still on paper:
    - the Hoeffding estimate for cheap tests;
    - the binomial estimates that turn (B) into a power of b;
    - the PPZ case for small b;
    - the optimization over b.
    Formalizing them would need real analysis rather than counting.
-2. **Several partitions.** Theorem B uses one partition. With two partitions, the pair
-   functions no longer live on a common set of block weights. A first case: two
-   partitions, where each test uses one of them.
-3. **Beyond block symmetry.** Without block symmetry, a test is an AND of monotone
-   functions of pairs of blocks, viewed as points of {0,1}^b. The exchange lemma lowers a
-   coordinate to the join of the counterexamples. In a Boolean lattice, that join need not
-   lie below p_ℓ. So the analogue of Lemma 2 needs a new argument.
 4. **The fixed-point form.** Formalize the reformulation in Section 2.3. It is no longer
    needed for Theorem B, but it links the problem to fixed points of networks.
 
