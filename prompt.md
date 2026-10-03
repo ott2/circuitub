@@ -54,9 +54,19 @@ We are now extending the ideas in new directions. The live document is
     ∏ C(b, v_i) clauses.
   - `wide_compress`, `wide_cover`: the count with w colours, when the CNF has fewer than
     β^(w+1) clauses.
+  - `wide_good`: a tight coordinate is decoded under a (w−1)^{w−1}/w^w fraction of colourings.
+  - `wide_cnf_cost`, `wide_sound_tight`: the CNF-size and soundness steps of `wide_cover`.
   - Pitfall: `max_false[OF …]` looped in unification; instantiate with `of` first.
+- `isabelle/Monotone_Kraft.thy` (imports `Complex_Main`): the same count with real weights.
+  - `kraft_partial`: Kraft inequality for injective encodings into {..<k} →E Opt.
+  - `exp_average`, `power_average`: Jensen for λ^D, from exp x ≥ 1 + x.
+  - `wide_kraft`, `wide_cover_kraft`: #S · λ^y ≤ (2^b/(1−δ))^k, with
+    λ = δ2^b/((1−δ)C(b,b/2)). There is no (2w)^k overhead.
+  - `free_sum` in `Monotone_Hyper` is the summed form of `average_free`.
+  - Pitfalls: `o` is composition, so don't use it as a bound variable. Instantiate
+    `kraft_partial` with `where enc = … and Opt = … and wo = …`.
 
-The session is `Majority_AC0` (16 theories, ~5700 lines). `isabelle/Audit.thy` lists every
+The session is `Majority_AC0` (17 theories, ~6100 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -82,17 +92,22 @@ and kept uncommitted.
     2^{Θ(√(n log n))}.
 - **Unbounded scope (§2.9):** **Theorem E** (pen and paper, from `wide_cover`): if every
   test is a block-symmetric monotone CNF with blocks of size b ≥ √n, the size is
-  2^{Ω(√(n log n))}, whatever the scopes. The proof works down to
-  b ≈ √(n/log n)·log log n, where the (2w)^k colouring overhead takes over.
+  2^{Ω(√(n log n))}, whatever the scopes.
+- **Theorem E′** (pen and paper, from `wide_cover_kraft`): the same for b ≥ n^α, α > 1/3,
+  with exponent Ω(√((3α−1) n log n)). With groups of whole blocks, KPPY is in the class, so
+  it is 2^{Θ(√(n log n))} for n^{1/3+ε} ≤ b ≤ √(n log n). The argument breaks even at
+  b ≈ (n log n)^{1/3}: a decoded block saves ½ log b bits, and locating it costs log w ≈
+  log(√n/b) bits.
 
 ## Suggested next steps (§2.10 of the document)
 
 1. **Small blocks with wide constraints, or many partitions.** For b = 1 the class is
-   everything, so this is the general open monotone question. Theorem E settles large b.
-   The natural target is the gap between b ≈ √(n/log n) and b = 1. There, a light block
-   costs only about 2^b, which is too little.
-2. **Sharper constants in `hyper_compress`:** k/(2r) instead of k/(4er), which needs
-   convexity.
+   everything, so this is the general open monotone question. Theorems E and E′ settle
+   b ≥ n^{1/3+ε}. The natural target is the gap between b ≈ n^{1/3} and b = 1. It needs a
+   cheaper way to locate decodable blocks, or a different exchange rate.
+2. **Sharper constants in `hyper_compress`:** k/(2r) instead of k/(4er). Running it through
+   `kraft_partial` and `power_average` removes the (2r)^k overhead. Getting rid of the factor
+   e needs random orders instead of colourings.
 3. **The analytic rest of Theorems C and D:** Hoeffding, binomial estimates, PPZ for
    small b.
 4. **The fixed-point form** (§2.3).

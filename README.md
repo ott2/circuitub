@@ -91,11 +91,17 @@ may be any block-symmetric monotone CNF:
 On paper, this gives Theorem E: with blocks of size at least √n, such formulas need
 2^{Ω(√(n log n))}, however many blocks a clause reads.
 
+`isabelle/Monotone_Kraft.thy` averages over the orders instead of choosing one per input
+(`wide_kraft`, `wide_cover_kraft`). It uses a Kraft inequality for partial encodings and
+Jensen's inequality, proved from exp x ≥ 1 + x. This removes a (2w)^k overhead. On paper
+it gives Theorem E′: the same bound holds for blocks of size n^{1/3+ε}. So the class is
+2^{Θ(√(n log n))} for n^{1/3+ε} ≤ b ≤ √(n log n).
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 16 theories, about 5700 lines |
+| `isabelle/` | Session `Majority_AC0`: 17 theories, about 6100 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
@@ -103,6 +109,7 @@ On paper, this gives Theorem E: with blocks of size at least √n, such formulas
 | `isabelle/Monotone_Mixed.thy` | Tests mixing two partitions: tight coordinates compress, every one lies in a tight block, coverage of a mixed test, cost of a tight coordinate |
 | `isabelle/Monotone_Hyper.thy` | Constraints on r blocks: Theorem B by averaging over colourings |
 | `isabelle/Monotone_Wide.thy` | Block-symmetric tests of any scope: decoding waits only for light blocks, which cost about 2^b clauses each |
+| `isabelle/Monotone_Kraft.thy` | The same count by Kraft and Jensen over all colourings, without the (2w)^k overhead |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |

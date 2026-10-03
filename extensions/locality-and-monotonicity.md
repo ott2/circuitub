@@ -10,7 +10,7 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | Part 1: block locality | `isabelle/Block_Local.thy` | Formalized and covered by the oracle audit |
-| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy`, `Monotone_Wide.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C, D and E: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))}; so do block-symmetric tests of any scope once blocks have size ≥ √n |
+| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy`, `Monotone_Wide.thy`, `Monotone_Kraft.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C, D, E and E′: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need 2^{Θ(√(n log n))}; so do block-symmetric tests of any scope once blocks have size ≥ n^{1/3+ε} |
 
 Notation:
 - n is the number of variables, N = n/2, and Majority means weight ≥ n/2.
@@ -379,8 +379,8 @@ clauses. Only the PPZ bound 2^{Ω(n/b)} = 2^{Ω(√n)} remains.
 **Summary** (including §2.8 and §2.9). Any monotone Σ₃ formula for Majority of size 2^{O(√n)}
 must do at least one of the following:
 - mix about log n or more partitions inside one test (two, as in L-R, is not enough);
-- use block-symmetric constraints on about log n or more blocks of size below about
-  √(n/log n)·log log n (with blocks of size ≥ √n, wide constraints do not help, §2.9);
+- use block-symmetric constraints on about log n or more blocks of size at most about
+  (n log n)^{1/3} (with blocks of size ≥ n^{1/3+ε}, wide constraints do not help, §2.9);
 - give up block symmetry.
 
 ### 2.8 Tests that mix partitions [F]
@@ -488,8 +488,8 @@ counting to unequal sizes should only change constants, but this has not been ch
 Section 2.7 (ii) loses a factor r in the exponent, and at r ≈ log n it reaches only the
 general bound 2^{Ω(√n)}. With blocks of size 1, wide constraints are arbitrary clauses, so
 some restriction is needed. This section shows that **block size alone is enough**: once
-b ≥ √n, the number of blocks a constraint reads does not matter. The finite part is
-formalized in `isabelle/Monotone_Wide.thy`.
+b ≥ n^{1/3+ε}, the number of blocks a constraint reads does not matter. The finite part is
+formalized in `isabelle/Monotone_Wide.thy` and `isabelle/Monotone_Kraft.thy`.
 
 **The model.** A test is any monotone CNF that is invariant under permuting the variables
 inside each block. Equivalently, it is a monotone predicate G of the block-weight vector,
@@ -553,10 +553,60 @@ complexity exactly 2^{Θ(√(n log n))}.
   - The overhead is k log₂(2w) ≤ √n·log₂(4c√(log₂ n)) = o(n log n / z).
   - So z² ≥ (1 − o(1))·n log₂ n/(16e), which contradicts c < 1/7. ∎
 
-**Where it stops.** The proof uses b ≥ √n twice: log b ≥ ½ log n, and the colouring overhead
-k log w must be o(n log b / z). The second condition holds down to
+**Where this proof stops.** The proof uses b ≥ √n twice: log b ≥ ½ log n, and the colouring
+overhead k log w must be o(n log b / z). The second condition holds down to
 b ≈ √(n/log n)·log log n. Below that, the gain of ½ log b bits per decoded block no longer
-pays for the colouring. With b = 1 the class is everything (§2.10).
+pays for recording the colouring.
+
+**Averaging instead of choosing [F].** The overhead is an artefact. `wide_compress` picks a
+good colouring for each accepted vector and records it, paying (2w)^k. `Monotone_Kraft.thy`
+records nothing.
+- **Kraft (`kraft_partial`).** Fix a colouring c. The map u ↦ (decoded, or u_i)_i is
+  injective on accepted vectors (`wfree_determined`). Weight a decoded coordinate by δ and
+  a free coordinate of value x by (1 − δ)·C(b, x)/2^b. The weights per coordinate sum to 1,
+  so the weights of the accepted vectors sum to at most 1.
+- **Cost of a decoded coordinate.** Comparing with the true input count ∏ C(b, u_i), a free
+  coordinate costs a factor 2^b/(1 − δ). A decoded one costs δ·2^b/(1 − δ) divided by
+  λ = δ·2^b/((1 − δ)·C(b, ⌊b/2⌋)).
+- **Jensen (`power_average`).** Average over all w^k colourings. By `free_sum`, a tight
+  coordinate is decoded under at least a (w−1)^{w−1}/w^w ≥ 1/(ew) fraction of them. Since
+  λ^D is convex in D, the average of λ^D is at least λ^{y}. The proof of Jensen used here
+  is just exp x ≥ 1 + x.
+- **Result (`wide_kraft`, `wide_cover_kraft`).** If a sound test's CNF has fewer than
+  β^{w+1} clauses, the inputs of weight N with at most a atypical blocks that it accepts
+  number at most
+
+    (2^b/(1 − δ))^k · λ^{−y},   y = (k−a)(w−1)^{w−1}/w^w.
+
+  With δ = 1/(w+1) and C(b, ⌊b/2⌋) ≤ 2^b/√(πb/2), this is
+  2^n · e^{k/w} · (w/√(πb/2))^{y}. A decoded block now gains ½ log b − log w bits, and
+  nothing is paid per block except e^{1/w}.
+
+**Theorem E′ (pen and paper, from `wide_cover_kraft`).** Fix α > 1/3. In Theorem E, assume
+only b ≥ n^α. Then F has size 2^{Ω(√((3α − 1)·n log n))}. For n^α ≤ b ≤ √(n log n) the
+class therefore has complexity exactly 2^{Θ(√(n log n))}. The upper bound is the
+construction of §2.5 with groups of about √(n log n)/b whole blocks in place of pairs. A
+threshold on a union of blocks is block-symmetric, and the scope is unrestricted.
+
+*Proof sketch.* The window, the Hoeffding step (a = k/2) and the choice of w are as in
+Theorem E. If F has size 2^z, the number of tests is at least
+(½ C(n, N)) / max|S| with C(n, N) ≥ 2^n/√(2n). So
+
+    z ≥ (k/(2ew))·(½ log₂ b − log₂ w − 8) − ½ log₂(8n).
+
+Suppose z ≤ c√(n log₂ n). Then w ≤ max(1, 2z/b), so
+log₂ w ≤ (½ − α) log₂ n + O(log log n), and the bracket is at least
+((3α − 1)/2)·log₂ n − O(log log n). Also k/(2ew) ≥ n/(4ez). Hence
+z² ≥ (1 − o(1))·(3α − 1)·n log₂ n/(8e), a contradiction once c² < (3α − 1)/(8e). ∎
+
+At α = ½ the constant matches Theorem E. The point is the range: the argument now works
+whenever √b ≫ w, i.e. b^{3/2} ≫ √(n log n).
+
+**Where it stops now.** At b ≈ (n log n)^{1/3} the bracket vanishes. A block is decoded only
+under about a 1/w fraction of the orders, and identifying the decoded blocks costs about
+log w bits each. With w ≈ √(n log n)/b this matches the ½ log b bits a decoded block
+saves. Below n^{1/3}, a different kind of argument is needed. With b = 1 the class is
+everything (§2.10).
 
 **Why this is natural.** In a block-symmetric CNF, a clause that ties ℓ to a typical block i
 contains all C(b, v_i) ≈ 2^b ways of choosing the zeros of i. So wide coupling costs about b
@@ -568,7 +618,7 @@ beats that rate.
 
 1. **Small blocks with wide constraints, or many partitions.** Theorems C–E pin down the
    monotone class whenever either
-   - blocks are large (b ≥ √n, any scope: Theorem E), or
+   - blocks are large (b ≥ n^{1/3+ε}, any scope: Theorems E and E′), or
    - both m (partitions per test) and r (blocks per constraint) are bounded (Theorems C, D).
 
    What remains is small blocks with wide constraints, or many partitions per test. There
@@ -582,11 +632,14 @@ beats that rate.
    r or m around √n, the question "is there a formula of size 2^{O(√n)} in the class?" is the
    general open question of the monotone depth-3 complexity of Majority.
 
-   The gap between Theorem E (b ≳ √(n/log n)·log log n) and b = 1 is the natural next
-   target. Small blocks make the light-width argument cheap (a light block costs only
-   C(b, b/2) ≈ 2^b), so a different exchange rate is needed there.
+   The gap between Theorem E′ (b ≫ (n log n)^{1/3}) and b = 1 is the natural next target.
+   There the decoding argument breaks even: a decoded block saves ½ log b bits, but finding
+   out which blocks are decoded costs log w ≈ log(√n/b) bits each. Going below n^{1/3}
+   needs either a cheaper way to locate decodable blocks, or a different exchange rate.
 2. **Sharper formal constants for (ii).** `hyper_compress` has exponent about k/(4er). The
-   pen-and-paper k/(2r) needs averaging of ρ^{−|F|} over orders, i.e. convexity.
+   convexity tools now exist (`kraft_partial`, `power_average`). Running `hyper_compress`
+   through them removes the (2r)^k overhead. Reaching the pen-and-paper k/(2r) would also
+   need random orders instead of colourings, which lose a factor e.
 3. **The rest of Theorems C and D.** The parts still on paper:
    - the Hoeffding estimates for cheap tests and atypical points;
    - the binomial estimates that turn (B) and (D) into powers of b;
