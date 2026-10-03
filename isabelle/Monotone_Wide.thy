@@ -338,6 +338,107 @@ qed
 
 subsection \<open>The counting theorem\<close>
 
+text \<open>A tight coordinate is decoded under a \<open>(w-1)\<^sup>w\<^sup>-\<^sup>1 / w\<^sup>w\<close> fraction of the colourings.\<close>
+
+lemma wide_good:
+  fixes k :: nat and G :: "(nat \<Rightarrow> nat) \<Rightarrow> bool"
+  assumes mono: "wmono k G" and w: "1 \<le> w" and beta: "1 < \<beta>"
+    and range: "\<forall>x. lo - 1 \<le> x \<longrightarrow> x < hi \<longrightarrow> \<beta> \<le> b choose x"
+    and cost: "\<forall>v\<in>{..<k} \<rightarrow>\<^sub>E {..b}. \<not> G v \<longrightarrow> (\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i))))
+                 \<longrightarrow> (\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)"
+    and ub: "u \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and Gu: "G u" and l: "l \<in> wtight k G lo hi u"
+    and C_def: "C = {..<k} \<rightarrow>\<^sub>E {..<w}"
+  shows "w ^ k * (w - 1) ^ (w - 1) \<le> w ^ w * card {c \<in> C. l \<notin> wfree k G lo hi (cord k c) u}"
+proof -
+  define F where "F c = wfree k G lo hi (cord k c) u" for c
+  have finC: "finite C" by (simp add: C_def finite_PiE)
+  have lk: "l < k" and lt: "l \<notin> atyp k lo hi u" and nl: "\<not> G (u(l := u l - 1))"
+    using l by (simp_all add: wtight_def)
+  have tyl: "lo \<le> u l" "u l \<le> hi" using lt lk by (auto simp: atyp_def)
+  have ul: "u l \<le> b" using PiE_mem[OF ub, of l] lk by simp
+  have ul1: "u l - 1 \<le> b" using ul by linarith
+  have ub': "u(l := u l - 1) \<in> {..<k} \<rightarrow>\<^sub>E {..b}" using ub lk ul1 by (auto simp: PiE_iff extensional_def)
+  note mf = max_false[of k G "u(l := u l - 1)" b, OF mono ub' nl]
+  obtain v where vb: "v \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and nv: "\<not> G v"
+    and ge: "\<forall>i<k. (u(l := u l - 1)) i \<le> v i"
+    and vmax: "\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i)))"
+    by (rule mf)
+  have vi: "u i \<le> v i" if "i < k" "i \<noteq> l" for i using ge[rule_format, OF that(1)] that(2) by simp
+  have vl1: "u l - 1 \<le> v l" using ge[rule_format, OF lk] by simp
+  have vl2: "v l < u l"
+  proof (rule ccontr)
+    assume nlt: "\<not> v l < u l"
+    have "\<forall>i<k. u i \<le> v i"
+    proof (intro allI impI)
+      fix i assume "i < k"
+      then show "u i \<le> v i" using vi nlt by (cases "i = l") auto
+    qed
+    then have "G v" using mono Gu unfolding wmono_def by blast
+    with nv show False ..
+  qed
+  define f where "f i = b choose v i" for i
+  define L where "L = {i. i < k \<and> i \<noteq> l \<and> i \<notin> atyp k lo hi u \<and> v i < hi}"
+  have Lsub: "L \<subseteq> {..<k} - {l}" by (auto simp: L_def)
+  have f1: "1 \<le> f i" if "i < k" for i
+  proof -
+    have "v i \<le> b" using PiE_mem[OF vb, of i] that by simp
+    then have "0 < f i" by (simp add: f_def)
+    then show ?thesis by simp
+  qed
+  have bl: "\<beta> \<le> f l"
+  proof -
+    have "lo - 1 \<le> v l" "v l < hi" using vl1 vl2 tyl by linarith+
+    then show ?thesis using range by (simp add: f_def)
+  qed
+  have bL: "\<beta> \<le> f i" if "i \<in> L" for i
+  proof -
+    have i: "i < k" "i \<noteq> l" "i \<notin> atyp k lo hi u" "v i < hi" using that by (simp_all add: L_def)
+    have "lo \<le> u i" using i(1,3) by (auto simp: atyp_def)
+    moreover have "u i \<le> v i" using vi i(1,2) by blast
+    ultimately have "lo - 1 \<le> v i" by linarith
+    then show ?thesis using range i(4) by (simp add: f_def)
+  qed
+  have rest: "1 \<le> (\<Prod>i\<in>({..<k} - {l}) - L. f i)" by (rule prod_ge_1) (use f1 in auto)
+  have pL: "\<beta> ^ card L \<le> (\<Prod>i\<in>L. f i)"
+  proof -
+    have "(\<Prod>i\<in>L. \<beta>) \<le> (\<Prod>i\<in>L. f i)" by (rule prod_mono) (use bL in auto)
+    then show ?thesis by simp
+  qed
+  have "\<beta> ^ (card L + 1) = \<beta> * \<beta> ^ card L" by simp
+  also have "\<dots> \<le> f l * (\<Prod>i\<in>L. f i)" using bl pL by (rule mult_le_mono)
+  also have "\<dots> = f l * (\<Prod>i\<in>L. f i) * 1" by simp
+  also have "\<dots> \<le> f l * (\<Prod>i\<in>L. f i) * (\<Prod>i\<in>({..<k} - {l}) - L. f i)" by (rule mult_le_mono2[OF rest])
+  also have "\<dots> = f l * (\<Prod>i\<in>{..<k} - {l}. f i)"
+    using prod.subset_diff[of L "{..<k} - {l}" f] Lsub by (simp add: mult_ac)
+  also have "\<dots> = (\<Prod>i<k. f i)" using prod.remove[of "{..<k}" l f] lk by simp
+  finally have pc: "\<beta> ^ (card L + 1) \<le> (\<Prod>i<k. b choose v i)" by (simp add: f_def)
+  have "(\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)" using cost vb nv vmax by blast
+  then have "\<beta> ^ (card L + 1) < \<beta> ^ (w + 1)" using pc by linarith
+  then have "card L + 1 < w + 1" by (rule power_less_imp_less_exp[OF beta])
+  then have cL: "card L \<le> w - 1" by linarith
+  have sub: "{c \<in> C. \<forall>e\<in>L. c e < c l} \<subseteq> {c \<in> C. l \<notin> F c}"
+  proof
+    fix c assume c: "c \<in> {c \<in> C. \<forall>e\<in>L. c e < c l}"
+    have ord: "\<forall>i<k. i \<noteq> l \<longrightarrow> i \<notin> atyp k lo hi u \<longrightarrow> v i < hi \<longrightarrow> cord k c i < cord k c l"
+    proof (intro allI impI)
+      fix i assume i: "i < k" "i \<noteq> l" "i \<notin> atyp k lo hi u" "v i < hi"
+      then have "i \<in> L" by (simp add: L_def)
+      then have "c i < c l" using c by blast
+      then show "cord k c i < cord k c l" using i(1) by (rule cord_less)
+    qed
+    have vi': "\<forall>i<k. i \<noteq> l \<longrightarrow> u i \<le> v i" using vi by blast
+    have "wdec k G lo hi (cord k c) u l" unfolding wdec_def using lt nv vi' vl1 ord by blast
+    then have "l \<notin> F c" by (simp add: F_def wfree_def)
+    then show "c \<in> {c \<in> C. l \<notin> F c}" using c by simp
+  qed
+  have fin: "finite {c \<in> C. l \<notin> F c}" using finC by simp
+  have "w ^ k * (w - 1) ^ (w - 1) \<le> w ^ w * card {c \<in> C. \<forall>e\<in>L. c e < c l}"
+    unfolding C_def by (rule good_colorings[OF lk Lsub cL w])
+  also have "\<dots> \<le> w ^ w * card {c \<in> C. l \<notin> F c}"
+    using sub fin by (intro mult_left_mono card_mono) simp_all
+  finally show ?thesis by (simp add: F_def)
+qed
+
 theorem wide_compress:
   fixes k :: nat and blk :: "nat \<Rightarrow> 'a set" and G :: "(nat \<Rightarrow> nat) \<Rightarrow> bool"
   assumes mono: "wmono k G" and w: "1 \<le> w" and beta: "1 < \<beta>"
@@ -391,94 +492,7 @@ proof -
     have ub: "u \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and Gu: "G u" using u by (simp_all add: U_def)
     define F where "F c = wfree k G lo hi (cord k c) u" for c
     have goodl: "\<forall>l\<in>wtight k G lo hi u. w ^ k * (w - 1) ^ (w - 1) \<le> w ^ w * card {c \<in> C. l \<notin> F c}"
-    proof
-      fix l assume l: "l \<in> wtight k G lo hi u"
-      have lk: "l < k" and lt: "l \<notin> atyp k lo hi u" and nl: "\<not> G (u(l := u l - 1))"
-        using l by (simp_all add: wtight_def)
-      have tyl: "lo \<le> u l" "u l \<le> hi" using lt lk by (auto simp: atyp_def)
-      have ul: "u l \<le> b" using PiE_mem[OF ub, of l] lk by simp
-      have ul1: "u l - 1 \<le> b" using ul by linarith
-      have ub': "u(l := u l - 1) \<in> {..<k} \<rightarrow>\<^sub>E {..b}" using ub lk ul1 by (auto simp: PiE_iff extensional_def)
-      note mf = max_false[of k G "u(l := u l - 1)" b, OF mono ub' nl]
-      obtain v where vb: "v \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and nv: "\<not> G v"
-        and ge: "\<forall>i<k. (u(l := u l - 1)) i \<le> v i"
-        and vmax: "\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i)))"
-        by (rule mf)
-      have vi: "u i \<le> v i" if "i < k" "i \<noteq> l" for i using ge[rule_format, OF that(1)] that(2) by simp
-      have vl1: "u l - 1 \<le> v l" using ge[rule_format, OF lk] by simp
-      have vl2: "v l < u l"
-      proof (rule ccontr)
-        assume nlt: "\<not> v l < u l"
-        have "\<forall>i<k. u i \<le> v i"
-        proof (intro allI impI)
-          fix i assume "i < k"
-          then show "u i \<le> v i" using vi nlt by (cases "i = l") auto
-        qed
-        then have "G v" using mono Gu unfolding wmono_def by blast
-        with nv show False ..
-      qed
-      define f where "f i = b choose v i" for i
-      define L where "L = {i. i < k \<and> i \<noteq> l \<and> i \<notin> atyp k lo hi u \<and> v i < hi}"
-      have Lsub: "L \<subseteq> {..<k} - {l}" by (auto simp: L_def)
-      have f1: "1 \<le> f i" if "i < k" for i
-      proof -
-        have "v i \<le> b" using PiE_mem[OF vb, of i] that by simp
-        then have "0 < f i" by (simp add: f_def)
-        then show ?thesis by simp
-      qed
-      have bl: "\<beta> \<le> f l"
-      proof -
-        have "lo - 1 \<le> v l" "v l < hi" using vl1 vl2 tyl by linarith+
-        then show ?thesis using range by (simp add: f_def)
-      qed
-      have bL: "\<beta> \<le> f i" if "i \<in> L" for i
-      proof -
-        have i: "i < k" "i \<noteq> l" "i \<notin> atyp k lo hi u" "v i < hi" using that by (simp_all add: L_def)
-        have "lo \<le> u i" using i(1,3) by (auto simp: atyp_def)
-        moreover have "u i \<le> v i" using vi i(1,2) by blast
-        ultimately have "lo - 1 \<le> v i" by linarith
-        then show ?thesis using range i(4) by (simp add: f_def)
-      qed
-      have rest: "1 \<le> (\<Prod>i\<in>({..<k} - {l}) - L. f i)" by (rule prod_ge_1) (use f1 in auto)
-      have pL: "\<beta> ^ card L \<le> (\<Prod>i\<in>L. f i)"
-      proof -
-        have "(\<Prod>i\<in>L. \<beta>) \<le> (\<Prod>i\<in>L. f i)" by (rule prod_mono) (use bL in auto)
-        then show ?thesis by simp
-      qed
-      have "\<beta> ^ (card L + 1) = \<beta> * \<beta> ^ card L" by simp
-      also have "\<dots> \<le> f l * (\<Prod>i\<in>L. f i)" using bl pL by (rule mult_le_mono)
-      also have "\<dots> = f l * (\<Prod>i\<in>L. f i) * 1" by simp
-      also have "\<dots> \<le> f l * (\<Prod>i\<in>L. f i) * (\<Prod>i\<in>({..<k} - {l}) - L. f i)" by (rule mult_le_mono2[OF rest])
-      also have "\<dots> = f l * (\<Prod>i\<in>{..<k} - {l}. f i)"
-        using prod.subset_diff[of L "{..<k} - {l}" f] Lsub by (simp add: mult_ac)
-      also have "\<dots> = (\<Prod>i<k. f i)" using prod.remove[of "{..<k}" l f] lk by simp
-      finally have pc: "\<beta> ^ (card L + 1) \<le> (\<Prod>i<k. b choose v i)" by (simp add: f_def)
-      have "(\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)" using cost vb nv vmax by blast
-      then have "\<beta> ^ (card L + 1) < \<beta> ^ (w + 1)" using pc by linarith
-      then have "card L + 1 < w + 1" by (rule power_less_imp_less_exp[OF beta])
-      then have cL: "card L \<le> w - 1" by linarith
-      have sub: "{c \<in> C. \<forall>e\<in>L. c e < c l} \<subseteq> {c \<in> C. l \<notin> F c}"
-      proof
-        fix c assume c: "c \<in> {c \<in> C. \<forall>e\<in>L. c e < c l}"
-        have ord: "\<forall>i<k. i \<noteq> l \<longrightarrow> i \<notin> atyp k lo hi u \<longrightarrow> v i < hi \<longrightarrow> cord k c i < cord k c l"
-        proof (intro allI impI)
-          fix i assume i: "i < k" "i \<noteq> l" "i \<notin> atyp k lo hi u" "v i < hi"
-          then have "i \<in> L" by (simp add: L_def)
-          then have "c i < c l" using c by blast
-          then show "cord k c i < cord k c l" using i(1) by (rule cord_less)
-        qed
-        have vi': "\<forall>i<k. i \<noteq> l \<longrightarrow> u i \<le> v i" using vi by blast
-        have "wdec k G lo hi (cord k c) u l" unfolding wdec_def using lt nv vi' vl1 ord by blast
-        then have "l \<notin> F c" by (simp add: F_def wfree_def)
-        then show "c \<in> {c \<in> C. l \<notin> F c}" using c by simp
-      qed
-      have fin: "finite {c \<in> C. l \<notin> F c}" using finC by simp
-      have "w ^ k * (w - 1) ^ (w - 1) \<le> w ^ w * card {c \<in> C. \<forall>e\<in>L. c e < c l}"
-        unfolding C_def by (rule good_colorings[OF lk Lsub cL w])
-      also have "\<dots> \<le> w ^ w * card {c \<in> C. l \<notin> F c}"
-        using sub fin by (intro mult_left_mono card_mono) simp_all
-      finally show "w ^ k * (w - 1) ^ (w - 1) \<le> w ^ w * card {c \<in> C. l \<notin> F c}" .
-    qed
+      using wide_good[OF mono w beta range cost ub Gu _ C_def] by (simp add: F_def)
     have Fsub: "\<forall>c\<in>C. F c \<subseteq> {..<k}" by (auto simp: F_def wfree_def)
     obtain c where c: "c \<in> C" and cF: "card (F c) * w ^ w + t * (w - 1) ^ (w - 1) \<le> k * w ^ w"
       using average_free[OF C_def w Fsub wtight_sub tu goodl] by blast
