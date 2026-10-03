@@ -536,6 +536,44 @@ text \<open>
   tight, so \<open>t = k - a\<close>.
 \<close>
 
+lemma wide_cnf_cost:
+  fixes k :: nat and blk :: "nat \<Rightarrow> 'a set" and G :: "(nat \<Rightarrow> nat) \<Rightarrow> bool"
+  assumes mono: "wmono k G" and blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
+    and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}" and V: "V = (\<Union>i<k. blk i)"
+    and cs: "finite cs" "\<forall>X\<subseteq>V. G (bw blk k X) = cnf_val cs X"
+    and size: "card cs < \<beta> ^ (w + 1)"
+  shows "\<forall>v\<in>{..<k} \<rightarrow>\<^sub>E {..b}. \<not> G v \<longrightarrow> (\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i))))
+           \<longrightarrow> (\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)"
+proof (intro ballI impI)
+  fix v assume v: "v \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and nv: "\<not> G v"
+    and vmax: "\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i)))"
+  have "(\<Prod>i<k. b choose v i) \<le> card cs" by (rule wide_cost[OF mono blk disj V v nv vmax cs])
+  then show "(\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)" using size by linarith
+qed
+
+lemma wide_sound_tight:
+  assumes sound: "\<forall>u. G u \<longrightarrow> N \<le> (\<Sum>i<k. u i)" and lo: "1 \<le> lo"
+    and su: "(\<Sum>i<k. u i) = N" and ca: "card (atyp k lo hi u) \<le> a"
+  shows "k - a \<le> card (wtight k G lo hi u)"
+proof -
+  have tsub: "{..<k} - atyp k lo hi u \<subseteq> wtight k G lo hi u"
+  proof
+    fix l assume l: "l \<in> {..<k} - atyp k lo hi u"
+    then have lk: "l < k" and lt: "l \<notin> atyp k lo hi u" by simp_all
+    have "lo \<le> u l" using lk lt by (auto simp: atyp_def)
+    then have pos: "0 < u l" using lo by linarith
+    have "(\<Sum>i<k. (u(l := u l - 1)) i) < (\<Sum>i<k. u i)" using lk pos by (intro sum_strict_mono_ex1) auto
+    then have "\<not> G (u(l := u l - 1))" using sound su by fastforce
+    then show "l \<in> wtight k G lo hi u" using lk lt by (simp add: wtight_def)
+  qed
+  have finA: "finite (atyp k lo hi u)" by (rule finite_subset[OF atyp_sub]) simp
+  have finW: "finite (wtight k G lo hi u)" by (rule finite_subset[OF wtight_sub]) simp
+  have "k - a \<le> k - card (atyp k lo hi u)" using ca by simp
+  also have "\<dots> = card ({..<k} - atyp k lo hi u)" using finA atyp_sub by (simp add: card_Diff_subset)
+  also have "\<dots> \<le> card (wtight k G lo hi u)" using tsub finW by (rule card_mono[rotated])
+  finally show ?thesis .
+qed
+
 theorem wide_cover:
   fixes k :: nat and blk :: "nat \<Rightarrow> 'a set" and G :: "(nat \<Rightarrow> nat) \<Rightarrow> bool"
   assumes mono: "wmono k G" and sound: "\<forall>u. G u \<longrightarrow> N \<le> (\<Sum>i<k. u i)"
@@ -551,38 +589,17 @@ theorem wide_cover:
              * ((2 ^ b) ^ (k - (k - a) * (w - 1) ^ (w - 1) div w ^ w)
                 * (b choose (b div 2)) ^ ((k - a) * (w - 1) ^ (w - 1) div w ^ w))"
 proof -
-  have cost: "\<forall>v\<in>{..<k} \<rightarrow>\<^sub>E {..b}. \<not> G v \<longrightarrow> (\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i))))
-                \<longrightarrow> (\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)"
-  proof (intro ballI impI)
-    fix v assume v: "v \<in> {..<k} \<rightarrow>\<^sub>E {..b}" and nv: "\<not> G v"
-      and vmax: "\<forall>i<k. v i < b \<longrightarrow> G (v(i := Suc (v i)))"
-    have "(\<Prod>i<k. b choose v i) \<le> card cs" by (rule wide_cost[OF mono blk disj V v nv vmax cs])
-    then show "(\<Prod>i<k. b choose v i) < \<beta> ^ (w + 1)" using size by linarith
-  qed
+  note cost = wide_cnf_cost[OF mono blk disj V cs size]
   let ?S = "{X. X \<subseteq> V \<and> G (bw blk k X) \<and> (\<Sum>i<k. bw blk k X i) = N
                  \<and> card (atyp k lo hi (bw blk k X)) \<le> a}"
   let ?T = "{X. X \<subseteq> V \<and> G (bw blk k X) \<and> k - a \<le> card (wtight k G lo hi (bw blk k X))}"
   have sub: "?S \<subseteq> ?T"
   proof
     fix X assume X: "X \<in> ?S"
-    define u where "u = bw blk k X"
-    have su: "(\<Sum>i<k. u i) = N" and ca: "card (atyp k lo hi u) \<le> a" using X by (simp_all add: u_def)
-    have tsub: "{..<k} - atyp k lo hi u \<subseteq> wtight k G lo hi u"
-    proof
-      fix l assume l: "l \<in> {..<k} - atyp k lo hi u"
-      then have lk: "l < k" and lt: "l \<notin> atyp k lo hi u" by simp_all
-      have "lo \<le> u l" using lk lt by (auto simp: atyp_def)
-      then have pos: "0 < u l" using lo by linarith
-      have "(\<Sum>i<k. (u(l := u l - 1)) i) < (\<Sum>i<k. u i)" using lk pos by (intro sum_strict_mono_ex1) auto
-      then have "\<not> G (u(l := u l - 1))" using sound su by fastforce
-      then show "l \<in> wtight k G lo hi u" using lk lt by (simp add: wtight_def)
-    qed
-    have finA: "finite (atyp k lo hi u)" by (rule finite_subset[OF atyp_sub]) simp
-    have finW: "finite (wtight k G lo hi u)" by (rule finite_subset[OF wtight_sub]) simp
-    have "k - a \<le> k - card (atyp k lo hi u)" using ca by simp
-    also have "\<dots> = card ({..<k} - atyp k lo hi u)" using finA atyp_sub by (simp add: card_Diff_subset)
-    also have "\<dots> \<le> card (wtight k G lo hi u)" using tsub finW by (rule card_mono[rotated])
-    finally show "X \<in> ?T" using X by (simp add: u_def)
+    have su: "(\<Sum>i<k. bw blk k X i) = N" and ca: "card (atyp k lo hi (bw blk k X)) \<le> a"
+      using X by simp_all
+    have "k - a \<le> card (wtight k G lo hi (bw blk k X))" by (rule wide_sound_tight[OF sound lo su ca])
+    then show "X \<in> ?T" using X by simp
   qed
   have finV: "finite V" using blk by (simp add: V)
   have finT: "finite ?T" using finV by (auto intro: finite_subset[of _ "Pow V"])

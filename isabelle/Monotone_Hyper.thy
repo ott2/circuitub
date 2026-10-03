@@ -284,14 +284,15 @@ text \<open>
   coordinates.  Stated without division: \<open>|F c| r\<^sup>r + t (r-1)\<^sup>r\<^sup>-\<^sup>1 \<le> k r\<^sup>r\<close>.
 \<close>
 
-lemma average_free:
+text \<open>Summed over all colourings, the free sets are small.\<close>
+
+lemma free_sum:
   fixes F :: "(nat \<Rightarrow> nat) \<Rightarrow> nat set"
   assumes C: "C = {..<k} \<rightarrow>\<^sub>E {..<r}" and r: "1 \<le> r"
     and Fsub: "\<forall>c\<in>C. F c \<subseteq> {..<k}" and T: "T \<subseteq> {..<k}" "t \<le> card T"
     and good: "\<forall>l\<in>T. r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. l \<notin> F c}"
-  shows "\<exists>c\<in>C. card (F c) * r ^ r + t * (r - 1) ^ (r - 1) \<le> k * r ^ r"
-proof (rule ccontr)
-  assume neg: "\<not> ?thesis"
+  shows "(\<Sum>c\<in>C. card (F c)) * r ^ r + t * (card C * (r - 1) ^ (r - 1)) \<le> k * (card C * r ^ r)"
+proof -
   define P where "P = r ^ r"
   define q where "q = (r - 1) ^ (r - 1)"
   define R where "R = card C"
@@ -360,6 +361,26 @@ proof (rule ccontr)
       by (simp add: sum.distrib sum_distrib_right dbl sumT)
     ultimately show ?thesis by simp
   qed
+  have "t * (R * q) \<le> card T * (R * q)" using T(2) by (rule mult_right_mono) simp
+  then show ?thesis using H1 unfolding S_def R_def P_def q_def by linarith
+qed
+
+lemma average_free:
+  fixes F :: "(nat \<Rightarrow> nat) \<Rightarrow> nat set"
+  assumes C: "C = {..<k} \<rightarrow>\<^sub>E {..<r}" and r: "1 \<le> r"
+    and Fsub: "\<forall>c\<in>C. F c \<subseteq> {..<k}" and T: "T \<subseteq> {..<k}" "t \<le> card T"
+    and good: "\<forall>l\<in>T. r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. l \<notin> F c}"
+  shows "\<exists>c\<in>C. card (F c) * r ^ r + t * (r - 1) ^ (r - 1) \<le> k * r ^ r"
+proof (rule ccontr)
+  assume neg: "\<not> ?thesis"
+  define P where "P = r ^ r"
+  define q where "q = (r - 1) ^ (r - 1)"
+  define R where "R = card C"
+  define S where "S = (\<Sum>c\<in>C. card (F c))"
+  have cC: "R = r ^ k" by (simp add: R_def C card_PiE)
+  have Rpos: "0 < R" using cC r by simp
+  have H1: "S * P + t * (R * q) \<le> k * (R * P)"
+    using free_sum[OF C r Fsub T good] by (simp add: S_def R_def P_def q_def)
   have H2: "R * (k * P) + R \<le> S * P + R * (t * q)"
   proof -
     have "\<forall>c\<in>C. k * P + 1 \<le> card (F c) * P + t * q" using neg by (auto simp: P_def q_def not_le)
@@ -368,9 +389,8 @@ proof (rule ccontr)
       by (simp add: S_def R_def sum.distrib sum_distrib_right sum_distrib_left algebra_simps)
   qed
   have a1: "R * (t * q) = t * (R * q)" by (simp add: mult_ac)
-  have a2: "t * (R * q) \<le> card T * (R * q)" using T(2) by (rule mult_right_mono) simp
   have a3: "k * (R * P) = R * (k * P)" by (simp add: mult_ac)
-  show False using H1 H2 a1 a2 a3 Rpos by linarith
+  show False using H1 H2 a1 a3 Rpos by linarith
 qed
 
 lemma free_bound:
