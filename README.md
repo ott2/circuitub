@@ -5,63 +5,63 @@ A machine-checked proof of the main theorem of
 > Victor Lecomte and Prasanna Ramakrishnan, *Optimal Shallow Circuits for Majority*,
 > [arXiv:2609.34029](https://arxiv.org/abs/2609.34029) (2026).
 
-**Theorem.** For every constant d ≥ 2, every symmetric Boolean function on n variables
-has depth-d AND/OR formulas, with negations only on inputs, of size 2^{O(n^{1/(d-1)})}.
-The constant depends only on d.
+**Theorem.** For every constant $d \ge 2$, every symmetric Boolean function on $n$
+variables has depth-$d$ AND/OR formulas, with negations only on inputs, of size
+$2^{O(n^{1/(d-1)})}$. The constant depends only on $d$.
 
-In particular, Majority has depth-d circuits of size 2^{O(n^{1/(d-1)})}, matching
-Håstad's lower bound. For depth 3, that is 2^{O(√n)}. The lower bound is not formalized
-here.
+In particular, Majority has depth-$d$ circuits of size $2^{O(n^{1/(d-1)})}$, matching
+Håstad's lower bound. For depth 3, that is $2^{O(\sqrt n)}$. The lower bound is not
+formalized here.
 
 The Isabelle statement (`isabelle/Majority_Circuits.thy`) is slightly stronger than the
 paper's claim. It bounds formula (tree) size rather than circuit size, and the formulas
 are strictly layered: alternating, with an OR at the top and every literal at depth
-exactly d. No `sorry` is used, and the build fails unless the headline theorems depend
+exactly $d$. No `sorry` is used, and the build fails unless the headline theorems depend
 on no oracles.
 
-`isabelle/Bounded_Width.thy` also formalizes Remark 1 of the paper's v2. For every k with
-k² ≥ n, every symmetric function, and in particular Majority, is an OR of 2^{O(k)}
-CNFs with clauses of width k′ = 2⌈n/k⌉. For k ≤ n this is 2^{O(n/k′)} CNFs. By
-pigeonhole, for every t ≤ n some k′-CNF in the cover accepts only inputs of weight t,
-and accepts at least C(n,t)/2^{O(n/k′)} of them (`enum_output_lower_bound`). Any
-algorithm for the local enumeration problem Enum(k′, t) of Gurumukhani et al.
-(CCC 2024) must list all of them. So the hypothetical algorithm with running time
-2^{(1−Ω(log k/k))n} cannot exist.
+`isabelle/Bounded_Width.thy` also formalizes Remark 1 of the paper's v2. For every $k$
+with $k^2 \ge n$, every symmetric function, and in particular Majority, is an OR of
+$2^{O(k)}$ CNFs with clauses of width $k' = 2\lceil n/k \rceil$. For $k \le n$ this is
+$2^{O(n/k')}$ CNFs. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
+only inputs of weight $t$, and accepts at least $\binom{n}{t}/2^{O(n/k')}$ of them
+(`enum_output_lower_bound`). Any algorithm for the local enumeration problem
+$\mathrm{Enum}(k', t)$ of Gurumukhani et al. (CCC 2024) must list all of them. So the
+hypothetical algorithm with running time $2^{(1-\Omega(\log k/k))n}$ cannot exist.
 
 A second document,
 [`extensions/locality-and-monotonicity.md`](extensions/locality-and-monotonicity.md), takes
 the work in new directions. It asks which restricted circuit classes can still reach
-2^{O(√n)}. It has two parts.
+$2^{O(\sqrt n)}$. It has two parts.
 
 The first part, `isabelle/Block_Local.thy`, records which structure the construction needs:
 - **Two blocks suffice.** Every clause of those CNFs reads variables from at most two blocks
-  of one of two fixed partitions into consecutive blocks of size at most ⌈n/k⌉
+  of one of two fixed partitions into consecutive blocks of size at most $\lceil n/k \rceil$
   (`symmetric_or_of_cnfs_local`).
 - **One block does not.** Consider a formula for Majority that is an OR of tests, where
   each test is an AND of subformulas that each read a single block of one fixed partition.
-  It needs at least one test per block-weight vector of total weight n/2
-  (`one_block_tests`). That is at least (b+1)^{m/2} tests for m blocks of size b
-  (`one_block_tests_equal`), or 2^{Ω(√n log n)} when b = m = √n.
+  It needs at least one test per block-weight vector of total weight $n/2$
+  (`one_block_tests`). That is at least $(b+1)^{m/2}$ tests for $m$ blocks of size $b$
+  (`one_block_tests_equal`), or $2^{\Omega(\sqrt n \log n)}$ when $b = m = \sqrt n$.
 
 The second part asks whether the construction can be made monotone. The class it studies
 is tests that are ANDs of monotone functions of two block weights. Its formal part is
 `isabelle/Monotone_Pairs.thy`:
-- **Theorem B** (`sharp_bounds`): with k blocks of size b, every such test covers at most a
-  2^{k+1}·(πb/2)^{−k/4}·√(2n) fraction of the Majority slice. The proof is a block-level
-  analogue of the PPZ satisfiability coding lemma. It improves an earlier
-  (k−1)^k·b^{−k/4} bound (Theorem A: `pairwise_count`, `pairwise_weight`).
+- **Theorem B** (`sharp_bounds`): with $k$ blocks of size $b$, every such test covers at
+  most a $2^{k+1} (\pi b/2)^{-k/4} \sqrt{2n}$ fraction of the Majority slice. The proof is a
+  block-level analogue of the PPZ satisfiability coding lemma. It improves an earlier
+  $(k-1)^k b^{-k/4}$ bound (Theorem A: `pairwise_count`, `pairwise_weight`).
 - **Tightness** (`matching_valid`, `matching_card`, `matching_weight`): pairing the blocks
-  with complementary weights achieves b^{−k/4}.
+  with complementary weights achieves $b^{-k/4}$.
 
 `isabelle/Monotone_Cost.thy` adds two finite ingredients:
 - **The cost of a test** (`clause_per_maxfalse`, `test_cost`): a monotone CNF needs one
-  clause per maximal false point. So a test covering a point with a block of weight w has
-  a pair CNF with at least C(b, w−1) clauses.
-- **The number of tests** (`tests_needed`): covering the slice needs at least C(kb, kb/2)
-  divided by the bound of Theorem B.
+  clause per maximal false point. So a test covering a point with a block of weight $w$
+  has a pair CNF with at least $\binom{b}{w-1}$ clauses.
+- **The number of tests** (`tests_needed`): covering the slice needs at least
+  $\binom{kb}{kb/2}$ divided by the bound of Theorem B.
 
 With some binomial estimates on paper, these give Theorem C: monotone formulas of this
-shape need size 2^{Θ(√(n log n))}.
+shape need size $2^{\Theta(\sqrt{n \log n})}$.
 
 `isabelle/Monotone_Mixed.thy` extends this to tests that mix two partitions, as the L-R
 tests do:
@@ -69,33 +69,35 @@ tests do:
   tight coordinates of any accepted weight vector, without a validity assumption.
 - **Every one is in a tight block** (`mixed_tight`, `mixed_cover`): in a sound mixed test,
   each one of a covered input lies in a tight block of one of the partitions. So one
-  partition compresses, and coverage stays b^{−Ω(k)}.
+  partition compresses, and coverage stays $b^{-\Omega(k)}$.
 - **Tight coordinates cost clauses** (`tight_cost`).
 
-`isabelle/Monotone_Hyper.thy` formalizes the version for constraints that read r blocks
+`isabelle/Monotone_Hyper.thy` formalizes the version for constraints that read $r$ blocks
 (`hyper_compress`). It averages over colourings of the blocks instead of using a random
 order and Jensen's inequality.
 
-On paper, this gives Theorem D: monotone formulas whose tests mix m partitions need
-2^{Ω(√(n log n / m))}. So the construction cannot be made monotone without changing its
-shape. In this shape, the negations account for the whole √(log n) saving over KPPY.
+On paper, this gives Theorem D: monotone formulas whose tests mix $m$ partitions need
+$2^{\Omega(\sqrt{n \log n / m})}$. So the construction cannot be made monotone without
+changing its shape. In this shape, the negations account for the whole $\sqrt{\log n}$
+saving over KPPY.
 
 `isabelle/Monotone_Wide.thy` removes the bound on the scope when blocks are large. A test
 may be any block-symmetric monotone CNF:
 - **Only light blocks need decoding** (`wdec_eq`, `wfree_determined`). Unknown blocks are
   filled with the top of a typical window.
 - **Light blocks are expensive** (`wide_cost`). Each typical block that a witness ties to
-  the decoded one multiplies the clause count by about 2^b.
+  the decoded one multiplies the clause count by about $2^b$.
 - **The count** (`wide_cover`).
 
-On paper, this gives Theorem E: with blocks of size at least √n, such formulas need
-2^{Ω(√(n log n))}, however many blocks a clause reads.
+On paper, this gives Theorem E: with blocks of size at least $\sqrt n$, such formulas need
+$2^{\Omega(\sqrt{n \log n})}$, however many blocks a clause reads.
 
 `isabelle/Monotone_Kraft.thy` averages over the orders instead of choosing one per input
 (`wide_kraft`, `wide_cover_kraft`). It uses a Kraft inequality for partial encodings and
-Jensen's inequality, proved from exp x ≥ 1 + x. This removes a (2w)^k overhead. On paper
-it gives Theorem E′: the same bound holds for blocks of size n^{1/3+ε}. So the class is
-2^{Θ(√(n log n))} for n^{1/3+ε} ≤ b ≤ √(n log n).
+Jensen's inequality, proved from $e^x \ge 1 + x$. This removes a $(2w)^k$ overhead. On
+paper it gives Theorem E′: the same bound holds for blocks of size $n^{1/3+\varepsilon}$. So
+the class is $2^{\Theta(\sqrt{n \log n})}$ for
+$n^{1/3+\varepsilon} \le b \le \sqrt{n \log n}$.
 
 ## Contents
 
@@ -103,13 +105,13 @@ it gives Theorem E′: the same bound holds for blocks of size n^{1/3+ε}. So th
 |---|---|
 | `isabelle/` | Session `Majority_AC0`: 17 theories, about 6100 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
-| `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need 2^{Ω(√n log n)} |
+| `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need $2^{\Omega(\sqrt n \log n)}$ |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
 | `isabelle/Monotone_Cost.thy` | One clause per maximal false point; the cost of a test; the number of tests needed to cover the slice |
 | `isabelle/Monotone_Mixed.thy` | Tests mixing two partitions: tight coordinates compress, every one lies in a tight block, coverage of a mixed test, cost of a tight coordinate |
-| `isabelle/Monotone_Hyper.thy` | Constraints on r blocks: Theorem B by averaging over colourings |
-| `isabelle/Monotone_Wide.thy` | Block-symmetric tests of any scope: decoding waits only for light blocks, which cost about 2^b clauses each |
-| `isabelle/Monotone_Kraft.thy` | The same count by Kraft and Jensen over all colourings, without the (2w)^k overhead |
+| `isabelle/Monotone_Hyper.thy` | Constraints on $r$ blocks: Theorem B by averaging over colourings |
+| `isabelle/Monotone_Wide.thy` | Block-symmetric tests of any scope: decoding waits only for light blocks, which cost about $2^b$ clauses each |
+| `isabelle/Monotone_Kraft.thy` | The same count by Kraft and Jensen over all colourings, without the $(2w)^k$ overhead |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
@@ -132,7 +134,7 @@ The main session builds in a few seconds.
 
 The argument is the paper's, but several parts were adapted to make the formalization
 simpler:
-- Gödel-β moduli instead of prime powers.
+- Gödel-$\beta$ moduli instead of prime powers.
 - Shifts sampled from the full cube.
 - A greedy covering argument instead of the probabilistic method.
 - A single induction on depth over arbitrary literal lists.
