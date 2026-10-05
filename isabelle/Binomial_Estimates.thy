@@ -305,6 +305,24 @@ next
   finally show ?case .
 qed
 
+text \<open>
+  So the smallest coefficient \<open>\<beta> = C(b, m - d - 1)\<close> of a window of half-width \<open>d\<close> is at least
+  \<open>2\<^sup>b e\<^sup>-\<^sup>2\<^sup>(\<^sup>d\<^sup>+\<^sup>1\<^sup>)\<^sup>(\<^sup>d\<^sup>+\<^sup>2\<^sup>)\<^sup>/\<^sup>m / (b + 1)\<close>.  With \<open>d \<approx> 2\<surd>b\<close> this is \<open>2\<^sup>b e\<^sup>-\<^sup>1\<^sup>6\<^sup>-\<^sup>o\<^sup>(\<^sup>1\<^sup>) / (b + 1)\<close>.
+\<close>
+
+lemma window_beta:
+  assumes m: "m = b div 2" and j: "4 * j \<le> m"
+  shows "2 ^ b / (real b + 1) * exp (- 2 * real j * (real j + 1) / real m) \<le> real (b choose (m - j))"
+proof -
+  have "real (2 ^ b) \<le> real ((b + 1) * (b choose (b div 2)))" by (rule of_nat_mono[OF slice_lower])
+  then have c: "2 ^ b / (real b + 1) \<le> real (b choose m)" using m by (simp add: field_simps)
+  have "2 ^ b / (real b + 1) * exp (- 2 * real j * (real j + 1) / real m)
+          \<le> real (b choose m) * exp (- 2 * real j * (real j + 1) / real m)"
+    using c by (rule mult_right_mono) simp
+  also have "\<dots> \<le> real (b choose (m - j))" by (rule window_lower[OF m j])
+  finally show ?thesis .
+qed
+
 subsection \<open>Two elementary inequalities\<close>
 
 lemma decoded_fraction:

@@ -31,7 +31,8 @@ ML \<open>
      @{thm hyper_good}, @{thm kraft_partial}, @{thm power_average}, @{thm kraft_count},
      @{thm wide_kraft}, @{thm wide_cover_kraft}, @{thm hyper_kraft},
      @{thm central_binomial}, @{thm central_ratio}, @{thm slice_lower}, @{thm binomial_moment},
-     @{thm chebyshev_window}, @{thm window_range}, @{thm window_lower}, @{thm decoded_fraction},
+     @{thm chebyshev_window}, @{thm window_range}, @{thm window_lower}, @{thm window_beta},
+     @{thm decoded_fraction},
      @{thm tw_cnf}, @{thm tw_sound}, @{thm formula_kraft}, @{thm atypical_count},
      @{thm typical_half}, @{thm majority_wide_tests},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
