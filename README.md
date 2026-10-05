@@ -99,11 +99,16 @@ paper it gives Theorem E′: the same bound holds for blocks of size $n^{1/3+\va
 the class is $2^{\Theta(\sqrt{n \log n})}$ for
 $n^{1/3+\varepsilon} \le b \le \sqrt{n \log n}$.
 
+The same argument, packaged as one lemma (`kraft_count`), also removes the $(2r)^k$
+overhead from `hyper_compress` (`hyper_kraft`). So the formal ingredients of the
+$2^{\Omega(\sqrt{n \log n / r})}$ bound for constraints on $r$ blocks now cover every
+$r \le n^{1/5-\varepsilon}$. Before, they covered only $r \log r = o(\log n)$.
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 17 theories, about 6100 lines |
+| `isabelle/` | Session `Majority_AC0`: 17 theories, about 6200 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need $2^{\Omega(\sqrt n \log n)}$ |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
@@ -111,7 +116,7 @@ $n^{1/3+\varepsilon} \le b \le \sqrt{n \log n}$.
 | `isabelle/Monotone_Mixed.thy` | Tests mixing two partitions: tight coordinates compress, every one lies in a tight block, coverage of a mixed test, cost of a tight coordinate |
 | `isabelle/Monotone_Hyper.thy` | Constraints on $r$ blocks: Theorem B by averaging over colourings |
 | `isabelle/Monotone_Wide.thy` | Block-symmetric tests of any scope: decoding waits only for light blocks, which cost about $2^b$ clauses each |
-| `isabelle/Monotone_Kraft.thy` | The same count by Kraft and Jensen over all colourings, without the $(2w)^k$ overhead |
+| `isabelle/Monotone_Kraft.thy` | The counts of `Monotone_Hyper` and `Monotone_Wide` by Kraft and Jensen over all colourings, without the $(2r)^k$ and $(2w)^k$ overheads |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |

@@ -378,9 +378,28 @@ constraints with arbitrary scopes of at most $r$ blocks.
 - **Soundness gives tightness (`hyper_sound_tight`).** For a sound test, every positive
   coordinate of a slice point is tight.
 
-So the formal bound has exponent about $k/(4er)$ instead of $k/(2r)$, and a factor $(2r)^k$
-instead of $2^k$. That is enough for $2^{\Omega(\sqrt{n \log n / r})}$ while
-$r \log r = o(\log n)$. The pen-and-paper version above covers all $r$.
+For a sound test, $t$ is about $k$, so the coverage is at most
+$(2r)^k (\pi b/2)^{-y/2}$ with $y/2 \approx k/(2er)$. The exponent is smaller than the
+pen-and-paper $k/(2r)$ by the factor $(1 - 1/r)^{r-1} \ge 1/e$, and recording the colouring
+costs $(2r)^k$. That is enough for $2^{\Omega(\sqrt{n \log n / r})}$ only while
+$r \log r = o(\log n)$.
+
+**Without the overhead (`hyper_kraft`) [F].** The Kraft and Jensen argument of §2.9 applies
+unchanged. Both `wide_kraft` and `hyper_kraft` are instances of one lemma, `kraft_count`.
+It needs only a family of free sets that determines the input and leaves each of $t$
+coordinates decoded under a $(r-1)^{r-1}/r^r$ fraction of the colourings. With
+$\delta = 1/(r+1)$, a sound test covers at most
+
+$$e^{k/r} \left(\frac{r}{\sqrt{\pi b/2}}\right)^{t(r-1)^{r-1}/r^r} \sqrt{2n}$$
+
+of the slice. A decoded block now gains $\frac12 \log_2 (\pi b/2) - \log_2 r$ bits, and the
+only other loss is $\log_2 e$ bits per $r$ blocks. The gain beats that loss once
+$\pi b/(2r^2) > e^{2e}$, and the coverage is a power of $b$ once $b \ge r^{2+\varepsilon}$.
+In the optimization, $b \approx \sqrt{n \log n / r}$, so the formal ingredients now give
+$2^{\Omega(\sqrt{n \log n / r})}$ for all $r \le n^{1/5 - \varepsilon}$. That includes the
+whole range $r \lesssim \log n$ where the bound beats $2^{\sqrt n}$. The exponent of $b$ is
+still smaller than in the pen-and-paper version by the factor $(1 - 1/r)^{r-1}$, at worst
+$1/e$. That factor comes from colourings rather than random orders.
 
 The cost lemma is unchanged: some $r$-ary constraint has a maximal false point with
 $\ell$-coordinate $p_\ell - 1$, so it has at least $\binom{b}{p_\ell - 1}$ clauses. Optimizing
@@ -676,10 +695,12 @@ $b^{-k/(2r)}$. Theorem E says nothing beats that rate.
    bits, but finding out which blocks are decoded costs $\log w \approx \log(\sqrt n/b)$ bits
    each. Going below $n^{1/3}$ needs either a cheaper way to locate decodable blocks, or a
    different exchange rate.
-2. **Sharper formal constants for (ii).** `hyper_compress` has exponent about $k/(4er)$. The
-   convexity tools now exist (`kraft_partial`, `power_average`). Running `hyper_compress`
-   through them removes the $(2r)^k$ overhead. Reaching the pen-and-paper $k/(2r)$ would
-   also need random orders instead of colourings, which lose a factor $e$.
+2. **Sharper formal constants for (ii).** Done in part: `hyper_kraft` removes the $(2r)^k$
+   overhead (§2.7). Its exponent is $k(1 - 1/r)^{r-1}/(2r) \ge k/(2er)$; reaching the
+   pen-and-paper $k/(2r)$ needs random orders instead of colourings. That means averaging
+   over the $k!$ permutations, where $\ell$ comes after its $r - 1$ witnesses with probability
+   exactly $1/r$. Since `kraft_count` only uses the colourings through `free_sum`, swapping in
+   permutations should mostly be a matter of counting them.
 3. **The rest of Theorems C and D.** The parts still on paper:
    - the Hoeffding estimates for cheap tests and atypical points;
    - the binomial estimates that turn (B) and (D) into powers of $b$;

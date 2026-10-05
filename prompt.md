@@ -43,7 +43,9 @@ We are now extending the ideas in new directions. The live document is
     scopes `S j` and predicates `G j`.
   - `hfree_determined`: decoding needs no injectivity.
   - `good_colorings` and `average_free`: averaging over the $r^k$ colourings, Jensen-free.
-  - `hyper_compress`: the count, with exponent about $k/(4er)$.
+  - `hyper_good`: a tight coordinate is decoded under a $(r-1)^{r-1}/r^r$ fraction of
+    colourings.
+  - `hyper_compress`: the count, coverage $(2r)^k (\pi b/2)^{-y/2}$ with $y \approx k/(er)$.
   - `hyper_sound_tight`, `hyper_lower_nontight`.
 - `isabelle/Monotone_Wide.thy`: a test is any monotone predicate `G` of the block weights
   (a block-symmetric monotone CNF), with no scope bound.
@@ -61,14 +63,20 @@ We are now extending the ideas in new directions. The live document is
 - `isabelle/Monotone_Kraft.thy` (imports `Complex_Main`): the same count with real weights.
   - `kraft_partial`: Kraft inequality for injective encodings into `{..<k} →E Opt`.
   - `exp_average`, `power_average`: Jensen for $\lambda^D$, from $e^x \ge 1 + x$.
-  - `wide_kraft`, `wide_cover_kraft`: $\lvert S\rvert \lambda^y \le (2^b/(1-\delta))^k$, with
-    $\lambda = \delta 2^b/((1-\delta)\binom{b}{\lfloor b/2\rfloor})$. There is no $(2w)^k$
-    overhead.
+  - `kraft_count`: the generic count. Given free sets `F c u` that determine `u` (`det`) and
+    $t$ coordinates decoded under a $(r-1)^{r-1}/r^r$ fraction of colourings (`good`),
+    $\lvert S\rvert \lambda^y \le (2^b/(1-\delta))^k$, with
+    $\lambda = \delta 2^b/((1-\delta)\binom{b}{\lfloor b/2\rfloor})$ and
+    $y = t(r-1)^{r-1}/r^r$.
+  - Instances: `wide_kraft`, `wide_cover_kraft` (no $(2w)^k$ overhead) and `hyper_kraft`
+    (no $(2r)^k$ overhead). `inputs_in` is the step from weight vectors to inputs.
+  - Pitfall: `blast` looped on `∃T. T ⊆ … ∧ t ≤ card T ∧ (∀l∈T. …)`; use
+    `intro exI[of _ "…"] conjI` with the named facts.
   - `free_sum` in `Monotone_Hyper` is the summed form of `average_free`.
   - Pitfalls: `o` is composition, so don't use it as a bound variable. Instantiate
     `kraft_partial` with `where enc = … and Opt = … and wo = …`.
 
-The session is `Majority_AC0` (17 theories, ~6100 lines). `isabelle/Audit.thy` lists every
+The session is `Majority_AC0` (17 theories, ~6200 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -108,9 +116,10 @@ and kept uncommitted.
    everything, so this is the general open monotone question. Theorems E and E′ settle
    $b \ge n^{1/3+\varepsilon}$. The natural target is the gap between $b \approx n^{1/3}$ and
    $b = 1$. It needs a cheaper way to locate decodable blocks, or a different exchange rate.
-2. **Sharper constants in `hyper_compress`:** $k/(2r)$ instead of $k/(4er)$. Running it
-   through `kraft_partial` and `power_average` removes the $(2r)^k$ overhead. Getting rid of
-   the factor $e$ needs random orders instead of colourings.
+2. **Sharper constants for $r$-block constraints:** `hyper_kraft` removed the $(2r)^k$
+   overhead, so the formal ingredients cover $r \le n^{1/5-\varepsilon}$. The exponent is
+   still $k(1-1/r)^{r-1}/(2r)$ rather than $k/(2r)$. Getting rid of the factor
+   $(1-1/r)^{r-1}$ needs random orders (permutations) instead of colourings in `free_sum`.
 3. **The analytic rest of Theorems C and D:** Hoeffding, binomial estimates, PPZ for
    small $b$.
 4. **The fixed-point form** (§2.3).
