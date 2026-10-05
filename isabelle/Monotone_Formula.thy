@@ -271,4 +271,247 @@ proof -
   finally show ?thesis by (simp add: q_def At_def)
 qed
 
+text \<open>
+  With the window \<open>[m - d, m + d]\<close>, \<open>d\<^sup>2 \<ge> 4b\<close> and \<open>a = k/2\<close>, at most \<open>2\<^sup>n / 2\<^sup>k\<close> inputs have more
+  than \<open>a\<close> atypical blocks; with \<open>2(n+1) \<le> 2\<^sup>k\<close>, at least half of the Majority slice is typical.
+\<close>
+
+lemma typical_half:
+  fixes blk :: "nat \<Rightarrow> 'a set"
+  assumes blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
+    and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}" and V: "V = (\<Union>i<k. blk i)"
+    and m: "m = b div 2" and d: "4 * b \<le> d\<^sup>2" and b: "1 \<le> b"
+    and k: "2 * (k * b + 1) \<le> 2 ^ k"
+  shows "2 ^ (k * b) \<le> 2 * (k * b + 1)
+           * card {X. X \<subseteq> V \<and> card X = (k * b) div 2 \<and> card (atyp k (m - d) (m + d) (bw blk k X)) \<le> k div 2}"
+proof -
+  define n where "n = k * b"
+  define a where "a = k div 2"
+  define q where "q = (\<Sum>x\<in>{x. x \<le> b \<and> (x < m - d \<or> m + d < x)}. b choose x)"
+  let ?T = "{X. X \<subseteq> V \<and> card X = n div 2 \<and> card (atyp k (m - d) (m + d) (bw blk k X)) \<le> a}"
+  let ?B = "{X. X \<subseteq> V \<and> a < card (atyp k (m - d) (m + d) (bw blk k X))}"
+  let ?S = "{X. X \<subseteq> V \<and> card X = n div 2}"
+  have finV: "finite V" using blk by (simp add: V)
+  have cV: "card V = n" unfolding V n_def by (rule card_blocks[OF blk disj])
+  have k1: "1 \<le> k" using k by (cases k) simp_all
+  have ak: "Suc a \<le> k" using k1 by (simp add: a_def)
+  text \<open>Few inputs have many atypical blocks.\<close>
+  have q16: "16 * q \<le> 2 ^ b"
+  proof -
+    have "16 * q * b = 4 * q * (4 * b)" by simp
+    also have "\<dots> \<le> 4 * q * d\<^sup>2" using d by (rule mult_left_mono) simp
+    also have "\<dots> = 4 * d\<^sup>2 * q" by simp
+    also have "\<dots> \<le> b * 2 ^ b" unfolding q_def by (rule chebyshev_window[OF m])
+    also have "\<dots> = 2 ^ b * b" by simp
+    finally show ?thesis using b by simp
+  qed
+  have cB: "card ?B \<le> (k choose Suc a) * (q ^ Suc a * (2 ^ b) ^ (k - Suc a))"
+    unfolding q_def by (rule atypical_count[OF blk V])
+  have "card ?B * 16 ^ Suc a \<le> (k choose Suc a) * ((16 * q) ^ Suc a * (2 ^ b) ^ (k - Suc a))"
+    using cB by (simp add: power_mult_distrib algebra_simps)
+  also have "\<dots> \<le> 2 ^ k * ((2 ^ b) ^ Suc a * (2 ^ b) ^ (k - Suc a))"
+    using q16 by (intro mult_mono power_mono binomial_le_pow2) simp_all
+  also have "(2 ^ b) ^ Suc a * (2 ^ b) ^ (k - Suc a) = (2::nat) ^ n"
+  proof -
+    have e: "Suc a + (k - Suc a) = k" using ak by simp
+    have "((2::nat) ^ b) ^ Suc a * (2 ^ b) ^ (k - Suc a) = (2 ^ b) ^ k" by (simp only: power_add[symmetric] e)
+    also have "\<dots> = 2 ^ n" by (simp add: power_mult[symmetric] n_def mult.commute)
+    finally show ?thesis .
+  qed
+  finally have B16: "card ?B * 16 ^ Suc a \<le> 2 ^ k * 2 ^ n" .
+  have "(4::nat) ^ k \<le> 4 ^ (2 * Suc a)" by (intro power_increasing) (simp_all add: a_def)
+  also have "\<dots> = 16 ^ Suc a" by (simp add: power_mult)
+  finally have "card ?B * 4 ^ k \<le> card ?B * 16 ^ Suc a" by simp
+  then have c4: "card ?B * 4 ^ k \<le> 2 ^ k * 2 ^ n" using B16 by (rule le_trans)
+  have four: "(4::nat) ^ k = 2 ^ k * 2 ^ k"
+  proof -
+    have "(4::nat) ^ k = (2 * 2) ^ k" by simp
+    also have "\<dots> = 2 ^ k * 2 ^ k" by (rule power_mult_distrib)
+    finally show ?thesis .
+  qed
+  have "card ?B * 2 ^ k * 2 ^ k = card ?B * 4 ^ k" by (simp only: four mult.assoc)
+  also have "\<dots> \<le> 2 ^ k * 2 ^ n" by (rule c4)
+  also have "\<dots> = 2 ^ n * 2 ^ k" by (rule mult.commute)
+  finally have "card ?B * 2 ^ k * 2 ^ k \<le> 2 ^ n * 2 ^ k" .
+  then have B: "card ?B * 2 ^ k \<le> 2 ^ n" by simp
+  text \<open>The slice is covered by the typical inputs and the bad ones.\<close>
+  have SU: "?S \<subseteq> ?T \<union> ?B" by auto
+  have finT: "finite ?T" and finB: "finite ?B" using finV by (auto intro: finite_subset[of _ "Pow V"])
+  have cS: "card ?S \<le> card ?T + card ?B"
+    using card_mono[OF _ SU] card_Un_le[of ?T ?B] finT finB by simp
+  have slice: "card ?S = n choose (n div 2)" using n_subsets[OF finV, of "n div 2"] cV by simp
+  have P: "2 ^ n \<le> (n + 1) * card ?S" using slice_lower[of n] slice by simp
+  define t where "t = card ?T"
+  define c where "c = card ?B"
+  define s where "s = card ?S"
+  define r where "r = n + 1"
+  have "2 ^ n * 2 ^ k \<le> r * s * 2 ^ k" using P by (simp add: r_def s_def)
+  also have "\<dots> \<le> r * (t + c) * 2 ^ k" using cS by (simp add: s_def t_def c_def)
+  also have "\<dots> = r * t * 2 ^ k + r * (c * 2 ^ k)" by (simp add: algebra_simps)
+  also have "\<dots> \<le> r * t * 2 ^ k + r * 2 ^ n" using B by (simp add: c_def)
+  finally have I: "2 ^ n * 2 ^ k \<le> r * t * 2 ^ k + r * 2 ^ n" .
+  have "2 * r \<le> 2 ^ k" using k by (simp add: r_def n_def)
+  then have "2 * r * 2 ^ n \<le> 2 ^ k * 2 ^ n" by (rule mult_right_mono) simp
+  then have F: "2 * (r * 2 ^ n) \<le> 2 ^ n * 2 ^ k" by (simp only: ac_simps)
+  have "2 ^ n * 2 ^ k \<le> 2 * (r * t * 2 ^ k)" using I F by linarith
+  then have "2 ^ n * 2 ^ k \<le> (2 * r * t) * 2 ^ k" by (simp only: ac_simps)
+  then have "2 ^ n \<le> 2 * r * t" by simp
+  then show ?thesis by (simp add: r_def t_def n_def a_def)
+qed
+
+subsection \<open>Theorem E\<Zprime>, finite form\<close>
+
+text \<open>
+  Let a monotone formula for Majority on \<open>n = kb\<close> variables be an OR of block-symmetric
+  monotone CNFs, each with fewer than \<open>\<beta>\<^sup>w\<^sup>+\<^sup>1\<close> clauses, where \<open>\<beta> = C(b, m - d - 1)\<close> is the
+  smallest binomial coefficient of the window.  Then the number \<open>T\<close> of tests satisfies
+  \<open>log\<^sub>2 T \<ge> (k / (2ew)) (\<frac>12 log\<^sub>2((3b+2)/2) - log\<^sub>2 w - 2e log\<^sub>2 e) - log\<^sub>2(2(n+1))\<close>.
+  Here \<open>2e log\<^sub>2 e < 7.85\<close>.  The hypotheses: the window half-width \<open>d\<close> has \<open>d\<^sup>2 \<ge> 4b\<close>, the
+  window stays inside \<open>[2, b - 2]\<close>, \<open>w C(b, b/2) \<le> 2\<^sup>b\<close> (otherwise the bound is negative anyway),
+  and \<open>2(n+1) \<le> 2\<^sup>k\<close>.
+\<close>
+
+theorem majority_wide_tests:
+  fixes Fm :: "'a set set set" and blk :: "nat \<Rightarrow> 'a set"
+  assumes blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
+    and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}" and V: "V = (\<Union>i<k. blk i)"
+    and Fm: "finite Fm" "\<forall>cs\<in>Fm. finite cs"
+    and sym: "\<forall>cs\<in>Fm. \<forall>X\<subseteq>V. \<forall>Y\<subseteq>V. bw blk k X = bw blk k Y \<longrightarrow> cnf_val cs X = cnf_val cs Y"
+    and maj: "\<forall>X\<subseteq>V. (\<exists>cs\<in>Fm. cnf_val cs X) \<longleftrightarrow> (k * b) div 2 \<le> card X"
+    and d: "4 * b \<le> d\<^sup>2" "d + 2 \<le> b div 2"
+    and size: "\<forall>cs\<in>Fm. card cs < (b choose (b div 2 - d - 1)) ^ (w + 1)"
+    and w: "1 \<le> w" "w * (b choose (b div 2)) \<le> 2 ^ b"
+    and k: "2 * (k * b + 1) \<le> 2 ^ k"
+  shows "real k / (2 * exp 1 * real w)
+           * (log 2 ((3 * real b + 2) / 2) / 2 - log 2 (real w) - 2 * exp 1 * log 2 (exp 1))
+         - log 2 (2 * (real (k * b) + 1))
+         \<le> log 2 (real (card Fm))"
+proof -
+  define n where "n = k * b"
+  define m where "m = b div 2"
+  define a where "a = k div 2"
+  define \<beta> where "\<beta> = b choose (m - d - 1)"
+  define \<delta> :: real where "\<delta> = 1 / (real w + 1)"
+  define C :: real where "C = real (b choose (b div 2))"
+  define L :: real where "L = 2 ^ b / C"
+  define lam :: real where "lam = \<delta> * 2 ^ b / ((1 - \<delta>) * C)"
+  define y :: real where "y = real (k - a) * real (w - 1) ^ (w - 1) / real w ^ w"
+  define T where "T = card {X. X \<subseteq> V \<and> card X = n div 2 \<and> card (atyp k (m - d) (m + d) (bw blk k X)) \<le> a}"
+  have b4: "4 \<le> b" using d(2) by linarith
+  have wpos: "0 < real w" using w(1) by simp
+  have Cpos: "0 < C" by (simp add: C_def)
+  have Lpos: "0 < L" using Cpos by (simp add: L_def)
+  have d0: "0 < \<delta>" "\<delta> < 1" using wpos by (simp_all add: \<delta>_def)
+  have d1: "1 - \<delta> = real w / (real w + 1)" using wpos by (simp add: \<delta>_def field_simps)
+  have lamL: "lam = L / real w"
+  proof -
+    have dd: "\<delta> / (1 - \<delta>) = 1 / real w" using wpos by (simp add: d1 \<delta>_def field_simps)
+    have "lam = \<delta> / (1 - \<delta>) * (2 ^ b / C)" unfolding lam_def by (rule times_divide_times_eq[symmetric])
+    then show ?thesis by (simp add: dd L_def)
+  qed
+  have wC: "real w * C \<le> 2 ^ b" using of_nat_mono[OF w(2)] by (simp add: C_def)
+  have lam1: "1 \<le> lam" using wC wpos Cpos by (simp add: lamL L_def field_simps)
+  have lamc: "(1 - \<delta>) * real (b choose (b div 2)) \<le> \<delta> * 2 ^ b"
+  proof -
+    have "(1 - \<delta>) * real (b choose (b div 2)) = real w * C / (real w + 1)" by (simp add: d1 C_def)
+    also have "\<dots> \<le> 2 ^ b / (real w + 1)" using wC wpos by (intro divide_right_mono) simp_all
+    also have "\<dots> = \<delta> * 2 ^ b" by (simp add: \<delta>_def)
+    finally show ?thesis .
+  qed
+  text \<open>The hypotheses of \<open>formula_kraft\<close>.\<close>
+  have sound: "\<forall>cs\<in>Fm. \<forall>X\<subseteq>V. cnf_val cs X \<longrightarrow> n div 2 \<le> card X" using maj by (auto simp: n_def)
+  have cover: "\<forall>X\<subseteq>V. card X = n div 2 \<longrightarrow> (\<exists>cs\<in>Fm. cnf_val cs X)" using maj by (auto simp: n_def)
+  have size': "\<forall>cs\<in>Fm. card cs < \<beta> ^ (w + 1)" using size by (simp add: \<beta>_def m_def)
+  have beta: "1 < \<beta>"
+  proof -
+    have "b choose 1 \<le> b choose (m - d - 1)" using d(2) by (intro binomial_mono) (simp_all add: m_def)
+    then show ?thesis using b4 by (simp add: \<beta>_def)
+  qed
+  have lo: "1 \<le> m - d" using d(2) by (simp add: m_def)
+  have range: "\<forall>x. m - d - 1 \<le> x \<longrightarrow> x < m + d \<longrightarrow> \<beta> \<le> b choose x"
+    unfolding \<beta>_def by (rule window_range) (use d(2) in \<open>simp_all add: m_def\<close>)
+  have FK: "real T * lam powr y \<le> real (card Fm) * (2 ^ b / (1 - \<delta>)) ^ k"
+    using formula_kraft[OF blk disj V Fm sym sound cover size' w(1) beta lo range d0 lamc, of a]
+    by (simp add: T_def lam_def C_def y_def)
+  text \<open>At least \<open>2\<^sup>n / (2(n+1))\<close> slice inputs are typical.\<close>
+  have TH: "2 ^ n \<le> 2 * (n + 1) * T"
+    unfolding T_def n_def a_def by (rule typical_half[OF blk disj V m_def d(1) _ k]) (use b4 in simp)
+  have TR: "2 ^ n / (2 * (real n + 1)) \<le> real T"
+  proof -
+    have "real (2 ^ n) \<le> real (2 * (n + 1) * T)" by (rule of_nat_mono[OF TH])
+    then show ?thesis by (simp add: field_simps)
+  qed
+  text \<open>The factor \<open>(2\<^sup>b / (1 - \<delta>))\<^sup>k\<close>.\<close>
+  have K: "(2 ^ b / (1 - \<delta>)) ^ k \<le> 2 ^ n * exp (real k / real w)"
+  proof -
+    have "2 ^ b / (1 - \<delta>) = 2 ^ b * (1 + 1 / real w)" using wpos by (simp add: d1 field_simps)
+    then have "(2 ^ b / (1 - \<delta>)) ^ k = 2 ^ n * (1 + 1 / real w) ^ k"
+      by (simp add: power_mult_distrib power_mult[symmetric] n_def mult.commute)
+    also have "\<dots> \<le> 2 ^ n * exp (real k / real w)" using one_plus_power[OF w(1)] by simp
+    finally show ?thesis .
+  qed
+  have lp: "0 < lam powr y" using lam1 by simp
+  have main: "lam powr y \<le> real (card Fm) * (2 * (real n + 1) * exp (real k / real w))"
+  proof -
+    have "2 ^ n / (2 * (real n + 1)) * lam powr y \<le> real T * lam powr y"
+      using TR lp by (intro mult_right_mono) simp_all
+    also have "\<dots> \<le> real (card Fm) * (2 ^ b / (1 - \<delta>)) ^ k" by (rule FK)
+    also have "\<dots> \<le> real (card Fm) * (2 ^ n * exp (real k / real w))" using K by (intro mult_left_mono) simp_all
+    finally have H: "2 ^ n / (2 * (real n + 1)) * lam powr y \<le> real (card Fm) * (2 ^ n * exp (real k / real w))" .
+    have "lam powr y = (2 * (real n + 1) / 2 ^ n) * (2 ^ n / (2 * (real n + 1)) * lam powr y)" by simp
+    also have "\<dots> \<le> (2 * (real n + 1) / 2 ^ n) * (real (card Fm) * (2 ^ n * exp (real k / real w)))"
+      using H by (rule mult_left_mono) simp
+    also have "\<dots> = real (card Fm) * (2 * (real n + 1) * exp (real k / real w))" by simp
+    finally show ?thesis .
+  qed
+  have Fpos: "0 < real (card Fm)"
+  proof (rule ccontr)
+    assume "\<not> 0 < real (card Fm)"
+    then have "real (card Fm) = 0" by simp
+    then show False using main lp by simp
+  qed
+  text \<open>Taking logarithms.\<close>
+  have L1: "y * log 2 lam \<le> log 2 (real (card Fm)) + log 2 (2 * (real n + 1)) + real k / real w * log 2 (exp 1)"
+  proof -
+    have "y * log 2 lam = log 2 (lam powr y)" using lam1 by (simp add: log_powr)
+    also have "\<dots> \<le> log 2 (real (card Fm) * (2 * (real n + 1) * exp (real k / real w)))"
+      by (rule log_mono[OF _ lp main]) simp
+    also have "\<dots> = log 2 (real (card Fm)) + log 2 (2 * (real n + 1)) + log 2 (exp (real k / real w))"
+      using Fpos by (simp add: log_mult)
+    also have "log 2 (exp (real k / real w)) = real k / real w * log 2 (exp 1)" by (simp add: log_def)
+    finally show ?thesis .
+  qed
+  have yk: "real k / (2 * exp 1 * real w) \<le> y"
+  proof -
+    have ka: "real k / 2 \<le> real (k - a)" by (simp add: a_def)
+    have fr: "1 / (exp 1 * real w) \<le> real (w - 1) ^ (w - 1) / real w ^ w"
+      using decoded_fraction[OF w(1)] by simp
+    have "real k / (2 * exp 1 * real w) = real k / 2 * (1 / (exp 1 * real w))" by simp
+    also have "\<dots> \<le> real (k - a) * (real (w - 1) ^ (w - 1) / real w ^ w)"
+      using ka fr by (intro mult_mono) simp_all
+    also have "\<dots> = y" by (simp add: y_def)
+    finally show ?thesis .
+  qed
+  have loglam: "log 2 ((3 * real b + 2) / 2) / 2 - log 2 (real w) \<le> log 2 lam"
+  proof -
+    have "log 2 ((3 * real b + 2) / 2) \<le> log 2 (L\<^sup>2)"
+      using central_ratio[of b] by (simp add: L_def C_def)
+    also have "\<dots> = 2 * log 2 L" using Lpos by (simp add: log_nat_power)
+    finally have "log 2 ((3 * real b + 2) / 2) / 2 \<le> log 2 L" by simp
+    moreover have "log 2 lam = log 2 L - log 2 (real w)" using Lpos wpos by (simp add: lamL log_divide)
+    ultimately show ?thesis by simp
+  qed
+  have lg0: "0 \<le> log 2 lam" using lam1 by simp
+  have "real k / (2 * exp 1 * real w)
+          * (log 2 ((3 * real b + 2) / 2) / 2 - log 2 (real w) - 2 * exp 1 * log 2 (exp 1))
+        = real k / (2 * exp 1 * real w) * (log 2 ((3 * real b + 2) / 2) / 2 - log 2 (real w))
+          - real k / real w * log 2 (exp 1)"
+    using wpos by (simp add: field_simps)
+  also have "\<dots> \<le> real k / (2 * exp 1 * real w) * log 2 lam - real k / real w * log 2 (exp 1)"
+    by (intro diff_right_mono mult_left_mono loglam) simp
+  also have "\<dots> \<le> y * log 2 lam - real k / real w * log 2 (exp 1)"
+    by (intro diff_right_mono mult_right_mono yk lg0)
+  finally show ?thesis using L1 by (simp add: n_def)
+qed
+
 end
