@@ -28,7 +28,8 @@ ML \<open>
      @{thm hyper_sound_tight}, @{thm hyper_lower_nontight}, @{thm hyper_compress},
      @{thm wdec_eq}, @{thm wfree_determined}, @{thm max_false}, @{thm wide_maxfalse},
      @{thm wide_cost}, @{thm wide_compress}, @{thm wide_cover}, @{thm wide_good},
-     @{thm kraft_partial}, @{thm power_average}, @{thm wide_kraft}, @{thm wide_cover_kraft},
+     @{thm hyper_good}, @{thm kraft_partial}, @{thm power_average}, @{thm kraft_count},
+     @{thm wide_kraft}, @{thm wide_cover_kraft}, @{thm hyper_kraft},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =

@@ -404,6 +404,42 @@ proof -
   then show ?thesis by simp
 qed
 
+text \<open>A tight coordinate is decoded under a \<open>(r-1)\<^sup>r\<^sup>-\<^sup>1 / r\<^sup>r\<close> fraction of the colourings.\<close>
+
+lemma hyper_good:
+  fixes k :: nat and S :: "'j \<Rightarrow> nat set"
+  assumes sc: "\<forall>j\<in>J. S j \<subseteq> {..<k} \<and> card (S j) \<le> r" and r: "1 \<le> r"
+    and l: "l \<in> htight J G S k u" and C_def: "C = {..<k} \<rightarrow>\<^sub>E {..<r}"
+  shows "r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. l \<notin> hfree J G S k (cord k c) u}"
+proof -
+  define F where "F c = hfree J G S k (cord k c) u" for c
+  obtain j where lk: "l < k" and w: "htw J G S u l j" using l by (auto simp: htight_def)
+  have j: "j \<in> J" "l \<in> S j" using w by (simp_all add: htw_def)
+  have Sk: "S j \<subseteq> {..<k}" and Sr: "card (S j) \<le> r" using sc j(1) by auto
+  have finS: "finite (S j)" using Sk by (rule finite_subset) simp
+  have Ek: "S j - {l} \<subseteq> {..<k} - {l}" using Sk by blast
+  have cE: "card (S j - {l}) \<le> r - 1" using Sr j(2) finS by simp
+  have sub: "{c \<in> C. \<forall>e\<in>S j - {l}. c e < c l} \<subseteq> {c \<in> C. l \<notin> F c}"
+  proof
+    fix c assume c: "c \<in> {c \<in> C. \<forall>e\<in>S j - {l}. c e < c l}"
+    have "\<forall>i\<in>S j - {l}. cord k c i < cord k c l"
+    proof
+      fix i assume i: "i \<in> S j - {l}"
+      then have "c i < c l" "i < k" using c Sk by auto
+      then show "cord k c i < cord k c l" by (rule cord_less)
+    qed
+    then have "l \<notin> F c" using w by (auto simp: F_def hfree_def)
+    then show "c \<in> {c \<in> C. l \<notin> F c}" using c by simp
+  qed
+  have finC: "finite C" by (simp add: C_def finite_PiE)
+  have fin: "finite {c \<in> C. l \<notin> F c}" using finC by simp
+  have "r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. \<forall>e\<in>S j - {l}. c e < c l}"
+    unfolding C_def by (rule good_colorings[OF lk Ek cE r])
+  also have "\<dots> \<le> r ^ r * card {c \<in> C. l \<notin> F c}"
+    using sub fin by (intro mult_left_mono card_mono) simp_all
+  finally show ?thesis by (simp add: F_def)
+qed
+
 subsection \<open>The counting theorem\<close>
 
 theorem hyper_compress:
@@ -455,33 +491,7 @@ proof -
     have tu: "t \<le> card (htight J G S k u)" using u by (simp add: U_def)
     define F where "F c = hfree J G S k (cord k c) u" for c
     have goodl: "\<forall>l\<in>htight J G S k u. r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. l \<notin> F c}"
-    proof
-      fix l assume l: "l \<in> htight J G S k u"
-      then obtain j where lk: "l < k" and w: "htw J G S u l j" by (auto simp: htight_def)
-      have j: "j \<in> J" "l \<in> S j" using w by (simp_all add: htw_def)
-      have Sk: "S j \<subseteq> {..<k}" and Sr: "card (S j) \<le> r" using sc j(1) by auto
-      have finS: "finite (S j)" using Sk by (rule finite_subset) simp
-      have Ek: "S j - {l} \<subseteq> {..<k} - {l}" using Sk by blast
-      have cE: "card (S j - {l}) \<le> r - 1" using Sr j(2) finS by simp
-      have sub: "{c \<in> C. \<forall>e\<in>S j - {l}. c e < c l} \<subseteq> {c \<in> C. l \<notin> F c}"
-      proof
-        fix c assume c: "c \<in> {c \<in> C. \<forall>e\<in>S j - {l}. c e < c l}"
-        have "\<forall>i\<in>S j - {l}. cord k c i < cord k c l"
-        proof
-          fix i assume i: "i \<in> S j - {l}"
-          then have "c i < c l" "i < k" using c Sk by auto
-          then show "cord k c i < cord k c l" by (rule cord_less)
-        qed
-        then have "l \<notin> F c" using w by (auto simp: F_def hfree_def)
-        then show "c \<in> {c \<in> C. l \<notin> F c}" using c by simp
-      qed
-      have fin: "finite {c \<in> C. l \<notin> F c}" using finC by simp
-      have "r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. \<forall>e\<in>S j - {l}. c e < c l}"
-        unfolding C_def by (rule good_colorings[OF lk Ek cE r])
-      also have "\<dots> \<le> r ^ r * card {c \<in> C. l \<notin> F c}"
-        using sub fin by (intro mult_left_mono card_mono) simp_all
-      finally show "r ^ k * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> C. l \<notin> F c}" .
-    qed
+      using hyper_good[OF sc r _ C_def] by (simp add: F_def)
     have Fsub: "\<forall>c\<in>C. F c \<subseteq> {..<k}" by (auto simp: F_def hfree_def)
     have Tk: "htight J G S k u \<subseteq> {..<k}" by (auto simp: htight_def)
     obtain c where c: "c \<in> C" and cF: "card (F c) * r ^ r + t * (r - 1) ^ (r - 1) \<le> k * r ^ r"
