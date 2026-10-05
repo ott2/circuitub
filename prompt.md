@@ -76,7 +76,29 @@ We are now extending the ideas in new directions. The live document is
   - Pitfalls: `o` is composition, so don't use it as a bound variable. Instantiate
     `kraft_partial` with `where enc = … and Opt = … and wo = …`.
 
-The session is `Majority_AC0` (17 theories, ~6200 lines). `isabelle/Audit.thy` lists every
+- `isabelle/Binomial_Estimates.thy` (imports `Complex_Main` only): elementary analytic
+  estimates.
+  - `central_binomial`: $\binom{b}{\lfloor b/2\rfloor}^2 (3b+2) \le 2 \cdot 4^b$;
+    `central_ratio`: the real form $(3b+2)/2 \le (2^b/\binom{b}{\lfloor b/2\rfloor})^2$.
+  - `slice_lower`: $2^n \le (n+1)\binom{n}{\lfloor n/2\rfloor}$.
+  - `binomial_moment`, `chebyshev_window`: Chebyshev for block weights, window
+    $[m-d, m+d]$ with $m = \lfloor b/2\rfloor$.
+  - `window_range`, `window_lower`, `window_beta`: the binomials in the window.
+  - `decoded_fraction`: $(w-1)^{w-1}/w^w \ge 1/(ew)$; `one_plus_power`.
+- `isabelle/Monotone_Formula.thy`: Theorem E′ from an actual formula.
+  - `tw`, `tw_mono`, `tw_cnf`, `tw_sound`: a block-symmetric monotone CNF as a monotone
+    predicate on weight vectors (the up-closure; `sub_with_weights` realizes smaller
+    weights inside an input).
+  - `formula_kraft`: `wide_cover_kraft` summed over the tests of a threshold formula.
+  - `atypical_count`, `typical_half`: half the slice has at most $k/2$ atypical blocks.
+  - `majority_wide_tests`: the explicit bound
+    $\log_2 T \ge \frac{k}{2ew}(\frac12\log_2\frac{3b+2}{2} - \log_2 w - 2e\log_2 e) - \log_2(2(n+1))$.
+  - Pitfalls met: simp unfolds `Suc n choose Suc k` (`binomial_Suc_Suc`) and pushes `int`
+    or `real` through sums before your rewrite fires; use `unfolding` first, then
+    `simp only: ac_simps`. For nonlinear cancellations, AC-normalize to atoms and use
+    `linarith`. Give `log_mono` and `mult_left_mono` explicitly rather than via simp.
+
+The session is `Majority_AC0` (19 theories, ~7100 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -109,6 +131,13 @@ and kept uncommitted.
   $n^{1/3+\varepsilon} \le b \le \sqrt{n \log n}$. The argument breaks even at
   $b \approx (n \log n)^{1/3}$: a decoded block saves $\frac12 \log b$ bits, and locating it
   costs $\log w \approx \log(\sqrt n/b)$ bits.
+- **Theorem E′, finite part, is formal** (`majority_wide_tests`). The side conditions it makes
+  explicit are $2(n+1) \le 2^k$, $w\binom{b}{\lfloor b/2\rfloor} \le 2^b$ ($\lambda \ge 1$),
+  and a window $[m-d, m+d] \subseteq [2, b-2]$ with $d^2 \ge 4b$. All hold in the regime of
+  the paper's contradiction argument. Only the step $w \le z/\log_2\beta + 1$ and the
+  optimization over $n$ remain on paper.
+- **Errors found so far by formalizing:** the documents said `hyper_compress` has exponent
+  $k/(4er)$; it is $k/(2er)$. Nothing wrong was found in Theorem E′.
 
 ## Suggested next steps (§2.10 of the document)
 
@@ -120,8 +149,11 @@ and kept uncommitted.
    overhead, so the formal ingredients cover $r \le n^{1/5-\varepsilon}$. The exponent is
    still $k(1-1/r)^{r-1}/(2r)$ rather than $k/(2r)$. Getting rid of the factor
    $(1-1/r)^{r-1}$ needs random orders (permutations) instead of colourings in `free_sum`.
-3. **The analytic rest of Theorems C and D:** Hoeffding, binomial estimates, PPZ for
-   small $b$.
+3. **The analytic rest:** Theorem E′ is done up to the optimization over $n$. An
+   explicit-constant corollary for fixed $\alpha$ (choose $w = \lfloor z/\log_2\beta\rfloor + 1$,
+   use `window_beta`) would close it. For Theorems C and D, `chebyshev_window` and
+   `central_binomial` replace Hoeffding and $\sqrt{\pi b/2}$. Still missing: the cheap-test
+   split and PPZ for small $b$.
 4. **The fixed-point form** (§2.3).
 
 ## Working rules

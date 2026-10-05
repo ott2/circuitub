@@ -104,11 +104,22 @@ overhead from `hyper_compress` (`hyper_kraft`). So the formal ingredients of the
 $2^{\Omega(\sqrt{n \log n / r})}$ bound for constraints on $r$ blocks now cover every
 $r \le n^{1/5-\varepsilon}$. Before, they covered only $r \log r = o(\log n)$.
 
+`isabelle/Monotone_Formula.thy` and `isabelle/Binomial_Estimates.thy` make the finite part
+of Theorem E′ formal end to end (`majority_wide_tests`). They start from an actual formula:
+an OR of block-symmetric monotone CNFs that computes Majority. The statement is: if every
+test has fewer than $\beta^{w+1}$ clauses, then the number $T$ of tests satisfies
+
+$$\log_2 T \ge \frac{k}{2ew}\left(\tfrac12 \log_2\frac{3b+2}{2} - \log_2 w - 2e\log_2 e\right) - \log_2\bigl(2(n+1)\bigr).$$
+
+The binomial estimates are elementary: a central binomial bound, Chebyshev for block
+weights, and a lower bound for the binomials in the window. Only the final optimization
+over $n$ remains on paper.
+
 ## Contents
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 17 theories, about 6200 lines |
+| `isabelle/` | Session `Majority_AC0`: 19 theories, about 7100 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need $2^{\Omega(\sqrt n \log n)}$ |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
@@ -117,6 +128,8 @@ $r \le n^{1/5-\varepsilon}$. Before, they covered only $r \log r = o(\log n)$.
 | `isabelle/Monotone_Hyper.thy` | Constraints on $r$ blocks: Theorem B by averaging over colourings |
 | `isabelle/Monotone_Wide.thy` | Block-symmetric tests of any scope: decoding waits only for light blocks, which cost about $2^b$ clauses each |
 | `isabelle/Monotone_Kraft.thy` | The counts of `Monotone_Hyper` and `Monotone_Wide` by Kraft and Jensen over all colourings, without the $(2r)^k$ and $(2w)^k$ overheads |
+| `isabelle/Binomial_Estimates.thy` | Central binomial bound, slice size, Chebyshev for block weights, binomials in the window |
+| `isabelle/Monotone_Formula.thy` | Theorem E′ in finite form, from a formula of block-symmetric CNF tests for Majority to an explicit bound on the number of tests |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |

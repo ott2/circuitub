@@ -10,7 +10,7 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | Part 1: block locality | `isabelle/Block_Local.thy` | Formalized and covered by the oracle audit |
-| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy`, `Monotone_Wide.thy`, `Monotone_Kraft.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The main results are Theorems C, D, E and E′: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need $2^{\Theta(\sqrt{n \log n})}$; so do block-symmetric tests of any scope once blocks have size $\ge n^{1/3+\varepsilon}$ |
+| Part 2: monotone tests | `isabelle/Monotone_Pairs.thy`, `Monotone_Cost.thy`, `Monotone_Mixed.thy`, `Monotone_Hyper.thy`, `Monotone_Wide.thy`, `Monotone_Kraft.thy`, `Binomial_Estimates.thy`, `Monotone_Formula.thy` | Formalized results are marked **[F]**; the rest is pen and paper. The finite part of Theorem E′ is formal end to end (`majority_wide_tests`). The main results are Theorems C, D, E and E′: in the shape of the L-R tests, including tests that mix two partitions, monotone formulas need $2^{\Theta(\sqrt{n \log n})}$; so do block-symmetric tests of any scope once blocks have size $\ge n^{1/3+\varepsilon}$ |
 
 Notation:
 - $n$ is the number of variables, $N = n/2$, and Majority means weight $\ge n/2$.
@@ -657,6 +657,51 @@ $c^2 < (3\alpha - 1)/(8e)$. ∎
 At $\alpha = \frac12$ the constant matches Theorem E. The point is the range: the argument
 now works whenever $\sqrt b \gg w$, i.e. $b^{3/2} \gg \sqrt{n \log n}$.
 
+**The finite part, formally (`majority_wide_tests`) [F].** Everything above the
+optimization over $n$ is now formal, starting from the formula itself:
+- **The formula.** `Monotone_Formula.thy` takes a set of tests, each a monotone CNF (a set
+  of clauses) whose value depends only on the block weights. The formula is required to
+  compute Majority with threshold $\lfloor n/2\rfloor$.
+- **Tests as weight predicates.** Each test is turned into a monotone predicate on weight
+  vectors (`tw`, `tw_cnf`, `tw_sound`), so `wide_cover_kraft` applies to it. Summing over
+  the tests gives `formula_kraft`.
+- **The estimates** are in `Binomial_Estimates.thy`, in elementary form:
+  - $\binom{b}{\lfloor b/2\rfloor}^2(3b+2) \le 2 \cdot 4^b$ (`central_binomial`), in place of
+    $\binom{b}{\lfloor b/2\rfloor} \le 2^b/\sqrt{\pi b/2}$;
+  - $2^n \le (n+1)\binom{n}{\lfloor n/2\rfloor}$ (`slice_lower`), in place of $2^n/\sqrt{2n}$;
+  - Chebyshev's inequality for block weights, from
+    $\sum_x \binom{b}{x}(2x-b)^2 = b\,2^b$ (`binomial_moment`, `chebyshev_window`), in place
+    of Hoeffding. So the window is $[m - d, m + d]$ with $d^2 \ge 4b$ instead of
+    $\sqrt{2b}$;
+  - $\binom{b}{m-j} \ge \binom{b}{m} e^{-2j(j+1)/m}$ for $4j \le m$ (`window_lower`,
+    `window_beta`). So $\log_2 \beta \ge b - \log_2(b+1) - O(1)$ for $d \approx 2\sqrt b$;
+  - $(w-1)^{w-1}/w^w \ge 1/(ew)$ and $(1 + 1/w)^k \le e^{k/w}$.
+- **Half the slice is typical (`atypical_count`, `typical_half`).**
+
+The result: if every test has fewer than $\beta^{w+1}$ clauses, where
+$\beta = \binom{b}{m-d-1}$ is the smallest coefficient in the window, then the number $T$
+of tests satisfies
+
+$$\log_2 T \ge \frac{k}{2ew}\left(\tfrac12 \log_2\frac{3b+2}{2} - \log_2 w - 2e\log_2 e\right) - \log_2\bigl(2(n+1)\bigr).$$
+
+Here $2e \log_2 e < 7.85$ and $\frac12\log_2\frac32 > 0.29$. So the bracket is at least the
+paper's $\frac12 \log_2 b - \log_2 w - 8$. The additive term is $\log_2(2(n+1))$ instead of
+$\frac12 \log_2(8n)$, because the slice bound is cruder; this does not affect the asymptotics.
+
+The formal statement makes three side conditions explicit, which the sketch above used
+silently:
+- $2(n+1) \le 2^k$. This is what makes half of the slice typical; the sketch needed
+  $(n+1)e^{-k/2} \le \frac12$.
+- $w \binom{b}{\lfloor b/2\rfloor} \le 2^b$, i.e. $\lambda \ge 1$, so roughly $w \le \sqrt b$.
+  Jensen's step needs it. When it fails, the bracket is negative and the bound says nothing
+  anyway. In the optimization, $w \le 2z/b$, and $2z/b \le \sqrt b$ holds exactly when
+  $\alpha > 1/3$, the same threshold.
+- The window lies inside $[2, b-2]$ and $d^2 \ge 4b$. This needs $b$ above a small constant.
+
+All three hold in the regime of the contradiction argument. The step from $w$ to $z$
+($w \le z/\log_2\beta + 1$) and the optimization over $n$ are still on paper. They are
+routine calculus.
+
 **Where it stops now.** At $b \approx (n \log n)^{1/3}$ the bracket vanishes. A block is
 decoded only under about a $1/w$ fraction of the orders, and identifying the decoded blocks
 costs about $\log w$ bits each. With $w \approx \sqrt{n \log n}/b$ this matches the
@@ -701,12 +746,15 @@ $b^{-k/(2r)}$. Theorem E says nothing beats that rate.
    over the $k!$ permutations, where $\ell$ comes after its $r - 1$ witnesses with probability
    exactly $1/r$. Since `kraft_count` only uses the colourings through `free_sum`, swapping in
    permutations should mostly be a matter of counting them.
-3. **The rest of Theorems C and D.** The parts still on paper:
-   - the Hoeffding estimates for cheap tests and atypical points;
-   - the binomial estimates that turn (B) and (D) into powers of $b$;
-   - the PPZ case for small $b$;
-   - the optimization over $b$.
+3. **The rest of Theorems C and D.** For Theorem E′ the finite part is formal
+   (`majority_wide_tests`, §2.9). The same tools cover most of what C and D still need on
+   paper:
+   - Chebyshev (`chebyshev_window`, `atypical_count`) can replace Hoeffding for atypical
+     points;
+   - `central_binomial` turns (B) and (D) into powers of $b$.
 
-   Formalizing them would need real analysis rather than counting.
+   Still missing are the cheap-test split of Theorem C, the PPZ case for small $b$, and the
+   optimizations over $b$ and $n$. The last is calculus with $o(1)$ terms; an explicit-constant
+   version for fixed $\alpha$ would be the natural formal target.
 4. **The fixed-point form.** Formalize the reformulation in Section 2.3. It is no longer
    needed for Theorem B, but it links the problem to fixed points of networks.
