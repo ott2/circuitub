@@ -38,6 +38,7 @@ ML \<open>
      @{thm window_d}, @{thm beta_half}, @{thm majority_wide_explicit},
      @{thm forced_kraft}, @{thm ppz_count}, @{thm crit_count}, @{thm sigma3_slice},
      @{thm sigma3_threshold}, @{thm majority_depth3_lower}, @{thm majority_depth3_sqrt},
+     @{thm majority_cnfs_lower}, @{thm majority_cnfs_lower_e},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =

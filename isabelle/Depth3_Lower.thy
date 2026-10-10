@@ -836,4 +836,170 @@ proof -
   qed
 qed
 
+section \<open>ORs of narrow CNFs: Remark 1 of the paper is tight\<close>
+
+text \<open>
+  The paper's Remark 1 (\<open>majority_or_of_cnfs\<close>) writes Majority as an OR of \<open>2\<^sup>O\<^sup>(\<^sup>n\<^sup>/\<^sup>w\<^sup>)\<close> CNFs of
+  width \<open>w\<close>, for every \<open>w \<le> 2\<surd>n\<close>.  By PPZ, at least \<open>2\<^sup>n\<^sup>/\<^sup>(\<^sup>2\<^sup>e\<^sup>w\<^sup>)\<^sup>/(n+1)\<close> are needed, for every \<open>w\<close>.
+  So the number of width-\<open>w\<close> CNFs needed is \<open>2\<^sup>\<Theta>\<^sup>(\<^sup>n\<^sup>/\<^sup>w\<^sup>)\<close>.\<close>
+
+lemma critical_clause:
+  assumes X: "csat G X" and nX: "\<not> csat G (X - {i})" and i: "i \<in> X"
+  shows "\<exists>C\<in>G. (i, True) \<in> C \<and> (i, False) \<notin> C \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l)"
+proof -
+  obtain C where C: "C \<in> G" and Cf: "\<forall>l\<in>C. \<not> lv (X - {i}) l" using nX by (auto simp: csat_def)
+  have other: "\<not> lv X l" if "l \<in> C" "fst l \<noteq> i" for l
+    using Cf that by (auto simp: lv_def)
+  obtain l where l: "l \<in> C" "lv X l" using X C by (auto simp: csat_def)
+  then have "fst l = i" using other by blast
+  then have "l = (i, True)" using l(2) i by (cases l) (simp add: lv_def)
+  then have iT: "(i, True) \<in> C" using l(1) by simp
+  have iF: "(i, False) \<notin> C" using Cf by (auto simp: lv_def)
+  show ?thesis using C iT iF other by blast
+qed
+
+lemma CNF_PI2: "CNF w f \<Longrightarrow> PI (Suc (Suc 0)) f"
+  unfolding CNF_def by (force simp: pi_Suc_And sig_Suc_Or)
+
+lemma clause_width:
+  assumes ls: "length ls \<le> w" and i: "(i, True) \<in> clause_of (Or ls)"
+  shows "card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> clause_of (Or ls))} \<le> w - 1"
+proof -
+  define C where "C = clause_of (Or ls)"
+  have Cv: "C = (\<lambda>(v, b). Lit v b) -` set ls" by (auto simp: C_def)
+  have inj: "inj (\<lambda>(v, b). Lit v b :: nat form)" by (auto simp: inj_def)
+  have finC: "finite C" unfolding Cv using inj by (intro finite_vimageI) simp_all
+  have "card C \<le> card (set ls)"
+  proof (rule card_inj_on_le)
+    show "inj_on (\<lambda>(v, b). Lit v b) C" using inj by (rule inj_on_subset) simp
+    show "(\<lambda>(v, b). Lit v b) ` C \<subseteq> set ls" by (auto simp: Cv)
+  qed simp
+  also have "\<dots> \<le> w" using ls card_length[of ls] by simp
+  finally have cC: "card C \<le> w" .
+  have iV: "i \<in> fst ` C" using i by (force simp: C_def)
+  have "{v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<subseteq> fst ` C - {i}" by force
+  then have "card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> card (fst ` C - {i})"
+    using finC by (intro card_mono) simp_all
+  also have "\<dots> = card (fst ` C) - 1" using iV finC by simp
+  also have "\<dots> \<le> card C - 1" using finC card_image_le[of C fst] by simp
+  also have "\<dots> \<le> w - 1" using cC by simp
+  finally show ?thesis by (simp add: C_def)
+qed
+
+theorem majority_cnfs_lower:
+  fixes fs :: "nat form list" and w :: nat
+  assumes cnf: "\<forall>f\<in>set fs. CNF w f" and maj: "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+    and n: "1 \<le> n" and w: "1 \<le> w"
+  shows "2 powr (real n * (w - 1) ^ (w - 1) / (2 * w ^ w)) \<le> real (n + 1) * real (length fs)"
+proof -
+  define t where "t = (n + 1) div 2"
+  define Q :: real where "Q = (w - 1) ^ (w - 1)"
+  define P :: real where "P = w ^ w"
+  define y where "y = real t * Q / P"
+  define Sl where "Sl = {X. X \<subseteq> {..<n} \<and> card X = t}"
+  define AG where "AG f = {X \<in> Sl. csat (cnf_of f) X}" for f
+  have a1: "n \<le> 2 * t" and a2: "2 * t \<le> n + 1" and t1: "1 \<le> t" using n unfolding t_def by presburger+
+  have Q0: "0 \<le> Q" and P0: "0 < P" using w by (simp_all add: Q_def P_def)
+  have ev: "eval (\<lambda>v. v \<in> X) f \<longleftrightarrow> csat (cnf_of f) X" if "f \<in> set fs" for f X
+    using eval_cnf CNF_PI2 cnf that by blast
+  have acc: "\<exists>f\<in>set fs. csat (cnf_of f) X" if "X \<in> Sl" for X
+  proof -
+    have "majority n (\<lambda>v. v \<in> X)" using that a1 by (auto simp: Sl_def majority_def weight_set)
+    then show ?thesis using maj ev by blast
+  qed
+  have rej: "\<not> csat (cnf_of f) X" if "f \<in> set fs" "X \<subseteq> {..<n}" "card X + 1 = t" for f X
+  proof -
+    have "\<not> majority n (\<lambda>v. v \<in> X)" using that a2 by (auto simp: majority_def weight_set)
+    then show ?thesis using maj ev that(1) by blast
+  qed
+  have AGb: "real (card (AG f)) * 2 powr y \<le> 2 ^ n" if f: "f \<in> set fs" for f
+    unfolding y_def Q_def P_def
+  proof (rule ppz_count[OF _ w])
+    show "AG f \<subseteq> {X. X \<subseteq> {..<n} \<and> csat (cnf_of f) X \<and> t \<le> card X}"
+      by (auto simp: AG_def Sl_def)
+    obtain cs where fcs: "f = And cs"
+      and cs: "\<forall>c\<in>set cs. \<exists>ls. c = Or ls \<and> length ls \<le> w \<and> (\<forall>l\<in>set ls. \<exists>v b. l = Lit v b)"
+      using cnf f by (auto simp: CNF_def)
+    show "\<forall>X\<in>AG f. \<forall>i\<in>X. \<exists>C\<in>cnf_of f. (i, True) \<in> C \<and> (i, False) \<notin> C
+        \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l) \<and> card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> w - 1"
+    proof (intro ballI)
+      fix X i assume X: "X \<in> AG f" and i: "i \<in> X"
+      have XS: "X \<subseteq> {..<n}" "card X = t" "csat (cnf_of f) X" using X by (auto simp: AG_def Sl_def)
+      have finX: "finite X" using XS(1) by (rule finite_subset) simp
+      have "card (X - {i}) + 1 = t" using XS(2) i finX t1 by (simp add: card_Diff_singleton)
+      then have "\<not> csat (cnf_of f) (X - {i})" using rej f XS(1) by blast
+      then obtain C where C: "C \<in> cnf_of f" "(i, True) \<in> C" "(i, False) \<notin> C"
+        and o: "\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l"
+        using critical_clause[OF XS(3) _ i] by blast
+      obtain c where c: "c \<in> set cs" "C = clause_of c" using C(1) by (auto simp: fcs)
+      obtain ls where ls: "c = Or ls" "length ls \<le> w" using cs c(1) by blast
+      have "card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> w - 1"
+        using clause_width[OF ls(2), of i n] C(2) by (simp add: c(2) ls(1))
+      then show "\<exists>C\<in>cnf_of f. (i, True) \<in> C \<and> (i, False) \<notin> C
+          \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l) \<and> card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> w - 1"
+        using C o by blast
+    qed
+  qed
+  have cover: "Sl \<subseteq> (\<Union>f\<in>set fs. AG f)" using acc by (auto simp: AG_def)
+  have "n choose (n div 2) = n choose t"
+  proof -
+    have "n - n div 2 = t" unfolding t_def by presburger
+    then show ?thesis using binomial_symmetric[of "n div 2" n] by simp
+  qed
+  also have "\<dots> = card Sl" by (simp add: Sl_def n_subsets)
+  also have "\<dots> \<le> card (\<Union>f\<in>set fs. AG f)"
+  proof (rule card_mono[OF _ cover])
+    have "(\<Union>f\<in>set fs. AG f) \<subseteq> Pow {..<n}" by (auto simp: AG_def Sl_def)
+    then show "finite (\<Union>f\<in>set fs. AG f)" by (rule finite_subset) simp
+  qed
+  also have "\<dots> \<le> (\<Sum>f\<in>set fs. card (AG f))" by (rule card_UN_le) simp
+  finally have nat: "n choose (n div 2) \<le> (\<Sum>f\<in>set fs. card (AG f))" .
+  have "(2::real) ^ n \<le> real (n + 1) * real (n choose (n div 2))"
+  proof -
+    have "(2::nat) ^ n \<le> (n + 1) * (n choose (n div 2))" by (rule slice_lower)
+    then have "real ((2::nat) ^ n) \<le> real ((n + 1) * (n choose (n div 2)))" by (simp only: of_nat_le_iff)
+    then show ?thesis by (simp only: of_nat_mult of_nat_power) simp
+  qed
+  also have "\<dots> \<le> real (n + 1) * (\<Sum>f\<in>set fs. real (card (AG f)))"
+  proof -
+    have "real (n choose (n div 2)) \<le> real (\<Sum>f\<in>set fs. card (AG f))" using nat by (simp only: of_nat_le_iff)
+    then show ?thesis by (intro mult_left_mono) simp_all
+  qed
+  also have "\<dots> \<le> real (n + 1) * (\<Sum>f\<in>set fs. 2 ^ n / 2 powr y)"
+    using AGb by (intro mult_left_mono sum_mono) (simp_all add: le_divide_eq)
+  also have "\<dots> = real (n + 1) * (real (card (set fs)) * 2 ^ n / 2 powr y)" by simp
+  also have "\<dots> \<le> real (n + 1) * (real (length fs) * 2 ^ n / 2 powr y)"
+    using card_length[of fs] by (intro mult_left_mono divide_right_mono mult_right_mono) simp_all
+  finally have "(2::real) ^ n \<le> real (n + 1) * real (length fs) * 2 ^ n / 2 powr y" by simp
+  then have "2 ^ n * 2 powr y \<le> real (n + 1) * real (length fs) * 2 ^ n" by (simp add: le_divide_eq)
+  then have Y: "2 powr y \<le> real (n + 1) * real (length fs)" by (simp add: mult.commute)
+  have "real n * Q / (2 * P) \<le> y"
+  proof -
+    have "real n \<le> 2 * real t" using a1 by simp
+    then have "real n * (Q / (2 * P)) \<le> 2 * real t * (Q / (2 * P))"
+      using Q0 P0 by (intro mult_right_mono) simp_all
+    then show ?thesis using P0 by (simp add: y_def field_simps)
+  qed
+  then have "2 powr (real n * Q / (2 * P)) \<le> 2 powr y" by (intro powr_mono) simp_all
+  then have "2 powr (real n * Q / (2 * P)) \<le> real (n + 1) * real (length fs)" using Y by (rule order.trans)
+  then show ?thesis by (simp add: Q_def P_def)
+qed
+
+corollary majority_cnfs_lower_e:
+  fixes fs :: "nat form list" and w :: nat
+  assumes "\<forall>f\<in>set fs. CNF w f" "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+    and "1 \<le> n" and w: "1 \<le> w"
+  shows "2 powr (real n / (2 * exp 1 * real w)) \<le> real (n + 1) * real (length fs)"
+proof -
+  have fr: "1 / (exp 1 * real w) \<le> real ((w - 1) ^ (w - 1)) / real (w ^ w)" by (rule decoded_fraction[OF w])
+  have "real n / (2 * exp 1 * real w) = real n / 2 * (1 / (exp 1 * real w))" by simp
+  also have "\<dots> \<le> real n / 2 * (real ((w - 1) ^ (w - 1)) / real (w ^ w))"
+    using fr by (intro mult_left_mono) simp_all
+  also have "\<dots> = real n * (w - 1) ^ (w - 1) / (2 * w ^ w)" by simp
+  finally have "2 powr (real n / (2 * exp 1 * real w)) \<le> 2 powr (real n * (w - 1) ^ (w - 1) / (2 * w ^ w))"
+    by simp
+  also have "\<dots> \<le> real (n + 1) * real (length fs)" using majority_cnfs_lower assms by blast
+  finally show ?thesis .
+qed
+
 end
