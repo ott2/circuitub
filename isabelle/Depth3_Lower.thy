@@ -562,4 +562,157 @@ proof -
   then show ?thesis by (simp add: y_def distrib_left)
 qed
 
+section \<open>Majority\<close>
+
+text \<open>Complementing the variables below \<open>n\<close>.\<close>
+
+fun cflip :: "nat \<Rightarrow> nat form \<Rightarrow> nat form" where
+  "cflip n (Lit v b) = Lit v (if v < n then \<not> b else b)"
+| "cflip n (And fs) = And (map (cflip n) fs)"
+| "cflip n (Or fs) = Or (map (cflip n) fs)"
+
+lemma eval_cflip: "eval \<sigma> (cflip n f) = eval (\<lambda>v. if v < n then \<not> \<sigma> v else \<sigma> v) f"
+  by (induction f) auto
+
+lemma gates_cflip: "gates (cflip n f) = gates f"
+proof (induction f)
+  case (And fs)
+  then show ?case by (simp add: comp_def cong: map_cong)
+next
+  case (Or fs)
+  then show ?case by (simp add: comp_def cong: map_cong)
+qed simp
+
+lemma sig_pi_cflip: "(SIG d f \<longrightarrow> SIG d (cflip n f)) \<and> (PI d f \<longrightarrow> PI d (cflip n f))"
+proof (induction d arbitrary: f)
+  case 0
+  then show ?case by (cases f) auto
+next
+  case (Suc d)
+  then show ?case by (cases f) auto
+qed
+
+lemma choose_mid: "1 \<le> n \<Longrightarrow> n choose (n div 2) \<le> 2 * (n choose (n div 2 + 1))"
+proof -
+  assume n: "1 \<le> n"
+  define m where "m = n div 2"
+  have e: "Suc m * (n choose Suc m) = (n - m) * (n choose m)"
+    using binomial_absorption[of m n] binomial_absorb_comp[of n m] by simp
+  have le: "Suc m \<le> 2 * (n - m)" using n unfolding m_def by presburger
+  have "Suc m * (n choose m) \<le> 2 * (n - m) * (n choose m)" using le by (rule mult_right_mono) simp
+  also have "\<dots> = Suc m * (2 * (n choose Suc m))" using e by (simp add: algebra_simps)
+  finally have "Suc m * (n choose m) \<le> Suc m * (2 * (n choose Suc m))" .
+  then have "n choose m \<le> 2 * (n choose Suc m)" by (simp only: Suc_mult_le_cancel1)
+  then show ?thesis by (simp add: m_def)
+qed
+
+lemma majority_slices:
+  fixes f :: "nat form" and r :: nat
+  assumes f: "SIG 3 f \<or> PI 3 f" "\<forall>\<sigma>. eval \<sigma> f = majority n \<sigma>" and n: "1 \<le> n" and r: "1 \<le> r"
+  shows "\<exists>t. n \<le> 2 * t \<and> real (n choose (n div 2)) \<le> 2 * real (n choose t)
+           \<and> real (n choose t) \<le> real (gates f)
+               * (2 ^ n / 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r) + real n * 2 ^ (n - Suc r))"
+proof (cases "SIG 3 f")
+  case True
+  define t where "t = (n + 1) div 2"
+  have a1: "n \<le> 2 * t" and a2: "2 * t \<le> n + 1" and t1: "1 \<le> t" using n unfolding t_def by presburger+
+  have bound: "real (n choose t) \<le> real (gates f)
+               * (2 ^ n / 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r) + real n * 2 ^ (n - Suc r))"
+  proof (rule sigma3_threshold[OF True t1 r])
+    show "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X = t \<longrightarrow> eval (\<lambda>v. v \<in> X) f"
+      using f(2) a1 by (auto simp: majority_def weight_set)
+    show "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X + 1 = t \<longrightarrow> \<not> eval (\<lambda>v. v \<in> X) f"
+      using f(2) a2 by (auto simp: majority_def weight_set)
+  qed
+  have "n choose t = n choose (n div 2)"
+  proof -
+    have "n - n div 2 = t" unfolding t_def by presburger
+    then show ?thesis using binomial_symmetric[of "n div 2" n] by simp
+  qed
+  then show ?thesis using a1 bound by (intro exI[of _ t]) simp
+next
+  case False
+  then have pf: "PI 3 f" using f(1) by blast
+  define t where "t = n div 2 + 1"
+  define h where "h = cflip n (dual f)"
+  have a1: "n < 2 * t" and a2: "2 * (n div 2) \<le> n" and t1: "1 \<le> t" unfolding t_def by presburger+
+  have hS: "SIG 3 h" using sig_dual[OF pf] sig_pi_cflip by (simp add: h_def)
+  have gh: "gates h = gates f" by (simp add: h_def gates_cflip)
+  have ev: "eval (\<lambda>v. v \<in> X) h \<longleftrightarrow> n < 2 * card X" if X: "X \<subseteq> {..<n}" for X
+  proof -
+    have cX: "card X \<le> n" using X card_mono[of "{..<n}" X] by simp
+    have "(\<lambda>v. if v < n then \<not> v \<in> X else v \<in> X) = (\<lambda>v. v \<in> {..<n} - X)" using X by auto
+    then have "eval (\<lambda>v. v \<in> X) h \<longleftrightarrow> \<not> majority n (\<lambda>v. v \<in> {..<n} - X)"
+      using f(2) by (simp add: h_def eval_cflip)
+    also have "majority n (\<lambda>v. v \<in> {..<n} - X) \<longleftrightarrow> n \<le> 2 * (n - card X)"
+    proof -
+      have "weight n (\<lambda>v. v \<in> {..<n} - X) = card ({..<n} - X)" by (rule weight_set) blast
+      also have "\<dots> = n - card X"
+        using X by (subst card_Diff_subset) (auto intro: finite_subset)
+      finally show ?thesis by (simp only: majority_def)
+    qed
+    finally show ?thesis using cX by linarith
+  qed
+  have bound: "real (n choose t) \<le> real (gates h)
+               * (2 ^ n / 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r) + real n * 2 ^ (n - Suc r))"
+  proof (rule sigma3_threshold[OF hS t1 r])
+    show "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X = t \<longrightarrow> eval (\<lambda>v. v \<in> X) h" using ev a1 by simp
+    show "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X + 1 = t \<longrightarrow> \<not> eval (\<lambda>v. v \<in> X) h"
+    proof (intro allI impI)
+      fix X assume "X \<subseteq> {..<n}" "card X + 1 = t"
+      then show "\<not> eval (\<lambda>v. v \<in> X) h" using ev a2 by (simp add: t_def)
+    qed
+  qed
+  have "real (n choose (n div 2)) \<le> 2 * real (n choose t)"
+  proof -
+    have "n choose (n div 2) \<le> 2 * (n choose t)" unfolding t_def using n by (rule choose_mid)
+    then have "real (n choose (n div 2)) \<le> real (2 * (n choose t))" by (simp only: of_nat_le_iff)
+    then show ?thesis by simp
+  qed
+  then show ?thesis using a1 bound gh by (intro exI[of _ t]) simp
+qed
+
+text \<open>
+  The depth-3 lower bound, explicitly: for every \<open>r \<ge> 1\<close>, a \<open>\<Sigma>\<^sub>3\<close> or \<open>\<Pi>\<^sub>3\<close> formula for
+  Majority on \<open>n\<close> variables has size \<open>s\<close> with
+  \<open>1 \<le> 2(n+1) s (2\<^sup>-\<^sup>y + n 2\<^sup>-\<^sup>r\<^sup>-\<^sup>1)\<close>, where \<open>y = n (r-1)\<^sup>r\<^sup>-\<^sup>1 / (2 r\<^sup>r) \<ge> n/(2er)\<close>.\<close>
+
+theorem majority_depth3_lower:
+  fixes f :: "nat form" and r :: nat
+  assumes f: "SIG 3 f \<or> PI 3 f" "\<forall>\<sigma>. eval \<sigma> f = majority n \<sigma>" and n: "1 \<le> n" and r: "1 \<le> r"
+  shows "2 ^ n \<le> 2 * real (n + 1) * real (gates f)
+           * (2 ^ n / 2 powr (real n * (r - 1) ^ (r - 1) / (2 * r ^ r)) + real n * 2 ^ (n - Suc r))"
+proof -
+  obtain t where a: "n \<le> 2 * t" and b: "real (n choose (n div 2)) \<le> 2 * real (n choose t)"
+    and c: "real (n choose t) \<le> real (gates f)
+               * (2 ^ n / 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r) + real n * 2 ^ (n - Suc r))"
+    using majority_slices[OF f n r] by blast
+  define Q :: real where "Q = (r - 1) ^ (r - 1)"
+  define P :: real where "P = r ^ r"
+  have Q0: "0 \<le> Q" and P0: "0 < P" using r by (simp_all add: Q_def P_def)
+  have "real n * Q / (2 * P) \<le> real t * Q / P"
+  proof -
+    have "real n \<le> 2 * real t" using a by simp
+    then have "real n * (Q / (2 * P)) \<le> 2 * real t * (Q / (2 * P))"
+      using Q0 P0 by (intro mult_right_mono) simp_all
+    then show ?thesis using P0 by (simp add: field_simps)
+  qed
+  then have "(2::real) ^ n / 2 powr (real t * Q / P) \<le> 2 ^ n / 2 powr (real n * Q / (2 * P))"
+    by (intro divide_left_mono) simp_all
+  then have c': "real (n choose t) \<le> real (gates f)
+      * (2 ^ n / 2 powr (real n * Q / (2 * P)) + real n * 2 ^ (n - Suc r))"
+    using c unfolding Q_def P_def by (smt (verit) mult_left_mono of_nat_0_le_iff)
+  have "(2::real) ^ n \<le> real (n + 1) * real (n choose (n div 2))"
+  proof -
+    have "(2::nat) ^ n \<le> (n + 1) * (n choose (n div 2))" by (rule slice_lower)
+    then have "real ((2::nat) ^ n) \<le> real ((n + 1) * (n choose (n div 2)))" by (simp only: of_nat_le_iff)
+    then show ?thesis by (simp add: distrib_right)
+  qed
+  also have "\<dots> \<le> real (n + 1) * (2 * real (n choose t))" using b by (intro mult_left_mono) simp_all
+  also have "\<dots> \<le> real (n + 1) * (2 * (real (gates f)
+      * (2 ^ n / 2 powr (real n * Q / (2 * P)) + real n * 2 ^ (n - Suc r))))"
+    using c' by (intro mult_left_mono) simp_all
+  finally show ?thesis by (simp add: Q_def P_def algebra_simps)
+qed
+
 end
