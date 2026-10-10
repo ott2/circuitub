@@ -35,6 +35,7 @@ ML \<open>
      @{thm decoded_fraction},
      @{thm tw_cnf}, @{thm tw_sound}, @{thm formula_kraft}, @{thm atypical_count},
      @{thm typical_half}, @{thm majority_wide_tests}, @{thm majority_wide_size}, @{thm beta_log},
+     @{thm window_d}, @{thm beta_half}, @{thm majority_wide_explicit},
      @{thm forced_kraft}, @{thm ppz_count}, @{thm crit_count}, @{thm sigma3_slice},
      @{thm sigma3_threshold}, @{thm majority_depth3_lower}, @{thm majority_depth3_sqrt},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];

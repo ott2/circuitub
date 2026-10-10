@@ -660,4 +660,218 @@ proof -
   ultimately show ?thesis by simp
 qed
 
+text \<open>A window of half-width \<open>d \<approx> 2\<surd>b\<close> exists once \<open>b \<ge> 300\<close>.\<close>
+
+lemma window_d:
+  fixes b :: nat
+  assumes b: "300 \<le> b"
+  shows "\<exists>d. 4 * b \<le> d\<^sup>2 \<and> (d + 1) * (d + 2) \<le> 5 * b \<and> 4 * (d + 1) \<le> b div 2"
+proof -
+  define s where "s = sqrt (real b)"
+  define d where "d = nat \<lceil>2 * s\<rceil>"
+  have s0: "0 \<le> s" by (simp add: s_def)
+  have ss: "s * s = real b" by (simp add: s_def)
+  have s17: "17 \<le> s"
+  proof (rule ccontr)
+    assume "\<not> 17 \<le> s"
+    then have "s * s \<le> 17 * 17" using s0 by (intro mult_mono) simp_all
+    then show False using ss b by simp
+  qed
+  have dlo: "2 * s \<le> real d" by (simp add: d_def real_nat_ceiling_ge)
+  have dhi: "real d \<le> 2 * s + 1"
+  proof -
+    have "0 \<le> \<lceil>2 * s\<rceil>" using s0 by simp
+    then have "real d = of_int \<lceil>2 * s\<rceil>" by (simp add: d_def)
+    also have "\<dots> \<le> 2 * s + 1" by (rule of_int_ceiling_le_add_one)
+    finally show ?thesis .
+  qed
+  have m: "real b - 1 \<le> 2 * real (b div 2)"
+  proof -
+    have "b \<le> 2 * (b div 2) + 1" by simp
+    then have "real b \<le> real (2 * (b div 2) + 1)" by (simp only: of_nat_le_iff)
+    then show ?thesis by simp
+  qed
+  have A: "4 * b \<le> d\<^sup>2"
+  proof -
+    have "(2 * s) * (2 * s) \<le> real d * real d" using dlo s0 by (intro mult_mono) simp_all
+    then have "real (4 * b) \<le> real (d\<^sup>2)" using ss by (simp add: power2_eq_square)
+    then show ?thesis by (simp only: of_nat_le_iff)
+  qed
+  have B: "(d + 1) * (d + 2) \<le> 5 * b"
+  proof -
+    have "(real d + 1) * (real d + 2) \<le> (2 * s + 2) * (2 * s + 3)" using dhi by (intro mult_mono) simp_all
+    also have "\<dots> = 4 * (s * s) + 10 * s + 6" by (simp add: algebra_simps)
+    also have "\<dots> \<le> 5 * (s * s)"
+    proof -
+      have "17 * s \<le> s * s" using s17 s0 by (intro mult_right_mono) simp_all
+      then show ?thesis using s17 by linarith
+    qed
+    finally have "real ((d + 1) * (d + 2)) \<le> real (5 * b)" using ss by (simp add: algebra_simps)
+    then show ?thesis by (simp only: of_nat_le_iff)
+  qed
+  have C: "4 * (d + 1) \<le> b div 2"
+  proof -
+    have "17 * s \<le> s * s" using s17 s0 by (intro mult_right_mono) simp_all
+    then have "16 * s + 17 \<le> s * s" using s17 by linarith
+    then have q: "16 * s + 16 \<le> s * s - 1" by linarith
+    have "2 * (4 * (real d + 1)) = 8 * (real d + 1)" by simp
+    also have "\<dots> \<le> 8 * (2 * s + 2)" using dhi by (intro mult_left_mono) simp_all
+    also have "\<dots> = 16 * s + 16" by simp
+    also have "\<dots> \<le> s * s - 1" by (rule q)
+    also have "\<dots> = real b - 1" using ss by simp
+    also have "\<dots> \<le> 2 * real (b div 2)" by (rule m)
+    finally have "4 * (real d + 1) \<le> real (b div 2)" by simp
+    then have "real (4 * (d + 1)) \<le> real (b div 2)" by simp
+    then show ?thesis by (simp only: of_nat_le_iff)
+  qed
+  show ?thesis using A B C by blast
+qed
+
+lemma four_le_pow: "5 \<le> m \<Longrightarrow> 4 * m + 4 \<le> (2::nat) ^ m"
+proof (induction m rule: nat_induct_at_least)
+  case base
+  then show ?case by simp
+next
+  case (Suc m)
+  then show ?case by simp
+qed
+
+lemma ln2_ge_half: "1 / 2 \<le> ln (2::real)"
+proof -
+  have m: "1 / 2 \<le> exp (- (1 / 2 :: real))" using exp_ge_add_one_self[of "- (1 / 2 :: real)"] by simp
+  have e: "exp (1 / 2 :: real) * exp (- (1 / 2)) = 1" by (rule exp_minus_inverse)
+  have "exp (1 / 2 :: real) * (1 / 2) \<le> exp (1 / 2) * exp (- (1 / 2))"
+    using m by (intro mult_left_mono) simp_all
+  then have "exp (1 / 2 :: real) \<le> 2" using e by simp
+  then show ?thesis by (simp add: ln_ge_iff[symmetric])
+qed
+
+text \<open>With such a window, \<open>log\<^sub>2 \<beta> \<ge> b/2\<close>.\<close>
+
+lemma beta_half:
+  assumes b: "300 \<le> b" and d: "(d + 1) * (d + 2) \<le> 5 * b" "4 * (d + 1) \<le> b div 2"
+  shows "real b / 2 \<le> log 2 (real (b choose (b div 2 - d - 1)))"
+proof -
+  define m where "m = b div 2"
+  have bl: "real b - log 2 (real b + 1) - 2 * real (d + 1) * real (d + 2) / (real m * ln 2)
+              \<le> log 2 (real (b choose (m - d - 1)))"
+    by (rule beta_log) (use d(2) in \<open>simp_all add: m_def\<close>)
+  have mb: "real b \<le> 3 * real m"
+  proof -
+    have "b \<le> 3 * (b div 2)" using b by simp
+    then show ?thesis by (simp add: m_def)
+  qed
+  have m0: "0 < real m" using b by (simp add: m_def)
+  have l2: "1 / 2 \<le> ln (2::real)" by (rule ln2_ge_half)
+  have corr: "2 * real (d + 1) * real (d + 2) / (real m * ln 2) \<le> 60"
+  proof -
+    have "2 * real (d + 1) * real (d + 2) = 2 * real ((d + 1) * (d + 2))"
+      by (simp only: of_nat_mult mult.assoc)
+    also have "\<dots> \<le> 2 * real (5 * b)" using d(1) by (simp only: of_nat_le_iff mult_le_cancel_left) simp
+    also have "\<dots> \<le> 60 * (real m * (1 / 2))" using mb by simp
+    also have "\<dots> \<le> 60 * (real m * ln 2)" using l2 m0 by (intro mult_left_mono) simp_all
+    finally show ?thesis using m0 l2 by (simp add: divide_le_eq)
+  qed
+  have lg: "log 2 (real b + 1) \<le> real b / 4"
+  proof -
+    have "4 * (b div 4) + 4 \<le> 2 ^ (b div 4)" using b by (intro four_le_pow) simp
+    moreover have "b + 1 \<le> 4 * (b div 4) + 4" by simp
+    ultimately have "real (b + 1) \<le> real ((2::nat) ^ (b div 4))" by (simp only: of_nat_le_iff)
+    then have "real b + 1 \<le> 2 ^ (b div 4)" by simp
+    then have "log 2 (real b + 1) \<le> log 2 (2 ^ (b div 4))" by (intro log_mono) simp_all
+    also have "\<dots> = real (b div 4)" by (simp add: log_nat_power)
+    also have "\<dots> \<le> real b / 4" by (simp add: real_of_nat_div)
+    finally show ?thesis .
+  qed
+  have "real b / 2 \<le> real b - log 2 (real b + 1) - 2 * real (d + 1) * real (d + 2) / (real m * ln 2)"
+    using corr lg b by simp
+  then show ?thesis using bl by (simp add: m_def)
+qed
+
+text \<open>
+  Theorem E\<Zprime>, explicitly.  Put \<open>Z = max z b\<close>.  If \<open>b \<ge> 300\<close>, the formula has at most \<open>2\<^sup>z\<close>
+  tests and every test at most \<open>2\<^sup>z\<close> clauses, then
+  \<open>n (\<onehalf> log\<^sub>2((3b+2)/2) - log\<^sub>2(3Z/b) - 2e log\<^sub>2 e) \<le> 6e Z (Z + log\<^sub>2(2(n+1)))\<close>.
+  For \<open>n\<^sup>\<alpha> \<le> b \<le> \<surd>(n log n)\<close> and \<open>\<alpha> > 1/3\<close> this forces \<open>z = \<Omega>(\<surd>((3\<alpha>-1) n log n))\<close>.\<close>
+
+theorem majority_wide_explicit:
+  fixes Fm :: "'a set set set" and blk :: "nat \<Rightarrow> 'a set" and z :: real
+  assumes blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
+    and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}" and V: "V = (\<Union>i<k. blk i)"
+    and Fm: "finite Fm" "\<forall>cs\<in>Fm. finite cs"
+    and sym: "\<forall>cs\<in>Fm. \<forall>X\<subseteq>V. \<forall>Y\<subseteq>V. bw blk k X = bw blk k Y \<longrightarrow> cnf_val cs X = cnf_val cs Y"
+    and maj: "\<forall>X\<subseteq>V. (\<exists>cs\<in>Fm. cnf_val cs X) \<longleftrightarrow> (k * b) div 2 \<le> card X"
+    and b: "300 \<le> b" and k: "2 * (k * b + 1) \<le> 2 ^ k"
+    and z: "real (card Fm) \<le> 2 powr z" "\<forall>cs\<in>Fm. real (card cs) \<le> 2 powr z"
+    and Z: "Z = max z (real b)"
+  shows "real (k * b) * (log 2 ((3 * real b + 2) / 2) / 2 - log 2 (3 * Z / real b)
+           - 2 * exp 1 * log 2 (exp 1))
+         \<le> 6 * exp 1 * Z * (Z + log 2 (2 * (real (k * b) + 1)))"
+proof -
+  obtain d where d: "4 * b \<le> d\<^sup>2" "(d + 1) * (d + 2) \<le> 5 * b" "4 * (d + 1) \<le> b div 2"
+    using window_d[OF b] by blast
+  have d2: "d + 2 \<le> b div 2" using d(3) by simp
+  define lb where "lb = log 2 (real (b choose (b div 2 - d - 1)))"
+  define W where "W = Z / lb + 1"
+  define B where "B x = log 2 ((3 * real b + 2) / 2) / 2 - log 2 x - 2 * exp 1 * log 2 (exp 1)" for x :: real
+  define Ln where "Ln = log 2 (2 * (real (k * b) + 1))"
+  have lbh: "real b / 2 \<le> lb" unfolding lb_def by (rule beta_half[OF b d(2) d(3)])
+  have b0: "0 < real b" using b by simp
+  have lb0: "0 < lb" using lbh b0 by simp
+  have Zb: "real b \<le> Z" and zZ: "z \<le> Z" by (simp_all add: Z)
+  have Z0: "0 < Z" using Zb b0 by simp
+  have zZ': "real (card Fm) \<le> 2 powr Z" "\<forall>cs\<in>Fm. real (card cs) \<le> 2 powr Z"
+    using z zZ by (auto intro: order.trans)
+  have Z0': "0 \<le> Z" using Z0 by simp
+  have W': "W = Z / log 2 (real (b choose (b div 2 - d - 1))) + 1" by (simp add: W_def lb_def)
+  have main: "real k / (2 * exp 1 * W) * B W - Ln \<le> Z"
+    using majority_wide_size[OF blk disj V Fm sym maj d(1) d2 k Z0' zZ'(1) zZ'(2) W']
+    unfolding B_def Ln_def .
+  have W3: "W \<le> 3 * Z / real b"
+  proof -
+    have "Z / lb \<le> Z / (real b / 2)" using lbh b0 Z0 by (intro divide_left_mono) simp_all
+    also have "\<dots> = 2 * Z / real b" by simp
+    finally have "W \<le> 2 * Z / real b + 1" by (simp add: W_def)
+    also have "1 \<le> Z / real b" using Zb b0 by simp
+    then have "2 * Z / real b + 1 \<le> 3 * Z / real b" by simp
+    finally show ?thesis .
+  qed
+  have "0 < Z / lb" using lb0 Z0 by simp
+  then have Wpos: "0 < W" by (simp add: W_def)
+  have Ln0: "0 \<le> Ln"
+  proof -
+    have h: "\<And>x::real. 0 \<le> x \<Longrightarrow> 1 \<le> 2 * (x + 1)" by simp
+    have "(1::real) \<le> 2 * (real (k * b) + 1)" by (rule h) (rule of_nat_0_le_iff)
+    then have "log 2 1 \<le> Ln" unfolding Ln_def by (intro log_mono) simp_all
+    then show ?thesis by simp
+  qed
+  have BB: "B (3 * Z / real b) \<le> B W" using W3 Wpos by (simp add: B_def)
+  show ?thesis
+  proof (cases "B (3 * Z / real b) < 0")
+    case True
+    have "real (k * b) * B (3 * Z / real b) \<le> 0" using True by (intro mult_nonneg_nonpos) simp_all
+    moreover have "0 \<le> 6 * exp 1 * Z * (Z + Ln)" using Z0 Ln0 by simp
+    ultimately show ?thesis unfolding B_def Ln_def by linarith
+  next
+    case False
+    then have B0: "0 \<le> B (3 * Z / real b)" by simp
+    have kW: "real (k * b) / (6 * exp 1 * Z) \<le> real k / (2 * exp 1 * W)"
+    proof -
+      have "2 * exp 1 * W \<le> 2 * exp 1 * (3 * Z / real b)" using W3 by (intro mult_left_mono) simp_all
+      then have "real k / (2 * exp 1 * (3 * Z / real b)) \<le> real k / (2 * exp 1 * W)"
+        using Wpos Z0 b0 by (intro divide_left_mono mult_pos_pos) simp_all
+      moreover have "real k / (2 * exp 1 * (3 * Z / real b)) = real (k * b) / (6 * exp 1 * Z)"
+        using b0 by (simp add: field_simps)
+      ultimately show ?thesis by simp
+    qed
+    have "real (k * b) / (6 * exp 1 * Z) * B (3 * Z / real b) \<le> real k / (2 * exp 1 * W) * B W"
+      using kW BB B0 Wpos by (intro mult_mono) simp_all
+    also have "\<dots> \<le> Z + Ln" using main by simp
+    finally have "real (k * b) / (6 * exp 1 * Z) * B (3 * Z / real b) \<le> Z + Ln" .
+    then have "real (k * b) * B (3 * Z / real b) \<le> (Z + Ln) * (6 * exp 1 * Z)"
+      using Z0 by (simp add: divide_le_eq mult.commute)
+    then show ?thesis by (simp add: B_def Ln_def algebra_simps)
+  qed
+qed
+
 end
