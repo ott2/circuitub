@@ -19,4 +19,5 @@ session Majority_AC0 = "HOL-Library" +
     Monotone_Kraft
     Binomial_Estimates
     Monotone_Formula
+    Depth3_Lower
     Audit
