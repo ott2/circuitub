@@ -325,4 +325,115 @@ proof -
   finally show ?thesis by (simp add: S_def W_def)
 qed
 
+text \<open>
+  An OR of CNFs that accepts the slice of weight \<open>t\<close> and rejects weight \<open>t - 1\<close>.  Each point of
+  the slice is accepted by some CNF \<open>G\<close>, and each of its ones has a critical clause in \<open>G\<close>.
+  Either all these can be chosen narrow (\<open>ppz_count\<close>), or some point is made critical by a
+  wide clause (\<open>crit_count\<close>).\<close>
+
+theorem sigma3_slice:
+  fixes Gs :: "nat lit set set set" and r t :: nat
+  assumes fin: "finite Gs" "\<forall>G\<in>Gs. finite G" and r: "1 \<le> r" and t: "1 \<le> t"
+    and acc: "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X = t \<longrightarrow> (\<exists>G\<in>Gs. csat G X)"
+    and rej: "\<forall>G\<in>Gs. \<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X + 1 = t \<longrightarrow> \<not> csat G X"
+  shows "real (n choose t) \<le> real (card Gs) * 2 ^ n / 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r)
+           + real (card (\<Union>Gs)) * (n * 2 ^ (n - Suc r))"
+proof -
+  define y :: real where "y = real t * (r - 1) ^ (r - 1) / r ^ r"
+  define W where "W C i = {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)}" for C :: "nat lit set" and i
+  define crit where "crit X i C \<longleftrightarrow> (i, True) \<in> C \<and> (i, False) \<notin> C \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l)"
+    for X i C
+  define AG where "AG G = {X. X \<subseteq> {..<n} \<and> csat G X \<and> card X = t
+                            \<and> (\<forall>i\<in>X. \<exists>C\<in>G. crit X i C \<and> card (W C i) \<le> r - 1)}" for G
+  define Bd where "Bd C i = (if r \<le> card (W C i)
+      then {X. X \<subseteq> {..<n} \<and> i \<in> X \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l)} else {})" for C i
+  define Sl where "Sl = {X. X \<subseteq> {..<n} \<and> card X = t}"
+  have finU: "finite (\<Union>Gs)" using fin by blast
+  have cover: "Sl \<subseteq> (\<Union>G\<in>Gs. AG G) \<union> (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i)"
+  proof
+    fix X assume "X \<in> Sl"
+    then have X: "X \<subseteq> {..<n}" "card X = t" by (auto simp: Sl_def)
+    obtain G where G: "G \<in> Gs" "csat G X" using acc X by blast
+    show "X \<in> (\<Union>G\<in>Gs. AG G) \<union> (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i)"
+    proof (cases "\<forall>i\<in>X. \<exists>C\<in>G. crit X i C \<and> card (W C i) \<le> r - 1")
+      case True
+      then have "X \<in> AG G" using X G by (simp add: AG_def)
+      then show ?thesis using G by blast
+    next
+      case False
+      then obtain i where i: "i \<in> X" and nn: "\<forall>C\<in>G. crit X i C \<longrightarrow> \<not> card (W C i) \<le> r - 1"
+        by blast
+      have finX: "finite X" using X(1) by (rule finite_subset) simp
+      have "card (X - {i}) + 1 = t" using X(2) i finX t by (simp add: card_Diff_singleton)
+      then have "\<not> csat G (X - {i})" using rej G(1) X(1) by blast
+      then obtain C where C: "C \<in> G" and Cf: "\<forall>l\<in>C. \<not> lv (X - {i}) l" by (auto simp: csat_def)
+      have other: "\<not> lv X l" if "l \<in> C" "fst l \<noteq> i" for l
+        using Cf that by (auto simp: lv_def)
+      obtain l where l: "l \<in> C" "lv X l" using G(2) C by (auto simp: csat_def)
+      then have li: "fst l = i" using other by blast
+      then have "l = (i, True)" using l(2) i by (cases l) (simp add: lv_def)
+      then have iT: "(i, True) \<in> C" using l(1) by simp
+      have iF: "(i, False) \<notin> C" using Cf by (auto simp: lv_def)
+      have cr: "crit X i C" using iT iF other by (simp add: crit_def)
+      then have "r \<le> card (W C i)" using nn C r by fastforce
+      then have "X \<in> Bd C i" using X(1) i other by (simp add: Bd_def)
+      moreover have "i < n" using X(1) i by blast
+      ultimately show ?thesis using C G(1) by blast
+    qed
+  qed
+  have AGb: "real (card (AG G)) \<le> 2 ^ n / 2 powr y" for G
+  proof -
+    have "real (card (AG G)) * 2 powr y \<le> 2 ^ n" unfolding y_def
+    proof (rule ppz_count[OF _ r])
+      show "AG G \<subseteq> {X. X \<subseteq> {..<n} \<and> csat G X \<and> t \<le> card X}" by (auto simp: AG_def)
+      show "\<forall>X\<in>AG G. \<forall>i\<in>X. \<exists>C\<in>G. (i, True) \<in> C \<and> (i, False) \<notin> C
+          \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l) \<and> card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> r - 1"
+        by (auto simp: AG_def crit_def W_def)
+    qed
+    then show ?thesis by (simp add: le_divide_eq)
+  qed
+  have Bdb: "card (Bd C i) \<le> 2 ^ (n - Suc r)" if "i < n" for C i
+  proof (cases "r \<le> card (W C i)")
+    case True
+    then have "card (Bd C i) \<le> 2 ^ (n - Suc (card (W C i)))"
+      using crit_count[OF that, of C] by (simp add: Bd_def W_def)
+    also have "\<dots> \<le> 2 ^ (n - Suc r)" using True by (intro power_increasing) simp_all
+    finally show ?thesis .
+  qed (simp add: Bd_def)
+  have finSl: "finite Sl" by (simp add: Sl_def)
+  have "n choose t = card Sl" by (simp add: Sl_def n_subsets)
+  also have "\<dots> \<le> card ((\<Union>G\<in>Gs. AG G) \<union> (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i))"
+  proof (rule card_mono[OF _ cover])
+    have "AG G \<subseteq> Pow {..<n}" for G by (auto simp: AG_def)
+    moreover have "Bd C i \<subseteq> Pow {..<n}" for C i by (auto simp: Bd_def)
+    ultimately have "(\<Union>G\<in>Gs. AG G) \<union> (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i) \<subseteq> Pow {..<n}" by blast
+    then show "finite ((\<Union>G\<in>Gs. AG G) \<union> (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i))"
+      by (rule finite_subset) simp
+  qed
+  also have "\<dots> \<le> card (\<Union>G\<in>Gs. AG G) + card (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i)"
+    by (rule card_Un_le)
+  also have "card (\<Union>G\<in>Gs. AG G) \<le> (\<Sum>G\<in>Gs. card (AG G))" by (rule card_UN_le[OF fin(1)])
+  also have "card (\<Union>C\<in>\<Union>Gs. \<Union>i\<in>{..<n}. Bd C i) \<le> (\<Sum>C\<in>\<Union>Gs. card (\<Union>i\<in>{..<n}. Bd C i))"
+    by (rule card_UN_le[OF finU])
+  also have "\<dots> \<le> (\<Sum>C\<in>\<Union>Gs. n * 2 ^ (n - Suc r))"
+  proof (rule sum_mono)
+    fix C
+    have "card (\<Union>i\<in>{..<n}. Bd C i) \<le> (\<Sum>i<n. card (Bd C i))" by (rule card_UN_le) simp
+    also have "\<dots> \<le> (\<Sum>i<n. 2 ^ (n - Suc r))" by (rule sum_mono) (rule Bdb, simp)
+    finally show "card (\<Union>i\<in>{..<n}. Bd C i) \<le> n * 2 ^ (n - Suc r)" by simp
+  qed
+  finally have nat: "n choose t \<le> (\<Sum>G\<in>Gs. card (AG G)) + card (\<Union>Gs) * (n * 2 ^ (n - Suc r))"
+    by simp
+  have "real (n choose t) \<le> (\<Sum>G\<in>Gs. real (card (AG G))) + real (card (\<Union>Gs)) * (n * 2 ^ (n - Suc r))"
+  proof -
+    have "real (n choose t) \<le> real ((\<Sum>G\<in>Gs. card (AG G)) + card (\<Union>Gs) * (n * 2 ^ (n - Suc r)))"
+      using nat by (simp only: of_nat_le_iff)
+    then show ?thesis by simp
+  qed
+  also have "(\<Sum>G\<in>Gs. real (card (AG G))) \<le> (\<Sum>G\<in>Gs. 2 ^ n / 2 powr y)"
+    by (rule sum_mono) (rule AGb)
+  also have "\<dots> = real (card Gs) * 2 ^ n / 2 powr y" by simp
+  finally show ?thesis by (simp add: y_def)
+qed
+
 end
