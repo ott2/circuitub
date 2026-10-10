@@ -436,4 +436,130 @@ proof -
   finally show ?thesis by (simp add: y_def)
 qed
 
+section \<open>Formulas\<close>
+
+fun clause_of :: "nat form \<Rightarrow> nat lit set" where
+  "clause_of (Or ls) = {(v, b). Lit v b \<in> set ls}"
+| "clause_of _ = {}"
+
+fun cnf_of :: "nat form \<Rightarrow> nat lit set set" where
+  "cnf_of (And hs) = clause_of ` set hs"
+| "cnf_of _ = {}"
+
+lemma pi0_lit: "PI 0 g \<Longrightarrow> \<exists>v b. g = Lit v b"
+  by (cases g) auto
+
+lemma eval_clause:
+  assumes "SIG (Suc 0) h"
+  shows "eval (\<lambda>v. v \<in> X) h \<longleftrightarrow> (\<exists>l\<in>clause_of h. lv X l)"
+proof -
+  obtain ls where h: "h = Or ls" and ls: "\<forall>g\<in>set ls. PI 0 g" using assms sig_Suc_Or by blast
+  have "eval (\<lambda>v. v \<in> X) h \<longleftrightarrow> (\<exists>g\<in>set ls. eval (\<lambda>v. v \<in> X) g)" by (simp add: h)
+  also have "\<dots> \<longleftrightarrow> (\<exists>l\<in>clause_of h. lv X l)"
+  proof
+    assume "\<exists>g\<in>set ls. eval (\<lambda>v. v \<in> X) g"
+    then obtain g where g: "g \<in> set ls" "eval (\<lambda>v. v \<in> X) g" by blast
+    obtain v b where "g = Lit v b" using pi0_lit ls g(1) by blast
+    then show "\<exists>l\<in>clause_of h. lv X l" using g by (auto simp: h lv_def)
+  next
+    assume "\<exists>l\<in>clause_of h. lv X l"
+    then obtain v b where "Lit v b \<in> set ls" "(v \<in> X) = b" by (auto simp: h lv_def)
+    then show "\<exists>g\<in>set ls. eval (\<lambda>v. v \<in> X) g" by force
+  qed
+  finally show ?thesis .
+qed
+
+lemma eval_cnf:
+  assumes "PI (Suc (Suc 0)) g"
+  shows "eval (\<lambda>v. v \<in> X) g \<longleftrightarrow> csat (cnf_of g) X"
+proof -
+  obtain hs where g: "g = And hs" and hs: "\<forall>h\<in>set hs. SIG (Suc 0) h" using assms pi_Suc_And by blast
+  show ?thesis using hs eval_clause by (auto simp: g csat_def)
+qed
+
+lemma gates_pos: "PI (Suc d) g \<Longrightarrow> 1 \<le> gates g" "SIG (Suc d) g \<Longrightarrow> 1 \<le> gates g"
+  by (cases g; simp)+
+
+lemma card_cnf_of:
+  assumes "PI (Suc (Suc 0)) g"
+  shows "card (cnf_of g) \<le> gates g"
+proof -
+  obtain hs where g: "g = And hs" and hs: "\<forall>h\<in>set hs. SIG (Suc 0) h" using assms pi_Suc_And by blast
+  have "card (cnf_of g) \<le> card (set hs)" by (simp add: g card_image_le)
+  also have "\<dots> \<le> length hs" by (rule card_length)
+  also have "\<dots> = (\<Sum>h\<leftarrow>hs. 1)" by (simp add: sum_list_triv)
+  also have "\<dots> \<le> (\<Sum>h\<leftarrow>hs. gates h)" using hs gates_pos(2) by (intro sum_list_mono) blast
+  also have "\<dots> \<le> gates g" by (simp add: g)
+  finally show ?thesis .
+qed
+
+lemma sum_set_le_sum_list: "sum f (set xs) \<le> (\<Sum>x\<leftarrow>xs. (f x :: nat))"
+proof (induction xs)
+  case (Cons a xs)
+  have "sum f (set (a # xs)) \<le> f a + sum f (set xs)"
+    by (cases "a \<in> set xs") (simp_all add: insert_absorb)
+  then show ?case using Cons by simp
+qed simp
+
+text \<open>A \<open>\<Sigma>\<^sub>3\<close> formula that accepts weight \<open>t\<close> and rejects weight \<open>t - 1\<close>, for any threshold \<open>t\<close>.\<close>
+
+theorem sigma3_threshold:
+  fixes f :: "nat form" and r t :: nat
+  assumes f: "SIG 3 f" and t: "1 \<le> t" and r: "1 \<le> r"
+    and acc: "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X = t \<longrightarrow> eval (\<lambda>v. v \<in> X) f"
+    and rej: "\<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X + 1 = t \<longrightarrow> \<not> eval (\<lambda>v. v \<in> X) f"
+  shows "real (n choose t) \<le> real (gates f)
+           * (2 ^ n / 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r) + real n * 2 ^ (n - Suc r))"
+proof -
+  have "SIG (Suc (Suc (Suc 0))) f" using f by (simp add: numeral_3_eq_3)
+  then obtain gs where fg: "f = Or gs" and gs: "\<forall>g\<in>set gs. PI (Suc (Suc 0)) g"
+    using sig_Suc_Or by blast
+  define Gs where "Gs = cnf_of ` set gs"
+  define y :: real where "y = real t * (r - 1) ^ (r - 1) / r ^ r"
+  have evf: "eval (\<lambda>v. v \<in> X) f \<longleftrightarrow> (\<exists>G\<in>Gs. csat G X)" for X
+    using gs eval_cnf by (auto simp: fg Gs_def)
+  have finG: "\<forall>G\<in>Gs. finite G"
+  proof
+    fix G assume "G \<in> Gs"
+    then obtain g where g: "g \<in> set gs" "G = cnf_of g" by (auto simp: Gs_def)
+    then have "PI (Suc (Suc 0)) g" using gs by blast
+    then obtain hs where "g = And hs" unfolding pi_Suc_And by blast
+    then show "finite G" using g(2) by simp
+  qed
+  have rejG: "\<forall>G\<in>Gs. \<forall>X. X \<subseteq> {..<n} \<longrightarrow> card X + 1 = t \<longrightarrow> \<not> csat G X"
+    using rej evf by blast
+  have main: "real (n choose t) \<le> real (card Gs) * 2 ^ n / 2 powr y
+                + real (card (\<Union>Gs)) * (n * 2 ^ (n - Suc r))"
+    unfolding y_def using evf acc rejG finG r t by (intro sigma3_slice) (auto simp: Gs_def)
+  have s1: "1 \<le> gates g" if "g \<in> set gs" for g using gs that gates_pos(1) by blast
+  have sum: "(\<Sum>g\<leftarrow>gs. gates g) < gates f" by (simp add: fg)
+  have cG: "card Gs \<le> gates f"
+  proof -
+    have "card Gs \<le> card (set gs)" by (simp add: Gs_def card_image_le)
+    also have "\<dots> \<le> length gs" by (rule card_length)
+    also have "\<dots> = (\<Sum>g\<leftarrow>gs. 1)" by (simp add: sum_list_triv)
+    also have "\<dots> \<le> (\<Sum>g\<leftarrow>gs. gates g)" using s1 by (intro sum_list_mono) blast
+    finally show ?thesis using sum by simp
+  qed
+  have cU: "card (\<Union>Gs) \<le> gates f"
+  proof -
+    have "card (\<Union>Gs) = card (\<Union>g\<in>set gs. cnf_of g)" by (simp add: Gs_def)
+    also have "\<dots> \<le> (\<Sum>g\<in>set gs. card (cnf_of g))" by (rule card_UN_le) simp
+    also have "\<dots> \<le> (\<Sum>g\<in>set gs. gates g)" using gs card_cnf_of by (intro sum_mono) blast
+    also have "\<dots> \<le> (\<Sum>g\<leftarrow>gs. gates g)" by (rule sum_set_le_sum_list)
+    finally show ?thesis using sum by simp
+  qed
+  have "real (card Gs) * 2 ^ n / 2 powr y \<le> real (gates f) * (2 ^ n / 2 powr y)"
+  proof -
+    have "real (card Gs) * (2 ^ n / 2 powr y) \<le> real (gates f) * (2 ^ n / 2 powr y)"
+      using cG by (intro mult_right_mono) simp_all
+    then show ?thesis by simp
+  qed
+  moreover have "real (card (\<Union>Gs)) * (n * 2 ^ (n - Suc r)) \<le> real (gates f) * (n * 2 ^ (n - Suc r))"
+    using cU by (intro mult_right_mono) simp_all
+  ultimately have "real (n choose t) \<le> real (gates f) * (2 ^ n / 2 powr y)
+                     + real (gates f) * (n * 2 ^ (n - Suc r))" using main by linarith
+  then show ?thesis by (simp add: y_def distrib_left)
+qed
+
 end
