@@ -514,4 +514,150 @@ proof -
   finally show ?thesis using L1 by (simp add: n_def)
 qed
 
+text \<open>
+  Theorem E\<Zprime> in terms of the size alone.  If the formula has at most \<open>2\<^sup>z\<close> tests and every
+  test at most \<open>2\<^sup>z\<close> clauses, take \<open>w = \<lfloor>z / log\<^sub>2 \<beta>\<rfloor> + 1\<close>: then every test has fewer than
+  \<open>\<beta>\<^sup>w\<close> clauses.  The hypothesis \<open>w C(b, b/2) \<le> 2\<^sup>b\<close> of \<open>majority_wide_tests\<close> is not needed:
+  when it fails, the bracket is negative and the bound is trivial.\<close>
+
+lemma choose_ge_2: "1 \<le> j \<Longrightarrow> j < b \<Longrightarrow> 2 \<le> b choose j"
+proof -
+  assume j: "1 \<le> j" "j < b"
+  obtain b' where b: "b = Suc b'" using j by (cases b) auto
+  obtain j' where jj: "j = Suc j'" using j by (cases j) auto
+  have p: "0 < b' choose j'" "0 < b' choose Suc j'" using j by (simp_all add: b jj)
+  have "b choose j = (b' choose j') + (b' choose Suc j')" by (simp add: b jj)
+  then show ?thesis using p by linarith
+qed
+
+theorem majority_wide_size:
+  fixes Fm :: "'a set set set" and blk :: "nat \<Rightarrow> 'a set" and z :: real
+  assumes blk: "\<forall>i<k. finite (blk i) \<and> card (blk i) = b"
+    and disj: "\<forall>i<k. \<forall>j<k. i \<noteq> j \<longrightarrow> blk i \<inter> blk j = {}" and V: "V = (\<Union>i<k. blk i)"
+    and Fm: "finite Fm" "\<forall>cs\<in>Fm. finite cs"
+    and sym: "\<forall>cs\<in>Fm. \<forall>X\<subseteq>V. \<forall>Y\<subseteq>V. bw blk k X = bw blk k Y \<longrightarrow> cnf_val cs X = cnf_val cs Y"
+    and maj: "\<forall>X\<subseteq>V. (\<exists>cs\<in>Fm. cnf_val cs X) \<longleftrightarrow> (k * b) div 2 \<le> card X"
+    and d: "4 * b \<le> d\<^sup>2" "d + 2 \<le> b div 2"
+    and k: "2 * (k * b + 1) \<le> 2 ^ k"
+    and z: "0 \<le> z" "real (card Fm) \<le> 2 powr z" "\<forall>cs\<in>Fm. real (card cs) \<le> 2 powr z"
+    and W: "W = z / log 2 (real (b choose (b div 2 - d - 1))) + 1"
+  shows "real k / (2 * exp 1 * W)
+           * (log 2 ((3 * real b + 2) / 2) / 2 - log 2 W - 2 * exp 1 * log 2 (exp 1))
+         - log 2 (2 * (real (k * b) + 1))
+         \<le> z"
+proof -
+  define \<beta> where "\<beta> = b choose (b div 2 - d - 1)"
+  define lb where "lb = log 2 (real \<beta>)"
+  define B where "B x = log 2 ((3 * real b + 2) / 2) / 2 - log 2 x - 2 * exp 1 * log 2 (exp 1)" for x :: real
+  define Ln where "Ln = log 2 (2 * (real (k * b) + 1))"
+  define w where "w = nat \<lfloor>z / lb\<rfloor> + 1"
+  have b2: "2 \<le> \<beta>" unfolding \<beta>_def using d(2) by (intro choose_ge_2) simp_all
+  have lb1: "1 \<le> lb"
+  proof -
+    have "log 2 2 \<le> log 2 (real \<beta>)" using b2 by (intro log_mono) simp_all
+    then show ?thesis by (simp add: lb_def)
+  qed
+  have Wlb: "W = z / lb + 1" by (simp add: W lb_def \<beta>_def)
+  have zl0: "0 \<le> z / lb" using z(1) lb1 by simp
+  have wW: "real w \<le> W"
+  proof -
+    have "real (nat \<lfloor>z / lb\<rfloor>) \<le> z / lb" using zl0 by (simp add: of_nat_nat)
+    then show ?thesis by (simp add: w_def Wlb)
+  qed
+  have w1: "1 \<le> w" by (simp add: w_def)
+  have wpos: "0 < real w" using w1 by simp
+  have Wpos: "0 < W" using wW wpos by simp
+  have zw: "z < real w * lb"
+  proof -
+    have "z / lb < real w" using zl0 by (simp add: w_def of_nat_nat) linarith
+    then show ?thesis using lb1 by (simp add: divide_less_eq mult.commute)
+  qed
+  have size: "\<forall>cs\<in>Fm. card cs < (b choose (b div 2 - d - 1)) ^ (w + 1)"
+  proof
+    fix cs assume cs: "cs \<in> Fm"
+    have "real (card cs) \<le> 2 powr z" using z(3) cs by blast
+    also have "\<dots> < 2 powr (real w * lb)" using zw by simp
+    also have "\<dots> = (2 powr lb) ^ w" by (simp add: powr_powr[symmetric] powr_realpow mult.commute)
+    also have "2 powr lb = real \<beta>" using b2 by (simp add: lb_def)
+    finally have "real (card cs) < real (\<beta> ^ w)" by simp
+    then have "card cs < \<beta> ^ w" by (simp only: of_nat_less_iff)
+    also have "\<dots> \<le> \<beta> ^ (w + 1)" using b2 by (intro power_increasing) simp_all
+    finally show "card cs < (b choose (b div 2 - d - 1)) ^ (w + 1)" by (simp add: \<beta>_def)
+  qed
+  have Ln0: "0 \<le> Ln"
+  proof -
+    have h: "\<And>x::real. 0 \<le> x \<Longrightarrow> 1 \<le> 2 * (x + 1)" by simp
+    have "(1::real) \<le> 2 * (real (k * b) + 1)" by (rule h) (rule of_nat_0_le_iff)
+    then have "log 2 1 \<le> Ln" unfolding Ln_def by (intro log_mono) simp_all
+    then show ?thesis by simp
+  qed
+  have BW: "B W \<le> B (real w)" using wW wpos by (simp add: B_def)
+  have Fz: "log 2 (real (card Fm)) \<le> z"
+  proof -
+    have "card V = (\<Sum>i<k. card (blk i))" unfolding V using blk disj by (intro card_UN_disjoint) auto
+    also have "\<dots> = k * b" using blk by simp
+    finally have "(k * b) div 2 \<le> card V" by simp
+    then have "\<exists>cs\<in>Fm. cnf_val cs V" using maj by blast
+    then have "1 \<le> real (card Fm)" using Fm(1) by (simp add: Suc_le_eq card_gt_0_iff) blast
+    then have "log 2 (real (card Fm)) \<le> log 2 (2 powr z)" using z(2) by (intro log_mono) simp_all
+    then show ?thesis by simp
+  qed
+  show ?thesis
+  proof (cases "B W < 0")
+    case True
+    have "real k / (2 * exp 1 * W) * B W \<le> 0"
+      using True Wpos by (intro mult_nonneg_nonpos) simp_all
+    then show ?thesis using Ln0 z(1) by (simp add: B_def Ln_def)
+  next
+    case False
+    then have BW0: "0 \<le> B W" by simp
+    have wC: "w * (b choose (b div 2)) \<le> 2 ^ b"
+    proof (rule ccontr)
+      assume "\<not> w * (b choose (b div 2)) \<le> 2 ^ b"
+      then have lt: "real (2 ^ b) < real (w * (b choose (b div 2)))" by (simp only: of_nat_less_iff not_le)
+      define C where "C = real (b choose (b div 2))"
+      have Cpos: "0 < C" by (simp add: C_def)
+      have "2 ^ b / C < real w" using lt Cpos by (simp add: C_def divide_less_eq)
+      then have "(2 ^ b / C)\<^sup>2 < (real w)\<^sup>2" using Cpos by (intro power_strict_mono) simp_all
+      then have "(3 * real b + 2) / 2 < (real w)\<^sup>2" using central_ratio[of b] by (simp add: C_def)
+      then have "log 2 ((3 * real b + 2) / 2) < log 2 ((real w)\<^sup>2)" by (intro log_less) simp_all
+      also have "\<dots> = 2 * log 2 (real w)" using wpos by (simp add: log_nat_power)
+      finally have lw: "log 2 ((3 * real b + 2) / 2) < 2 * log 2 (real w)" .
+      have "0 < 2 * exp 1 * log 2 (exp 1)" by simp
+      then have "B (real w) < 0" using lw unfolding B_def by linarith
+      then show False using BW BW0 by simp
+    qed
+    have T: "real k / (2 * exp 1 * real w) * B (real w) - Ln \<le> log 2 (real (card Fm))"
+      using majority_wide_tests[OF blk disj V Fm sym maj d size w1 wC k] by (simp add: B_def Ln_def)
+    have "real k / (2 * exp 1 * W) * B W \<le> real k / (2 * exp 1 * real w) * B W"
+      using wW wpos BW0 by (intro mult_right_mono divide_left_mono) simp_all
+    also have "\<dots> \<le> real k / (2 * exp 1 * real w) * B (real w)"
+      using BW by (intro mult_left_mono) simp_all
+    finally have "real k / (2 * exp 1 * W) * B W - Ln \<le> z" using T Fz by linarith
+    then show ?thesis by (simp add: B_def Ln_def)
+  qed
+qed
+
+text \<open>The smallest binomial of the window, explicitly: \<open>log\<^sub>2 \<beta> \<ge> b - log\<^sub>2(b+1) - O(d\<^sup>2/b)\<close>.\<close>
+
+lemma beta_log:
+  assumes m: "m = b div 2" and j: "4 * (d + 1) \<le> m"
+  shows "real b - log 2 (real b + 1) - 2 * real (d + 1) * real (d + 2) / (real m * ln 2)
+           \<le> log 2 (real (b choose (m - d - 1)))"
+proof -
+  have "2 ^ b / (real b + 1) * exp (- 2 * real (d + 1) * (real (d + 1) + 1) / real m)
+          \<le> real (b choose (m - (d + 1)))" by (rule window_beta[OF m j])
+  then have le: "2 ^ b / (real b + 1) * exp (- 2 * real (d + 1) * real (d + 2) / real m)
+          \<le> real (b choose (m - d - 1))" by (simp add: add.commute)
+  have pos: "0 < 2 ^ b / (real b + 1) * exp (- 2 * real (d + 1) * real (d + 2) / real m)" by simp
+  have "log 2 (2 ^ b / (real b + 1) * exp (- 2 * real (d + 1) * real (d + 2) / real m))
+          = log 2 (2 ^ b) - log 2 (real b + 1) + log 2 (exp (- 2 * real (d + 1) * real (d + 2) / real m))"
+    by (simp add: log_mult_pos log_divide_pos)
+  also have "\<dots> = real b - log 2 (real b + 1) - 2 * real (d + 1) * real (d + 2) / (real m * ln 2)"
+    by (simp add: log_nat_power) (simp add: algebra_simps minus_divide_left)
+  moreover have "log 2 (2 ^ b / (real b + 1) * exp (- 2 * real (d + 1) * real (d + 2) / real m))
+          \<le> log 2 (real (b choose (m - d - 1)))" by (rule log_mono[OF _ pos le]) simp
+  ultimately show ?thesis by simp
+qed
+
 end
