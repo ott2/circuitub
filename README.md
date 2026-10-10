@@ -37,7 +37,10 @@ on no oracles.
 `isabelle/Bounded_Width.thy` also formalizes Remark 1 of the paper's v2. For every $k$
 with $k^2 \ge n$, every symmetric function, and in particular Majority, is an OR of
 $2^{O(k)}$ CNFs with clauses of width $k' = 2\lceil n/k \rceil$. For $k \le n$ this is
-$2^{O(n/k')}$ CNFs. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
+$2^{O(n/k')}$ CNFs. This is tight: by PPZ, any OR of width-$w$ CNFs for Majority has at least
+$2^{n/(2ew)}/(n+1)$ CNFs (`majority_cnfs_lower_e` in `isabelle/Depth3_Lower.thy`). So for
+$w \le 2\sqrt n$ the number of width-$w$ CNFs needed is $2^{\Theta(n/w)}$, with both directions
+formal. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
 only inputs of weight $t$, and accepts at least $\binom{n}{t}/2^{O(n/k')}$ of them
 (`enum_output_lower_bound`). Any algorithm for the local enumeration problem
 $\mathrm{Enum}(k', t)$ of Gurumukhani et al. (CCC 2024) must list all of them. So the
