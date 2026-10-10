@@ -715,4 +715,125 @@ proof -
   finally show ?thesis by (simp add: Q_def P_def algebra_simps)
 qed
 
+lemma exp_one_le_4: "exp (1::real) \<le> 4"
+proof -
+  have m: "1 / 2 \<le> exp (- (1 / 2 :: real))" using exp_ge_add_one_self[of "- (1 / 2 :: real)"] by simp
+  have e: "exp (1 / 2 :: real) * exp (- (1 / 2)) = 1" by (rule exp_minus_inverse)
+  have "exp (1 / 2 :: real) * (1 / 2) \<le> exp (1 / 2) * exp (- (1 / 2))"
+    using m by (intro mult_left_mono) simp_all
+  then have h: "exp (1 / 2 :: real) \<le> 2" using e by simp
+  have "exp (1::real) = exp (1 / 2) * exp (1 / 2)" by (simp add: exp_add[symmetric])
+  also have "\<dots> \<le> 2 * 2" using h by (intro mult_mono) simp_all
+  finally show ?thesis by simp
+qed
+
+text \<open>
+  In \<open>2\<^sup>\<Omega>\<^sup>(\<^sup>\<surd>\<^sup>n\<^sup>)\<close> form, with \<open>r = \<lceil>\<surd>n/4\<rceil>\<close>.  Together with \<open>majority_depth3\<close>, Majority has
+  depth-3 complexity \<open>2\<^sup>\<Theta>\<^sup>(\<^sup>\<surd>\<^sup>n\<^sup>)\<close>.\<close>
+
+corollary majority_depth3_sqrt:
+  fixes f :: "nat form"
+  assumes f: "SIG 3 f \<or> PI 3 f" "\<forall>\<sigma>. eval \<sigma> f = majority n \<sigma>" and n: "1 \<le> n"
+  shows "2 powr (sqrt (real n) / 4) \<le> real (n + 1) * real (n + 2) * real (gates f)"
+proof -
+  have s1: "1 \<le> gates f"
+    using f(1) gates_pos[of "Suc (Suc 0)" f] by (auto simp: numeral_3_eq_3)
+  define x where "x = sqrt (real n)"
+  have x0: "0 \<le> x" by (simp add: x_def)
+  have xx: "x * x = real n" by (simp add: x_def)
+  have A1: "6 \<le> real (n + 1) * real (n + 2) * real (gates f)"
+  proof -
+    have "2 * 3 * 1 \<le> (n + 1) * (n + 2) * gates f" using n s1 by (intro mult_mono) simp_all
+    then have "real (2 * 3 * 1) \<le> real (n + 1) * real (n + 2) * real (gates f)"
+      by (simp only: of_nat_le_iff of_nat_mult[symmetric])
+    then show ?thesis by simp
+  qed
+  show ?thesis
+  proof (cases "n \<le> 16")
+    case True
+    have "x \<le> 4"
+    proof (rule ccontr)
+      assume "\<not> x \<le> 4"
+      then have "4 * 4 < x * x" by (intro mult_strict_mono) simp_all
+      then show False using xx True by simp
+    qed
+    then have "2 powr (x / 4) \<le> 2 powr 1" by (intro powr_mono) simp_all
+    then show ?thesis using A1 by (simp add: x_def)
+  next
+    case False
+    have x4: "4 \<le> x"
+    proof (rule ccontr)
+      assume "\<not> 4 \<le> x"
+      then have "x * x \<le> 4 * 4" using x0 by (intro mult_mono) simp_all
+      then show False using xx False by simp
+    qed
+    define r where "r = nat \<lceil>x / 4\<rceil>"
+    have rlo: "x / 4 \<le> real r" by (simp add: r_def real_nat_ceiling_ge)
+    have rhi: "real r \<le> x / 4 + 1"
+    proof -
+      have "0 \<le> \<lceil>x / 4\<rceil>" using x0 by simp
+      then have "real r = of_int \<lceil>x / 4\<rceil>" by (simp add: r_def)
+      also have "\<dots> \<le> x / 4 + 1" by (rule of_int_ceiling_le_add_one)
+      finally show ?thesis .
+    qed
+    have r1: "1 \<le> r" using rlo x4 by simp
+    have rn: "Suc r \<le> n"
+    proof -
+      have "4 * x \<le> x * x" using x4 x0 by (intro mult_right_mono) simp_all
+      then have "real (Suc r) \<le> real n" using rhi xx False by simp
+      then show ?thesis by (simp only: of_nat_le_iff)
+    qed
+    define Q :: real where "Q = (r - 1) ^ (r - 1)"
+    define P :: real where "P = r ^ r"
+    define y where "y = real n * Q / (2 * P)"
+    define Z :: real where "Z = 2 powr (x / 4)"
+    define K :: real where "K = 2 ^ n"
+    define S where "S = real (gates f)"
+    have Z0: "0 < Z" and K0: "0 < K" by (simp_all add: Z_def K_def)
+    have main: "K \<le> 2 * real (n + 1) * S * (K / 2 powr y + real n * 2 ^ (n - Suc r))"
+      using majority_depth3_lower[OF f n r1] by (simp add: K_def S_def y_def Q_def P_def)
+    have qp: "1 / (exp 1 * real r) \<le> Q / P" using decoded_fraction[OF r1] by (simp add: Q_def P_def)
+    have er: "exp 1 * real r \<le> 2 * x"
+    proof -
+      have "exp 1 * real r \<le> 4 * (x / 4 + 1)" using exp_one_le_4 rhi by (intro mult_mono) simp_all
+      then show ?thesis using x4 by simp
+    qed
+    have er0: "0 < exp 1 * real r" using r1 by simp
+    have xy: "x / 4 \<le> y"
+    proof -
+      have "x * (2 * (exp 1 * real r)) \<le> x * (2 * (2 * x))" using er x0 by (intro mult_left_mono) simp_all
+      then have "x / 4 * (2 * (exp 1 * real r)) \<le> real n" using xx by simp
+      then have "x / 4 \<le> real n / (2 * (exp 1 * real r))" using er0 by (simp add: le_divide_eq)
+      also have "\<dots> = real n / 2 * (1 / (exp 1 * real r))" by simp
+      also have "\<dots> \<le> real n / 2 * (Q / P)" using qp by (intro mult_left_mono) simp_all
+      also have "\<dots> = y" by (simp add: y_def)
+      finally show ?thesis .
+    qed
+    have h1: "K / 2 powr y \<le> K / Z"
+      unfolding Z_def using xy K0 by (intro divide_left_mono powr_mono) simp_all
+    have h2: "real n * 2 ^ (n - Suc r) \<le> real n * K / (2 * Z)"
+    proof -
+      have "Z \<le> 2 powr real r" unfolding Z_def using rlo by (intro powr_mono) simp_all
+      also have "\<dots> = 2 ^ r" by (simp add: powr_realpow)
+      finally have Zr: "2 * Z \<le> 2 ^ Suc r" by simp
+      have ns: "n - Suc r + Suc r = n" using rn by simp
+      have "(2::real) ^ (n - Suc r) * 2 ^ Suc r = 2 ^ (n - Suc r + Suc r)" by (simp only: power_add)
+      then have "(2::real) ^ (n - Suc r) * 2 ^ Suc r = K" by (simp only: ns K_def)
+      then have "(2::real) ^ (n - Suc r) = K / 2 ^ Suc r" by (simp add: eq_divide_eq)
+      also have "\<dots> \<le> K / (2 * Z)" using Zr Z0 K0 by (intro divide_left_mono) simp_all
+      finally have "real n * 2 ^ (n - Suc r) \<le> real n * (K / (2 * Z))"
+        by (intro mult_left_mono) simp_all
+      then show ?thesis by simp
+    qed
+    have S0: "0 \<le> S" by (simp add: S_def)
+    have "K \<le> 2 * real (n + 1) * S * (K / Z + real n * K / (2 * Z))"
+      using main h1 h2 S0 by (smt (verit) mult_left_mono of_nat_0_le_iff mult_nonneg_nonneg)
+    also have "\<dots> = real (n + 1) * real (n + 2) * S * K / Z" using Z0 by (simp add: field_simps)
+    finally have "K * Z \<le> real (n + 1) * real (n + 2) * S * K" using Z0 by (simp add: le_divide_eq)
+    then have "Z * K \<le> (real (n + 1) * real (n + 2) * S) * K" by (simp add: algebra_simps)
+    then have "Z \<le> real (n + 1) * real (n + 2) * S" using K0 by simp
+    then show ?thesis by (simp add: Z_def S_def x_def)
+  qed
+qed
+
 end

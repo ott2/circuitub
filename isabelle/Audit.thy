@@ -1,5 +1,5 @@
 theory Audit
-  imports Block_Local Monotone_Mixed Monotone_Formula
+  imports Block_Local Monotone_Mixed Monotone_Formula Depth3_Lower
 begin
 
 text \<open>
@@ -35,6 +35,8 @@ ML \<open>
      @{thm decoded_fraction},
      @{thm tw_cnf}, @{thm tw_sound}, @{thm formula_kraft}, @{thm atypical_count},
      @{thm typical_half}, @{thm majority_wide_tests},
+     @{thm forced_kraft}, @{thm ppz_count}, @{thm crit_count}, @{thm sigma3_slice},
+     @{thm sigma3_threshold}, @{thm majority_depth3_lower}, @{thm majority_depth3_sqrt},
      @{thm matching_valid}, @{thm matching_card}, @{thm matching_weight}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
