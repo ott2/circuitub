@@ -127,8 +127,13 @@ test has fewer than $\beta^{w+1}$ clauses, then the number $T$ of tests satisfie
 $$\log_2 T \ge \frac{k}{2ew}\left(\tfrac12 \log_2\frac{3b+2}{2} - \log_2 w - 2e\log_2 e\right) - \log_2\bigl(2(n+1)\bigr).$$
 
 The binomial estimates are elementary: a central binomial bound, Chebyshev for block
-weights, and a lower bound for the binomials in the window. Only the final optimization
-over $n$ remains on paper.
+weights, and a lower bound for the binomials in the window. In terms of the formula size
+alone, with $Z = \max(z, b)$ for a formula of at most $2^z$ tests of at most $2^z$ clauses
+each and $b \ge 300$ (`majority_wide_explicit`):
+
+$$n\left(\tfrac12\log_2\frac{3b+2}{2} - \log_2\frac{3Z}{b} - 2e\log_2 e\right) \le 6e\,Z\bigl(Z + \log_2(2(n+1))\bigr).$$
+
+Only solving this for $Z$ remains on paper.
 
 ## Contents
 

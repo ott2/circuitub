@@ -698,9 +698,28 @@ silently:
   $\alpha > 1/3$, the same threshold.
 - The window lies inside $[2, b-2]$ and $d^2 \ge 4b$. This needs $b$ above a small constant.
 
-All three hold in the regime of the contradiction argument. The step from $w$ to $z$
-($w \le z/\log_2\beta + 1$) and the optimization over $n$ are still on paper. They are
-routine calculus.
+All three hold in the regime of the contradiction argument.
+
+**In terms of the size alone (`majority_wide_size`, `majority_wide_explicit`) [F].** The step
+from $w$ to $z$ is formal too.
+- If the formula has at most $2^z$ tests, each with at most $2^z$ clauses, take
+  $w = \lfloor z/\log_2\beta\rfloor + 1$. Then every test has fewer than $\beta^w$ clauses,
+  and the bound of `majority_wide_tests` holds with $W = z/\log_2\beta + 1$ in place of $w$.
+- The condition $\lambda \ge 1$ disappears: when it fails, the bracket is negative and the
+  bound is trivial.
+- For $b \ge 300$ a window with $d \approx 2\sqrt b$ exists (`window_d`), and then
+  $\log_2\beta \ge b/2$ (`beta_half`, from `beta_log`). With $Z = \max(z, b)$ this gives one
+  explicit inequality, with no further side conditions except $2(n+1) \le 2^k$:
+
+  $$n\left(\tfrac12\log_2\frac{3b+2}{2} - \log_2\frac{3Z}{b} - 2e\log_2 e\right) \le 6e\,Z\bigl(Z + \log_2(2(n+1))\bigr).$$
+
+Only solving this for $Z$ is left on paper. With $b \ge n^\alpha$ and
+$Z \le C\sqrt{n \log_2 n}$, the bracket is at least
+$\frac{3\alpha-1}{2}\log_2 n - O(\log\log n)$, so
+$Z^2 \ge (1 - o(1))\frac{3\alpha-1}{12e}\, n\log_2 n$. For
+$b \le c\sqrt{n\log_2 n}$ with $c^2 < \frac{3\alpha-1}{12e}$ this means $Z = z$. The constant is
+$12e$ rather than the sketch's $8e$, because the formal proof bounds $W \le 3Z/b$. For larger
+$b$, the cost of one tight typical block, $z \ge \log_2\beta \ge b/2$, gives the bound.
 
 **Where it stops now.** At $b \approx (n \log n)^{1/3}$ the bracket vanishes. A block is
 decoded only under about a $1/w$ fraction of the orders, and identifying the decoded blocks

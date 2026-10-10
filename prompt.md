@@ -154,8 +154,10 @@ and kept uncommitted.
 - **Theorem E′, finite part, is formal** (`majority_wide_tests`). The side conditions it makes
   explicit are $2(n+1) \le 2^k$, $w\binom{b}{\lfloor b/2\rfloor} \le 2^b$ ($\lambda \ge 1$),
   and a window $[m-d, m+d] \subseteq [2, b-2]$ with $d^2 \ge 4b$. All hold in the regime of
-  the paper's contradiction argument. Only the step $w \le z/\log_2\beta + 1$ and the
-  optimization over $n$ remain on paper.
+  the paper's contradiction argument. The step to the formula size is formal too
+  (`majority_wide_size`; `majority_wide_explicit` for $b \ge 300$, with $Z = \max(z,b)$:
+  $n(\frac12\log_2\frac{3b+2}{2} - \log_2\frac{3Z}{b} - 2e\log_2 e) \le 6eZ(Z + \log_2(2(n+1)))$).
+  Only solving this for $Z$ remains on paper; it gives the constant $(3\alpha-1)/(12e)$.
 - **The depth-3 lower bound is formal** (`majority_depth3_sqrt`): so the paper's optimality
   claim is checked at depth 3, and depth-3 Majority is $2^{\Theta(\sqrt n)}$ in Isabelle.
   `ppz_count` also covers the small-$b$ case of Theorem C, with a factor $e$ lost to
@@ -173,12 +175,20 @@ and kept uncommitted.
    overhead, so the formal ingredients cover $r \le n^{1/5-\varepsilon}$. The exponent is
    still $k(1-1/r)^{r-1}/(2r)$ rather than $k/(2r)$. Getting rid of the factor
    $(1-1/r)^{r-1}$ needs random orders (permutations) instead of colourings in `free_sum`.
-3. **The analytic rest:** Theorem E′ is done up to the optimization over $n$. An
-   explicit-constant corollary for fixed $\alpha$ (choose $w = \lfloor z/\log_2\beta\rfloor + 1$,
-   use `window_beta`) would close it. For Theorems C and D, `chebyshev_window` and
+3. **The analytic rest:** Theorem E′ is formal up to solving one explicit quadratic
+   inequality (`majority_wide_explicit`). For Theorems C and D, `chebyshev_window` and
    `central_binomial` replace Hoeffding and $\sqrt{\pi b/2}$, and `ppz_count` is the small-$b$
    case. Still missing: the cheap-test split.
 4. **The fixed-point form** (§2.3).
+5. **Monotone $\Sigma_3^k$ for $k \ge 4$ (open, per the literature check in
+   `notes/summaries/depth3-thresholds-and-monotone-k.md`).** Only $k = 2$ and monotone $k = 3$
+   (GKPRST26) are settled. The conjecture $2^{\Omega(n\log k/k)}$, i.e. that a monotone $k$-CNF
+   with no satisfying point below weight $n/2$ accepts at most $2^n k^{-\Omega(n/k)}$ points
+   of weight $n/2$, would give monotone depth-3 Majority $\ge 2^{\Omega(\sqrt{n\log n})}$:
+   a monotone/non-monotone separation at depth 3, given L-R. PPZ (`ppz_count`) loses the
+   $\log k$ factor even on the extremal block example (blocks of $2k-2$, all $k$-sets): it
+   saves 1 bit per block where the truth is $\frac12\log_2 k$. Theorem B's block decoding is
+   the analogue that does gain $\frac12\log b$.
 
 ## Working rules
 
