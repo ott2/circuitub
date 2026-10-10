@@ -179,4 +179,150 @@ proof -
   finally show ?thesis .
 qed
 
+text \<open>
+  PPZ for one CNF.  Suppose every one \<open>i\<close> of every point of \<open>A\<close> has a critical clause with at most
+  \<open>r - 1\<close> other variables.  Under a uniformly random colouring with \<open>r\<close> colours, \<open>i\<close> is forced
+  whenever those variables get smaller colours (\<open>good_colorings\<close>).  Averaging \<open>forced_kraft\<close>
+  over the colourings, with Jensen (\<open>power_average\<close>), gives the bound.\<close>
+
+lemma ppz_count:
+  fixes r :: nat and G :: "nat lit set set"
+  assumes A: "A \<subseteq> {X. X \<subseteq> {..<n} \<and> csat G X \<and> t \<le> card X}" and r: "1 \<le> r"
+    and narrow: "\<forall>X\<in>A. \<forall>i\<in>X. \<exists>C\<in>G. (i, True) \<in> C \<and> (i, False) \<notin> C
+        \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l) \<and> card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> r - 1"
+  shows "real (card A) * 2 powr (real t * (r - 1) ^ (r - 1) / r ^ r) \<le> 2 ^ n"
+proof -
+  define Cs where "Cs = {..<n} \<rightarrow>\<^sub>E {..<r}"
+  define q where "q = (r - 1) ^ (r - 1)"
+  define P where "P = r ^ r"
+  define y :: real where "y = real t * q / P"
+  define D where "D c X = card {i. i < n \<and> forced n c G X i}" for c X
+  have finCs: "finite Cs" by (simp add: Cs_def finite_PiE)
+  have cCs: "card Cs = r ^ n" by (simp add: Cs_def card_PiE)
+  have R0: "0 < card Cs" using cCs r by simp
+  then have Cs0: "Cs \<noteq> {}" by auto
+  have P0: "0 < P" using r by (simp add: P_def)
+  have "A \<subseteq> Pow {..<n}" using A by blast
+  then have finA: "finite A" by (rule finite_subset) simp
+  have each: "real (card Cs) * 2 powr y \<le> (\<Sum>c\<in>Cs. (2::real) ^ D c X)" if X: "X \<in> A" for X
+  proof -
+    define F where "F c = {i. i < n \<and> \<not> forced n c G X i}" for c
+    have XA: "X \<subseteq> {..<n}" "t \<le> card X" using A X by auto
+    have good: "\<forall>l\<in>X. r ^ n * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> Cs. l \<notin> F c}"
+    proof
+      fix i assume i: "i \<in> X"
+      obtain C where C: "C \<in> G" "(i, True) \<in> C" "(i, False) \<notin> C"
+        and o: "\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l"
+        and w: "card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)} \<le> r - 1"
+        using narrow X i by blast
+      define E where "E = {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)}"
+      have iN: "i < n" using i XA by blast
+      have "r ^ n * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> Cs. \<forall>e\<in>E. c e < c i}"
+        unfolding Cs_def using iN w r by (intro good_colorings) (auto simp: E_def)
+      also have "\<dots> \<le> r ^ r * card {c \<in> Cs. i \<notin> F c}"
+      proof (intro mult_left_mono card_mono)
+        show "finite {c \<in> Cs. i \<notin> F c}" using finCs by simp
+        show "{c \<in> Cs. \<forall>e\<in>E. c e < c i} \<subseteq> {c \<in> Cs. i \<notin> F c}"
+        proof safe
+          fix c assume c: "c \<in> Cs" "\<forall>e\<in>E. c e < c i" "i \<in> F c"
+          have "forced n c G X i" unfolding forced_def
+          proof (intro bexI[OF _ C(1)] exI[of _ True] conjI)
+            show "(i, True) \<in> C" "(i, \<not> True) \<notin> C" using C by simp_all
+            show "\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> (fst l < n \<longrightarrow> c (fst l) < c i) \<and> \<not> lv X l"
+            proof (intro ballI impI conjI)
+              fix l assume l: "l \<in> C" "fst l \<noteq> i"
+              show "\<not> lv X l" using o l by blast
+              assume "fst l < n"
+              then have "fst l \<in> E" using l unfolding E_def by (cases l) auto
+              then show "c (fst l) < c i" using c(2) by blast
+            qed
+          qed
+          then show False using c(3) by (simp add: F_def)
+        qed
+      qed simp
+      finally show "r ^ n * (r - 1) ^ (r - 1) \<le> r ^ r * card {c \<in> Cs. i \<notin> F c}" .
+    qed
+    have fs: "(\<Sum>c\<in>Cs. card (F c)) * r ^ r + t * (card Cs * (r - 1) ^ (r - 1))
+                \<le> n * (card Cs * r ^ r)"
+      by (rule free_sum[OF Cs_def r _ XA(1) XA(2) good]) (auto simp: F_def)
+    have DF: "D c X + card (F c) = n" for c
+    proof -
+      have "{i. i < n \<and> forced n c G X i} \<union> F c = {..<n}" by (auto simp: F_def)
+      moreover have "{i. i < n \<and> forced n c G X i} \<inter> F c = {}" by (auto simp: F_def)
+      ultimately have "card {i. i < n \<and> forced n c G X i} + card (F c) = card {..<n}"
+        by (metis card_Un_disjoint finite_Un finite_lessThan)
+      then show ?thesis by (simp add: D_def)
+    qed
+    define SD where "SD = (\<Sum>c\<in>Cs. D c X)"
+    define SF where "SF = (\<Sum>c\<in>Cs. card (F c))"
+    have "SD + SF = (\<Sum>c\<in>Cs. D c X + card (F c))" by (simp add: SD_def SF_def sum.distrib)
+    also have "\<dots> = n * card Cs" using DF by simp
+    finally have e: "SD + SF = n * card Cs" .
+    have "SD * P + SF * P = n * (card Cs * P)" using e by (metis add_mult_distrib mult.assoc)
+    moreover have "SF * P + t * (card Cs * q) \<le> n * (card Cs * P)"
+      using fs by (simp add: SF_def P_def q_def)
+    ultimately have sd: "t * (card Cs * q) \<le> SD * P" by linarith
+    have avg: "real (card Cs) * y \<le> (\<Sum>c\<in>Cs. real (D c X))"
+    proof -
+      have "real (card Cs) * y = real (t * (card Cs * q)) / real P"
+        by (simp add: y_def algebra_simps)
+      also have "\<dots> \<le> real (SD * P) / real P"
+        using sd by (intro divide_right_mono) (simp only: of_nat_le_iff, simp)
+      also have "\<dots> = real SD" using P0 by simp
+      finally show ?thesis by (simp add: SD_def)
+    qed
+    show ?thesis using power_average[OF finCs Cs0 _ avg, of 2] by simp
+  qed
+  have "real (card A) * (real (card Cs) * 2 powr y) = (\<Sum>X\<in>A. real (card Cs) * 2 powr y)" by simp
+  also have "\<dots> \<le> (\<Sum>X\<in>A. \<Sum>c\<in>Cs. (2::real) ^ D c X)" by (rule sum_mono) (rule each)
+  also have "\<dots> = (\<Sum>c\<in>Cs. \<Sum>X\<in>A. (2::real) ^ D c X)" by (rule sum.swap)
+  also have "\<dots> \<le> (\<Sum>c\<in>Cs. (2::real) ^ n)"
+  proof (rule sum_mono)
+    fix c
+    have "(\<Sum>X\<in>A. (2::nat) ^ D c X) \<le> 2 ^ n" unfolding D_def using A by (intro forced_kraft) blast
+    then have "real (\<Sum>X\<in>A. (2::nat) ^ D c X) \<le> real ((2::nat) ^ n)" by (simp only: of_nat_le_iff)
+    then show "(\<Sum>X\<in>A. (2::real) ^ D c X) \<le> 2 ^ n" by simp
+  qed
+  also have "\<dots> = real (card Cs) * 2 ^ n" by simp
+  finally have "real (card Cs) * (real (card A) * 2 powr y) \<le> real (card Cs) * 2 ^ n"
+    by (simp add: algebra_simps)
+  then show ?thesis using R0 by (simp add: y_def q_def P_def)
+qed
+
+text \<open>A clause with \<open>w\<close> other variables is critical for \<open>i\<close> at no more than \<open>2\<^sup>n\<^sup>-\<^sup>w\<^sup>-\<^sup>1\<close> points.\<close>
+
+lemma crit_count:
+  assumes i: "i < n"
+  shows "card {X. X \<subseteq> {..<n} \<and> i \<in> X \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l)}
+           \<le> 2 ^ (n - Suc (card {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)}))"
+proof -
+  define W where "W = {v. v < n \<and> v \<noteq> i \<and> (\<exists>b. (v, b) \<in> C)}"
+  define S where "S = {X. X \<subseteq> {..<n} \<and> i \<in> X \<and> (\<forall>l\<in>C. fst l \<noteq> i \<longrightarrow> \<not> lv X l)}"
+  define R where "R = {..<n} - insert i W"
+  have Wn: "insert i W \<subseteq> {..<n}" using i by (auto simp: W_def)
+  have finW: "finite W" by (simp add: W_def)
+  have iW: "i \<notin> W" by (simp add: W_def)
+  have inj: "inj_on (\<lambda>X. X - insert i W) S"
+  proof (rule inj_onI)
+    fix X Y assume X: "X \<in> S" and Y: "Y \<in> S" and e: "X - insert i W = Y - insert i W"
+    have "v \<in> X \<longleftrightarrow> v \<in> Y" if v: "v \<in> insert i W" for v
+    proof (cases "v = i")
+      case True
+      then show ?thesis using X Y by (simp add: S_def)
+    next
+      case False
+      then obtain b where b: "(v, b) \<in> C" using v by (auto simp: W_def)
+      have "\<not> lv X (v, b)" "\<not> lv Y (v, b)" using X Y b False by (auto simp: S_def)
+      then show ?thesis by (auto simp: lv_def)
+    qed
+    then show "X = Y" using e by blast
+  qed
+  have sub: "(\<lambda>X. X - insert i W) ` S \<subseteq> Pow R" by (auto simp: S_def R_def)
+  have "card S \<le> card (Pow R)" using inj sub by (rule card_inj_on_le) (simp add: R_def)
+  also have "\<dots> = 2 ^ card R" by (simp add: R_def card_Pow)
+  also have "card R = n - Suc (card W)"
+    using Wn finW iW by (simp add: R_def card_Diff_subset)
+  finally show ?thesis by (simp add: S_def W_def)
+qed
+
 end
