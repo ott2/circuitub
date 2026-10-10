@@ -10,8 +10,23 @@ variables has depth-$d$ AND/OR formulas, with negations only on inputs, of size
 $2^{O(n^{1/(d-1)})}$. The constant depends only on $d$.
 
 In particular, Majority has depth-$d$ circuits of size $2^{O(n^{1/(d-1)})}$, matching
-Håstad's lower bound. For depth 3, that is $2^{O(\sqrt n)}$. The lower bound is not
-formalized here.
+Håstad's lower bound. For depth 3, that is $2^{O(\sqrt n)}$.
+
+At depth 3 the matching lower bound is formalized too (`isabelle/Depth3_Lower.thy`). Every
+$\Sigma_3$ or $\Pi_3$ formula for Majority on $n \ge 1$ variables has at least
+$2^{\sqrt n/4}/((n+1)(n+2))$ gates (`majority_depth3_sqrt`). So depth-3 Majority is
+$2^{\Theta(\sqrt n)}$, with both directions machine-checked. The proof is the elementary
+argument of Håstad, Jukna and Pudlák and of Paturi, Pudlák and Zane:
+- In a CNF of the formula that accepts a point of the middle slice, every one of the point
+  has a *critical clause*: a clause whose only true literal at the point is that one.
+- **Narrow critical clauses** force their variable in a random order of the variables, and
+  forced variables need not be recorded (`ppz_count`). The Kraft inequality is proved with
+  disjoint cylinders (`forced_kraft`), and the random order is a random colouring, as in
+  `Monotone_Hyper`.
+- **Wide critical clauses** are critical for few points (`crit_count`).
+
+The general statement (`sigma3_threshold`) holds for every threshold. Lower bounds for
+depth $d > 3$ need the switching lemma and are not formalized.
 
 The Isabelle statement (`isabelle/Majority_Circuits.thy`) is slightly stronger than the
 paper's claim. It bounds formula (tree) size rather than circuit size, and the formulas
@@ -119,7 +134,7 @@ over $n$ remains on paper.
 
 | Path | |
 |---|---|
-| `isabelle/` | Session `Majority_AC0`: 19 theories, about 7100 lines |
+| `isabelle/` | Session `Majority_AC0`: 20 theories, about 7950 lines |
 | `isabelle/Bounded_Width.thy` | Remark 1 (OR of narrow CNFs) and the Enum output-size bound |
 | `isabelle/Block_Local.thy` | Clauses read two blocks; tests built from one-block pieces need $2^{\Omega(\sqrt n \log n)}$ |
 | `isabelle/Monotone_Pairs.thy` | Monotone pairwise tests: exchange and determination lemmas, Theorems A and B (counting and weighted), tightness via matching tests |
@@ -130,6 +145,7 @@ over $n$ remains on paper.
 | `isabelle/Monotone_Kraft.thy` | The counts of `Monotone_Hyper` and `Monotone_Wide` by Kraft and Jensen over all colourings, without the $(2r)^k$ and $(2w)^k$ overheads |
 | `isabelle/Binomial_Estimates.thy` | Central binomial bound, slice size, Chebyshev for block weights, binomials in the window |
 | `isabelle/Monotone_Formula.thy` | Theorem E′ in finite form, from a formula of block-symmetric CNF tests for Majority to an explicit bound on the number of tests |
+| `isabelle/Depth3_Lower.thy` | The matching depth-3 lower bound: $\Sigma_3$ and $\Pi_3$ formulas for Majority need $2^{\Omega(\sqrt n)}$ gates (PPZ with critical clauses) |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |

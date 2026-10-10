@@ -98,7 +98,27 @@ We are now extending the ideas in new directions. The live document is
     `simp only: ac_simps`. For nonlinear cancellations, AC-normalize to atoms and use
     `linarith`. Give `log_mono` and `mult_left_mono` explicitly rather than via simp.
 
-The session is `Majority_AC0` (19 theories, ~7100 lines). `isabelle/Audit.thy` lists every
+- `isabelle/Depth3_Lower.thy`: the matching depth-3 lower bound for Majority.
+  - `lv`, `csat`, `forced`: points are subsets of `{..<n}`, a CNF is a set of literal sets,
+    and coordinate `i` is forced in the order `p` if a clause has every other literal false
+    and earlier (and `i` with one sign only).
+  - `forced_kraft`: $\sum_X 2^{\#\mathrm{forced}} \le 2^n$, via disjoint cylinders
+    (`cyl_disjoint`: at the first coordinate where two points differ, both forced and
+    unforced lead to a contradiction). No injectivity of `p` is needed, so colourings serve
+    as orders directly.
+  - `ppz_count`: narrow critical clauses, averaged over colourings with `good_colorings`,
+    `free_sum` and `power_average`. `crit_count`: a clause with $w$ other variables is
+    critical for at most $2^{n-w-1}$ points.
+  - `sigma3_slice` (sets of CNFs), `sigma3_threshold` (formulas, any threshold),
+    `majority_slices` (Σ3 directly; Π3 via `dual` and `cflip`, which complements the
+    variables below $n$), `majority_depth3_lower` (explicit in $r$), and
+    `majority_depth3_sqrt`: $2^{\sqrt n/4} \le (n+1)(n+2)\cdot\mathrm{gates}$.
+  - Pitfalls met: blast/fastforce loop on `pi_Suc_And`/`sig_Suc_Or` unfolding and on
+    disjointness goals; obtain the witness explicitly. To keep casts of products intact use
+    `simp only: of_nat_le_iff of_nat_mult[symmetric]`. There is no `exp 1 ≤ 3` in the
+    library; `exp_one_le_4` is proved from $e^{-1/2} \ge 1/2$.
+
+The session is `Majority_AC0` (20 theories, ~7950 lines). `isabelle/Audit.thy` lists every
 headline theorem and fails the build if any depends on an oracle. Add new headline
 theorems there.
 
@@ -136,6 +156,10 @@ and kept uncommitted.
   and a window $[m-d, m+d] \subseteq [2, b-2]$ with $d^2 \ge 4b$. All hold in the regime of
   the paper's contradiction argument. Only the step $w \le z/\log_2\beta + 1$ and the
   optimization over $n$ remain on paper.
+- **The depth-3 lower bound is formal** (`majority_depth3_sqrt`): so the paper's optimality
+  claim is checked at depth 3, and depth-3 Majority is $2^{\Theta(\sqrt n)}$ in Isabelle.
+  `ppz_count` also covers the small-$b$ case of Theorem C, with a factor $e$ lost to
+  colourings.
 - **Errors found so far by formalizing:** the documents said `hyper_compress` has exponent
   $k/(4er)$; it is $k/(2er)$. Nothing wrong was found in Theorem E′.
 
@@ -152,8 +176,8 @@ and kept uncommitted.
 3. **The analytic rest:** Theorem E′ is done up to the optimization over $n$. An
    explicit-constant corollary for fixed $\alpha$ (choose $w = \lfloor z/\log_2\beta\rfloor + 1$,
    use `window_beta`) would close it. For Theorems C and D, `chebyshev_window` and
-   `central_binomial` replace Hoeffding and $\sqrt{\pi b/2}$. Still missing: the cheap-test
-   split and PPZ for small $b$.
+   `central_binomial` replace Hoeffding and $\sqrt{\pi b/2}$, and `ppz_count` is the small-$b$
+   case. Still missing: the cheap-test split.
 4. **The fixed-point form** (§2.3).
 
 ## Working rules

@@ -753,8 +753,14 @@ $b^{-k/(2r)}$. Theorem E says nothing beats that rate.
      points;
    - `central_binomial` turns (B) and (D) into powers of $b$.
 
-   Still missing are the cheap-test split of Theorem C, the PPZ case for small $b$, and the
-   optimizations over $b$ and $n$. The last is calculus with $o(1)$ terms; an explicit-constant
+   The PPZ case for small $b$ is now formal as well: `ppz_count` in
+   `isabelle/Depth3_Lower.thy` bounds a CNF in which every one of every accepted point has a
+   critical clause with at most $r - 1$ other variables. With $r = 2b$ it gives
+   $2^{n - N(r-1)^{r-1}/r^r} \le 2^{n - N/(2eb)}$ accepted points, instead of
+   $2^{n - N/(2b)}$; the factor $e$ comes from colourings in place of permutations (item 2).
+   The same file proves the depth-3 lower bound for Majority itself
+   (`majority_depth3_sqrt`), so the paper's optimality claim is now checked at depth 3.
+   Still missing are the cheap-test split of Theorem C and the optimizations over $b$ and $n$. The last is calculus with $o(1)$ terms; an explicit-constant
    version for fixed $\alpha$ would be the natural formal target.
 4. **The fixed-point form.** Formalize the reformulation in Section 2.3. It is no longer
    needed for Theorem B, but it links the problem to fixed points of networks.
