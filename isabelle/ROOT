@@ -21,3 +21,8 @@ session Majority_AC0 = "HOL-Library" +
     Monotone_Formula
     Depth3_Lower
     Audit
+
+session Monotone_Sigma3 in "gkprst" = "HOL-Library" +
+  options [timeout = 600]
+  theories
+    Monotone_3CNF
