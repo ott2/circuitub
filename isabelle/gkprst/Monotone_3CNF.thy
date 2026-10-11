@@ -383,7 +383,53 @@ proof -
   finally show ?thesis .
 qed
 
+text \<open>If every clause containing \<open>a\<close> also contains \<open>b\<close>, a transversal with \<open>a\<close> omits \<open>b\<close>:
+  otherwise \<open>a\<close> would have no critical clause.\<close>
+
+lemma forced_out:
+  assumes X: "X \<in> trans V F t" and a: "a \<in> X" and ab: "a \<noteq> b"
+    and aw: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> b \<in> D"
+  shows "b \<notin> X"
+proof
+  assume b: "b \<in> X"
+  obtain D where D: "D \<in> F" "D \<inter> X = {a}" using critical[OF X a] by blast
+  then have "b \<in> D \<inter> X" using aw b by blast
+  then show False using D ab by auto
+qed
+
+lemma hit:
+  assumes "X \<in> trans V F t" "C \<in> F"
+  shows "C \<inter> X \<noteq> {}"
+proof -
+  have "hits F X" using assms(1) by (simp add: trans_def)
+  then show ?thesis using assms(2) unfolding hits_def by blast
+qed
+
+lemma restr_finite: "finite (restr F J E)"
+  unfolding restr_def using finF by simp
+
 end
+
+lemma card3_obtain:
+  assumes "3 \<le> card A"
+  obtains x y z where "x \<in> A" "y \<in> A" "z \<in> A" "x \<noteq> y" "x \<noteq> z" "y \<noteq> z"
+proof -
+  obtain B where B: "B \<subseteq> A" "card B = 3" using obtain_subset_with_card_n[OF assms] by blast
+  then obtain x y z where "B = {x,y,z}" "x \<noteq> y" "y \<noteq> z" "x \<noteq> z"
+    using card_3_iff[of B] by blast
+  then show ?thesis using that B(1) by blast
+qed
+
+lemma card2_obtain:
+  assumes "2 \<le> card A"
+  obtains x y where "x \<in> A" "y \<in> A" "x \<noteq> y"
+proof -
+  obtain B where B: "B \<subseteq> A" "card B = 2" using obtain_subset_with_card_n[OF assms] by blast
+  then obtain x y where "B = {x,y}" "x \<noteq> y" using card_2_iff[of B] by blast
+  then show ?thesis using that B(1) by blast
+qed
+
+lemmas ratio_simps = ratio_def power_int_minus inverse_eq_divide power_divide
 
 subsection \<open>Monotone 3-CNFs with no 2-clause\<close>
 
@@ -391,58 +437,210 @@ locale core0 = core +
   assumes three: "\<And>C. C \<in> F \<Longrightarrow> card C = 3"
 begin
 
-lemma hit3:
-  assumes "X \<in> trans V F t" "{a,b,c} \<in> F" "a \<notin> X" "b \<notin> X"
-  shows "c \<in> X"
+lemma three_form:
+  assumes C: "C \<in> F" and xy: "x \<in> C" "y \<in> C" "x \<noteq> y"
+  obtains z where "C = {x,y,z}" "z \<noteq> x" "z \<noteq> y"
 proof -
-  have "hits F X" using assms(1) by (simp add: trans_def)
-  then have "{a,b,c} \<inter> X \<noteq> {}" using assms(2) unfolding hits_def by blast
-  then show ?thesis using assms(3,4) by auto
+  have fC: "finite C" using cnf_clause_finite[OF cnf C] .
+  have "card (C - {x,y}) = card C - card {x,y}"
+    using xy fC by (intro card_Diff_subset) auto
+  then have "card (C - {x,y}) = 1" using three[OF C] xy(3) by simp
+  then obtain z where z: "C - {x,y} = {z}" by (rule card_1_singletonE)
+  then have "C = {x,y,z}" using xy by blast
+  moreover have "z \<noteq> x" "z \<noteq> y" using z by auto
+  ultimately show ?thesis using that by blast
 qed
 
-text \<open>\<open>\<P>(0,1)\<close>: a pair \<open>{a,b}\<close> in three clauses.  If \<open>a\<close> always occurs with \<open>b\<close>, setting \<open>a\<close>
-  to 1 forces \<open>b\<close> to 0, since otherwise \<open>a\<close> has no critical clause.\<close>
+lemma del_two:
+  assumes C: "C \<in> F" "a \<in> C" "C \<inter> J = {}"
+  shows "C - {a} \<in> twos (restr F J {a})"
+proof -
+  have "card (C - {a}) = 2"
+    using three[OF C(1)] C(2) cnf_clause_finite[OF cnf C(1)] by simp
+  then show ?thesis using restr_mem[OF C(1) C(3)] by (simp add: twos_def)
+qed
+
+text \<open>\<open>\<P>(0,1)\<close>: a pair \<open>{a,b}\<close> lies in three clauses \<open>{a,b,c}\<close>, \<open>{a,b,d}\<close>, \<open>{a,b,e}\<close>.
+  If \<open>a\<close> always occurs with \<open>b\<close>, setting \<open>a\<close> to 1 forces \<open>b\<close> to 0.\<close>
 
 lemma p01_with:
   assumes C: "{a,b,c} \<in> F" "{a,b,d} \<in> F" "{a,b,e} \<in> F" and dist: "distinct [a,b,c,d,e]"
-    and aw: "\<And>C. C \<in> F \<Longrightarrow> a \<in> C \<Longrightarrow> b \<in> C"
+    and aw: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> b \<in> D"
   shows "real (card (trans V F t)) \<le> bound T0 s t"
-proof (rule table[where rs = "[({a},{b},T0), ({b},{a},T0), ({c,d,e},{a,b},T0)]"])
-  show "rows_ok [({a},{b},T0), ({b},{a},T0), ({c,d,e},{a,b},T0)]"
-    using sub[OF C(1)] sub[OF C(2)] sub[OF C(3)] dist unfolding rows_ok_def by auto
-  show "\<forall>X\<in>trans V F t. \<exists>(J,E,k)\<in>set [({a},{b},T0), ({b},{a},T0), ({c,d,e},{a,b},T0)].
-      J \<subseteq> X \<and> X \<inter> E = {}"
-  proof
-    fix X assume X: "X \<in> trans V F t"
-    show "\<exists>(J,E,k)\<in>set [({a},{b},T0), ({b},{a},T0), ({c,d,e},{a,b},T0)]. J \<subseteq> X \<and> X \<inter> E = {}"
-    proof (cases "a \<in> X")
-      case True
-      have "b \<notin> X"
-      proof
-        assume b: "b \<in> X"
-        obtain D where D: "D \<in> F" "D \<inter> X = {a}" using critical[OF X True] by blast
-        then have "b \<in> D \<inter> X" using aw b by blast
-        then show False using D dist by auto
-      qed
-      then show ?thesis using True by auto
-    next
-      case na: False
-      show ?thesis
-      proof (cases "b \<in> X")
-        case True
-        then show ?thesis using na by auto
-      next
-        case False
-        have "c \<in> X" "d \<in> X" "e \<in> X" using hit3[OF X _ na False] C by auto
-        then show ?thesis using na False by auto
-      qed
-    qed
+proof (rule table[where rs = "[({a},{b},T0), ({b},{a},T0), ({c,d,e},{a,b},T0)]"], goal_cases)
+  case 1
+  then show ?case using sub[OF C(1)] sub[OF C(2)] sub[OF C(3)] dist unfolding rows_ok_def by auto
+next
+  case 2
+  have "a \<in> X \<and> b \<notin> X \<or> b \<in> X \<and> a \<notin> X \<or> {c,d,e} \<subseteq> X \<and> a \<notin> X \<and> b \<notin> X"
+    if X: "X \<in> trans V F t" for X
+  proof (cases "a \<in> X")
+    case True
+    then show ?thesis using forced_out[OF X True _ aw] dist by auto
+  next
+    case False
+    then show ?thesis using hit[OF X C(1)] hit[OF X C(2)] hit[OF X C(3)] by auto
   qed
-  show "(\<Sum>(J,E,k)\<leftarrow>[({a},{b},T0), ({b},{a},T0), ({c,d,e},{a,b},T0)].
-      ratio k (card J) (card E) T0 (even s)) \<le> 1"
-    using dist by (cases "even s") (simp_all add: ratio_def power_int_minus inverse_eq_divide power_divide)
+  then show ?case by auto
+next
+  case 3
+  then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>Otherwise some clause contains \<open>a\<close> but not \<open>b\<close>, and setting \<open>a = 0\<close>, \<open>b = 1\<close> leaves a
+  2-clause.  The paper also assumes a clause with \<open>b\<close> but not \<open>a\<close>; it is not needed.\<close>
+
+lemma p01_sep:
+  assumes C: "{a,b,c} \<in> F" "{a,b,d} \<in> F" "{a,b,e} \<in> F" and dist: "distinct [a,b,c,d,e]"
+    and D: "D \<in> F" "a \<in> D" "b \<notin> D"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({a},{},T0), ({b},{a},T1), ({c,d,e},{a,b},T0)]"], goal_cases)
+  case 1
+  have "D - {a} \<in> twos (restr F {b} {a})" using D by (intro del_two) auto
+  then have "infam T1 (restr F {b} {a})" by auto
+  then show ?case using sub[OF C(1)] sub[OF C(2)] sub[OF C(3)] dist unfolding rows_ok_def by auto
+next
+  case 2
+  have "a \<in> X \<or> b \<in> X \<and> a \<notin> X \<or> {c,d,e} \<subseteq> X \<and> a \<notin> X \<and> b \<notin> X"
+    if X: "X \<in> trans V F t" for X
+    using hit[OF X C(1)] hit[OF X C(2)] hit[OF X C(3)] by auto
+  then show ?case by auto
+next
+  case 3
+  then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+lemma p01:
+  assumes "\<not> npair F"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof -
+  obtain a b where ab: "a \<noteq> b" "\<not> card {C\<in>F. a \<in> C \<and> b \<in> C} \<le> 2"
+    using assms unfolding npair_def by blast
+  have "3 \<le> card {C\<in>F. a \<in> C \<and> b \<in> C}" using ab(2) by simp
+  then obtain C1 C2 C3 where Cs: "C1 \<in> {C\<in>F. a \<in> C \<and> b \<in> C}" "C2 \<in> {C\<in>F. a \<in> C \<and> b \<in> C}"
+      "C3 \<in> {C\<in>F. a \<in> C \<and> b \<in> C}" "C1 \<noteq> C2" "C1 \<noteq> C3" "C2 \<noteq> C3"
+    by (rule card3_obtain)
+  obtain c where c: "C1 = {a,b,c}" "c \<noteq> a" "c \<noteq> b" using three_form[of "C1" a b] Cs(1) ab(1) by blast
+  obtain d where d: "C2 = {a,b,d}" "d \<noteq> a" "d \<noteq> b" using three_form[of "C2" a b] Cs(2) ab(1) by blast
+  obtain e where e: "C3 = {a,b,e}" "e \<noteq> a" "e \<noteq> b" using three_form[of "C3" a b] Cs(3) ab(1) by blast
+  have dist: "distinct [a,b,c,d,e]" using ab(1) c d e Cs(4-6) by auto
+  have C: "{a,b,c} \<in> F" "{a,b,d} \<in> F" "{a,b,e} \<in> F" using Cs c d e by auto
+  show ?thesis
+  proof (cases "\<forall>D\<in>F. a \<in> D \<longrightarrow> b \<in> D")
+    case True
+    then show ?thesis using p01_with[OF C dist] by blast
+  next
+    case False
+    then obtain D where "D \<in> F" "a \<in> D" "b \<notin> D" by blast
+    then show ?thesis using p01_sep[OF C dist] by blast
+  qed
+qed
+
+text \<open>\<open>\<P>(0,2)\<close>: a variable \<open>a\<close> in three clauses.  Setting \<open>a = 0\<close> turns its clauses into
+  2-clauses; no three share a variable, since that variable would lie in three clauses with
+  \<open>a\<close>.  If \<open>a\<close> is in four or more clauses the restriction has four or more 2-clauses, and it is
+  still of type 3 in the paper's restricted sense.\<close>
+
+lemma del_type3:
+  assumes np: "npair F" and deg: "3 \<le> card {C\<in>F. a \<in> C}"
+  shows "infam T3 (restr F {} {a})"
+proof -
+  let ?G = "restr F {} {a}"
+  have finT: "finite (twos ?G)" using restr_finite by (simp add: twos_def)
+  have img: "(\<lambda>C. C - {a}) ` {C\<in>F. a \<in> C} \<subseteq> twos ?G"
+    using del_two by auto
+  have inj: "inj_on (\<lambda>C. C - {a}) {C\<in>F. a \<in> C}"
+  proof (rule inj_onI)
+    fix C D assume "C \<in> {C\<in>F. a \<in> C}" "D \<in> {C\<in>F. a \<in> C}" "C - {a} = D - {a}"
+    then have "insert a (C - {a}) = insert a (D - {a})" "a \<in> C" "a \<in> D" by auto
+    then show "C = D" by (simp add: insert_absorb)
+  qed
+  have "3 \<le> card ((\<lambda>C. C - {a}) ` {C\<in>F. a \<in> C})" using deg card_image[OF inj] by simp
+  also have "\<dots> \<le> card (twos ?G)" using card_mono[OF finT img] .
+  finally have c3: "3 \<le> card (twos ?G)" .
+  have deg2: "card {D\<in>twos ?G. x \<in> D} \<le> 2" for x
+  proof (cases "x = a")
+    case True
+    then have e: "{D\<in>twos ?G. x \<in> D} = {}" by (auto simp: twos_def restr_def)
+    show ?thesis unfolding e by simp
+  next
+    case False
+    have "{D\<in>twos ?G. x \<in> D} \<subseteq> (\<lambda>C. C - {a}) ` {C\<in>F. a \<in> C \<and> x \<in> C}"
+    proof
+      fix D assume D: "D \<in> {D\<in>twos ?G. x \<in> D}"
+      then obtain C where C: "C \<in> F" "D = C - {a}" "card D = 2" "x \<in> D"
+        by (auto simp: twos_def restr_def)
+      have "a \<in> C"
+      proof (rule ccontr)
+        assume "a \<notin> C"
+        then have "D = C" using C(2) by simp
+        then show False using C three by simp
+      qed
+      then show "D \<in> (\<lambda>C. C - {a}) ` {C\<in>F. a \<in> C \<and> x \<in> C}" using C by blast
+    qed
+    then have "card {D\<in>twos ?G. x \<in> D} \<le> card ((\<lambda>C. C - {a}) ` {C\<in>F. a \<in> C \<and> x \<in> C})"
+      using finF by (intro card_mono) auto
+    also have "\<dots> \<le> card {C\<in>F. a \<in> C \<and> x \<in> C}" using finF by (intro card_image_le) simp
+    also have "\<dots> \<le> 2" using np False unfolding npair_def by (metis (no_types, lifting))
+    finally show ?thesis .
+  qed
+  show ?thesis using c3 deg2 npair_restr[OF finF np] by simp
+qed
+
+lemma p02:
+  assumes np: "npair F" and deg: "3 \<le> card {C\<in>F. a \<in> C}"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({a},{},T0), ({},{a},T3)]"], goal_cases)
+  case 1
+  obtain C where "C \<in> F" "a \<in> C" using deg by (metis (no_types, lifting) card.empty empty_Collect_eq not_numeral_le_zero)
+  then have "a \<in> V" using sub by blast
+  then show ?case using del_type3[OF np deg] unfolding rows_ok_def by auto
+next
+  case 2
+  show ?case by auto
+next
+  case 3
+  then show ?case by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>\<open>\<P>(0,3)\<close>: a pair \<open>{a,b}\<close> in exactly two clauses \<open>{a,b,c}\<close>, \<open>{a,b,d}\<close>; since \<open>\<P>(0,2)\<close>
+  fails, \<open>a\<close> is in no other clause, so \<open>a = 1\<close> forces \<open>b = 0\<close>.\<close>
+
+lemma p03:
+  assumes np: "npair F" and deg: "\<And>x. card {C\<in>F. x \<in> C} \<le> 2"
+    and C: "{a,b,c} \<in> F" "{a,b,d} \<in> F" and dist: "distinct [a,b,c,d]"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({a},{b},T0), ({},{a},T2o)]"], goal_cases)
+  case 1
+  have "{b,c} \<in> twos (restr F {} {a})" "{b,d} \<in> twos (restr F {} {a})"
+    using del_two[OF C(1), of a "{}"] del_two[OF C(2), of a "{}"] dist
+    by (simp_all add: insert_Diff_if)
+  moreover have "{b,c} \<noteq> {b,d}" using dist by (auto simp: doubleton_eq_iff)
+  ultimately have "infam T2o (restr F {} {a})" using npair_restr[OF finF np] by fastforce
+  then show ?case using sub[OF C(1)] dist unfolding rows_ok_def by auto
+next
+  case 2
+  have aC: "{{a,b,c},{a,b,d}} = {C\<in>F. a \<in> C}"
+  proof (rule card_seteq)
+    show "finite {C\<in>F. a \<in> C}" using finF by simp
+    show "{{a,b,c},{a,b,d}} \<subseteq> {C\<in>F. a \<in> C}" using C by auto
+    have "{a,b,c} \<noteq> {a,b,d}" using dist by auto
+    then show "card {C\<in>F. a \<in> C} \<le> card {{a,b,c},{a,b,d}}" using deg[of a] by simp
+  qed
+  have aw: "b \<in> D" if "D \<in> F" "a \<in> D" for D
+  proof -
+    have "D \<in> {{a,b,c},{a,b,d}}" using aC that by blast
+    then show ?thesis by auto
+  qed
+  have "a \<in> X \<and> b \<notin> X \<or> a \<notin> X" if X: "X \<in> trans V F t" for X
+    using forced_out[OF X _ _ aw] dist by auto
+  then show ?case by auto
+next
+  case 3
+  then show ?case by (cases "even s") (simp_all add: ratio_simps)
 qed
 
 end
+
 
 end
