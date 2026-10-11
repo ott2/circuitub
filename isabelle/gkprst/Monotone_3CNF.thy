@@ -106,7 +106,13 @@ proof (rule card_inj_on_le[where f = "\<lambda>X. X - J"])
     then obtain X where X: "X \<subseteq> V" "hits F X" "card X = t" "J \<subseteq> X" "X \<inter> E = {}"
       and Y: "Y = X - J" by (auto simp: trans_def)
     have "hits (restr F J E) Y"
-      unfolding hits_def restr_def using X(2,5) Y unfolding hits_def by blast
+      unfolding hits_def
+    proof
+      fix C' assume "C' \<in> restr F J E"
+      then obtain C where C: "C \<in> F" "C \<inter> J = {}" "C' = C - E" by (auto simp: restr_def)
+      then obtain x where "x \<in> C" "x \<in> X" using X(2) unfolding hits_def by blast
+      then show "C' \<inter> Y \<noteq> {}" using C X(5) Y by blast
+    qed
     moreover have "card Y = t - card J"
       using X Y finite_subset[OF J V] by (simp add: card_Diff_subset)
     ultimately show "Y \<in> trans (V - J - E) (restr F J E) (t - card J)"
@@ -266,7 +272,7 @@ locale core =
   assumes cnf: "cnf V F" and thr: "thr V F t" and ih: "IH (card V)"
     and sizes: "\<And>C. C \<in> F \<Longrightarrow> card C = 2 \<or> card C = 3"
     and anti: "\<And>C D. C \<in> F \<Longrightarrow> D \<in> F \<Longrightarrow> C \<subseteq> D \<Longrightarrow> C = D"
-    and onto: "\<Union>F = V"
+    and onto: "\<Union>F = V" and t1: "1 \<le> t"
 begin
 
 abbreviation s :: int where "s \<equiv> 3 * int t - int (card V)"
@@ -340,7 +346,7 @@ definition rows_ok :: "(nat set \<times> nat set \<times> fam) list \<Rightarrow
 
 lemma table_sum:
   assumes ok: "rows_ok rs" and S: "S \<subseteq> trans V F t"
-    and cov: "\<forall>X\<in>S. \<exists>(J,E,k)\<in>set rs. J \<subseteq> X \<and> X \<inter> E = {}"
+    and cov: "\<forall>X\<in>S. \<exists>r\<in>set rs. fst r \<subseteq> X \<and> X \<inter> fst (snd r) = {}"
   shows "real (card S) \<le> (\<Sum>(J,E,k)\<leftarrow>rs. ratio k (card J) (card E) i (even s)) * bound i s t"
   using ok S cov
 proof (induction rs arbitrary: S)
@@ -350,13 +356,19 @@ next
   case (Cons r rs)
   obtain J E k where r: "r = (J, E, k)" by (cases r) auto
   let ?S1 = "{X\<in>S. J \<subseteq> X \<and> X \<inter> E = {}}"
-  let ?S2 = "S - ?S1"
+  let ?S2 = "{X\<in>S. \<exists>r\<in>set rs. fst r \<subseteq> X \<and> X \<inter> fst (snd r) = {}}"
   have fin: "finite (trans V F t)"
     by (rule finite_subset[of _ "Pow V"]) (use finV in \<open>auto simp: trans_def\<close>)
   have okr: "J \<subseteq> V" "E \<subseteq> V" "J \<inter> E = {}" "J \<union> E \<noteq> {}"
       "infam k (restr F J E) \<or> (\<exists>C\<in>restr F J E. card C \<le> 1)"
     using Cons.prems(1) r unfolding rows_ok_def by auto
-  have "S = ?S1 \<union> ?S2" by blast
+  have ok2: "rows_ok rs" using Cons.prems(1) unfolding rows_ok_def by simp
+  have cov2: "\<forall>X\<in>?S2. \<exists>r\<in>set rs. fst r \<subseteq> X \<and> X \<inter> fst (snd r) = {}" by blast
+  have S2: "?S2 \<subseteq> trans V F t" using Cons.prems(2) by blast
+  have cS: "S \<subseteq> ?S1 \<union> ?S2" using Cons.prems(3) r by auto
+  have "?S1 \<union> ?S2 \<subseteq> trans V F t" using Cons.prems(2) by blast
+  then have "finite (?S1 \<union> ?S2)" using fin by (rule finite_subset)
+  then have "card S \<le> card (?S1 \<union> ?S2)" using cS by (rule card_mono)
   then have "card S \<le> card ?S1 + card ?S2"
     using card_Un_le[of ?S1 ?S2] by simp
   moreover have "card ?S1 \<le> card {X\<in>trans V F t. J \<subseteq> X \<and> X \<inter> E = {}}"
@@ -365,13 +377,13 @@ next
       \<le> ratio k (card J) (card E) i (even s) * bound i s t"
     using row[OF okr] .
   moreover have "real (card ?S2) \<le> (\<Sum>(J,E,k)\<leftarrow>rs. ratio k (card J) (card E) i (even s)) * bound i s t"
-    using Cons.prems Cons.IH[of ?S2] r unfolding rows_ok_def by fastforce
+    using Cons.IH[OF ok2 S2 cov2] .
   ultimately show ?case using r by (simp add: algebra_simps)
 qed
 
 lemma table:
   assumes ok: "rows_ok rs"
-    and cov: "\<forall>X\<in>trans V F t. \<exists>(J,E,k)\<in>set rs. J \<subseteq> X \<and> X \<inter> E = {}"
+    and cov: "\<forall>X\<in>trans V F t. \<exists>r\<in>set rs. fst r \<subseteq> X \<and> X \<inter> fst (snd r) = {}"
     and sum: "(\<Sum>(J,E,k)\<leftarrow>rs. ratio k (card J) (card E) i (even s)) \<le> 1"
   shows "real (card (trans V F t)) \<le> bound i s t"
 proof -
@@ -408,6 +420,57 @@ qed
 lemma restr_finite: "finite (restr F J E)"
   unfolding restr_def using finF by simp
 
+lemma two_mem:
+  assumes "C \<in> F" "C \<inter> J = {}" "C - E = {y,z}" "y \<noteq> z"
+  shows "{y,z} \<in> twos (restr F J E)"
+  using restr_mem[OF assms(1,2), of E] assms(3,4) by (simp add: twos_def)
+
+lemma two_only:
+  assumes deg: "card {C\<in>F. x \<in> C} \<le> 2" and C: "C1 \<in> F" "C2 \<in> F" "x \<in> C1" "x \<in> C2" "C1 \<noteq> C2"
+    and D: "D \<in> F" "x \<in> D"
+  shows "D = C1 \<or> D = C2"
+proof (rule ccontr)
+  assume "\<not> (D = C1 \<or> D = C2)"
+  then have "C1 \<noteq> D" "C2 \<noteq> D" by auto
+  then have "card {C1, C2, D} = 3" using C(5) by simp
+  moreover have "card {C1, C2, D} \<le> card {C\<in>F. x \<in> C}"
+    using C D finF by (intro card_mono) auto
+  ultimately show False using deg by simp
+qed
+
+text \<open>If \<open>a \<in> X\<close> lies only in \<open>C1\<close> and \<open>C2\<close>, and \<open>C1\<close> has another variable of \<open>X\<close>, then \<open>C2\<close> is
+  the critical clause of \<open>a\<close>.\<close>
+
+lemma crit_other:
+  assumes X: "X \<in> trans V F t" and a: "a \<in> X"
+    and only: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = C1 \<or> D = C2"
+    and y: "y \<in> C1" "y \<in> X" "y \<noteq> a"
+  shows "C2 \<inter> X = {a}"
+proof -
+  obtain D where D: "D \<in> F" "D \<inter> X = {a}" using critical[OF X a] by blast
+  have "D \<noteq> C1" using D(2) y by blast
+  then show ?thesis using only[OF D(1)] D(2) by blast
+qed
+
+lemma crit_other':
+  assumes X: "X \<in> trans V F t" and a: "a \<in> X"
+    and only: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = C1 \<or> D = C2"
+    and y: "y \<in> C2" "y \<in> X" "y \<noteq> a"
+  shows "C1 \<inter> X = {a}"
+  using crit_other[OF X a _ y, of C1] only by blast
+
+lemma crit_excl:
+  assumes X: "X \<in> trans V F t" and a: "a \<in> X"
+    and only: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = C1 \<or> D = {a,u,v}"
+    and y: "y \<in> C1" "y \<in> X" "y \<noteq> a" and uv: "u \<noteq> a" "v \<noteq> a"
+  shows "u \<notin> X \<and> v \<notin> X"
+  using crit_other[OF X a only y] uv by blast
+
+lemma only_clause:
+  assumes X: "X \<in> trans V F t" and a: "a \<in> X" and only: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = C"
+  shows "C \<inter> X = {a}"
+  using critical[OF X a] only by blast
+
 end
 
 lemma card3_obtain:
@@ -429,7 +492,16 @@ proof -
   then show ?thesis using that B(1) by blast
 qed
 
-lemmas ratio_simps = ratio_def power_int_minus inverse_eq_divide power_divide
+lemma infam_2d: "C \<in> twos G \<Longrightarrow> D \<in> twos G \<Longrightarrow> npair G \<Longrightarrow> C \<inter> D = {} \<Longrightarrow> infam T2d G"
+  by auto
+
+lemma single_out: "C \<inter> X = {x} \<Longrightarrow> y \<in> C \<Longrightarrow> y \<noteq> x \<Longrightarrow> y \<notin> X"
+  by blast
+
+lemma excl3: "{x,y,z} \<inter> X = {x} \<Longrightarrow> y \<noteq> x \<Longrightarrow> z \<noteq> x \<Longrightarrow> y \<notin> X \<and> z \<notin> X"
+  by blast
+
+lemmas ratio_simps =ratio_def power_int_minus inverse_eq_divide power_divide
 
 subsection \<open>Monotone 3-CNFs with no 2-clause\<close>
 
@@ -638,6 +710,270 @@ next
 next
   case 3
   then show ?case by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>
+  \<open>\<P>(0,4)\<close>: a triangle \<open>{a,b,d}\<close>, \<open>{b,c,e}\<close>, \<open>{a,c,f}\<close>, each of \<open>a\<close>, \<open>b\<close>, \<open>c\<close> in no other
+  clause.  Since \<open>\<P>(0,3)\<close> fails, \<open>d\<close>, \<open>e\<close>, \<open>f\<close> are distinct (\<open>d = e\<close> would put \<open>{b,d}\<close> in two
+  clauses), so the rows with two of \<open>a\<close>, \<open>b\<close>, \<open>c\<close> set five variables, not four.
+
+  \<^bold>\<open>Gap in the paper.\<close> Its table has no row for \<open>a = b = c = 0\<close>, which forces \<open>d = e = f = 1\<close>.
+  Such transversals exist: in the prism (two triangles \<open>a b c\<close> and \<open>a' b' c'\<close> joined by
+  \<open>d\<close>, \<open>e\<close>, \<open>f\<close>), \<open>{d,e,f}\<close> is a minimum transversal.  With the exact parameters the
+  missing row fits: the sums are \<open>103/108\<close> and \<open>1\<close>.\<close>
+
+lemma p04:
+  assumes deg: "\<And>x. card {C\<in>F. x \<in> C} \<le> 2"
+    and T: "{a,b,d} \<in> F" "{b,c,e} \<in> F" "{a,c,f} \<in> F" and dist: "distinct [a,b,c,d,e,f]"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({a,e},{b,c},T0), ({b,f},{a,c},T0), ({c,d},{a,b},T0),
+    ({a,b},{c,e,f},T0), ({b,c},{a,d,f},T0), ({a,c},{b,d,e},T0), ({d,e,f},{a,b,c},T0)]"], goal_cases)
+  case 1
+  then show ?case using sub[OF T(1)] sub[OF T(2)] sub[OF T(3)] dist unfolding rows_ok_def by auto
+next
+  case 2
+  have ne: "{a,b,d} \<noteq> {b,c,e}" "{a,b,d} \<noteq> {a,c,f}" "{b,c,e} \<noteq> {a,c,f}" using dist by auto
+  have oa: "D = {a,b,d} \<or> D = {a,c,f}" if "D \<in> F" "a \<in> D" for D
+    using two_only[OF deg T(1) T(3) _ _ ne(2) that] by simp
+  have ob: "D = {a,b,d} \<or> D = {b,c,e}" if "D \<in> F" "b \<in> D" for D
+    using two_only[OF deg T(1) T(2) _ _ ne(1) that] by simp
+  have oc: "D = {b,c,e} \<or> D = {a,c,f}" if "D \<in> F" "c \<in> D" for D
+    using two_only[OF deg T(2) T(3) _ _ ne(3) that] by simp
+  have "(a \<in> X \<and> e \<in> X \<and> b \<notin> X \<and> c \<notin> X) \<or> (b \<in> X \<and> f \<in> X \<and> a \<notin> X \<and> c \<notin> X)
+      \<or> (c \<in> X \<and> d \<in> X \<and> a \<notin> X \<and> b \<notin> X) \<or> (a \<in> X \<and> b \<in> X \<and> c \<notin> X \<and> e \<notin> X \<and> f \<notin> X)
+      \<or> (b \<in> X \<and> c \<in> X \<and> a \<notin> X \<and> d \<notin> X \<and> f \<notin> X) \<or> (a \<in> X \<and> c \<in> X \<and> b \<notin> X \<and> d \<notin> X \<and> e \<notin> X)
+      \<or> (d \<in> X \<and> e \<in> X \<and> f \<in> X \<and> a \<notin> X \<and> b \<notin> X \<and> c \<notin> X)"
+    if X: "X \<in> trans V F t" for X
+  proof -
+    have h: "a \<in> X \<or> b \<in> X \<or> d \<in> X" "b \<in> X \<or> c \<in> X \<or> e \<in> X" "a \<in> X \<or> c \<in> X \<or> f \<in> X"
+      using hit[OF X T(1)] hit[OF X T(2)] hit[OF X T(3)] by auto
+    have ab: "c \<notin> X \<and> f \<notin> X \<and> e \<notin> X" if "a \<in> X" "b \<in> X"
+    proof -
+      have e1: "{a,c,f} \<inter> X = {a}" by (rule crit_other[OF X that(1) oa, of b]) (use dist that in auto)
+      have e2: "{b,c,e} \<inter> X = {b}" by (rule crit_other[OF X that(2) ob, of a]) (use dist that in auto)
+      show ?thesis using single_out[OF e1, of c] single_out[OF e1, of f] single_out[OF e2, of e] dist
+        by auto
+    qed
+    have bc: "a \<notin> X \<and> d \<notin> X \<and> f \<notin> X" if "b \<in> X" "c \<in> X"
+    proof -
+      have e1: "{a,b,d} \<inter> X = {b}" by (rule crit_other'[OF X that(1) ob, of c]) (use dist that in auto)
+      have e2: "{a,c,f} \<inter> X = {c}" by (rule crit_other[OF X that(2) oc, of b]) (use dist that in auto)
+      show ?thesis using single_out[OF e1, of a] single_out[OF e1, of d] single_out[OF e2, of f] dist
+        by auto
+    qed
+    have ac: "b \<notin> X \<and> d \<notin> X \<and> e \<notin> X" if "a \<in> X" "c \<in> X"
+    proof -
+      have e1: "{a,b,d} \<inter> X = {a}" by (rule crit_other'[OF X that(1) oa, of c]) (use dist that in auto)
+      have e2: "{b,c,e} \<inter> X = {c}" by (rule crit_other'[OF X that(2) oc, of a]) (use dist that in auto)
+      show ?thesis using single_out[OF e1, of b] single_out[OF e1, of d] single_out[OF e2, of e] dist
+        by auto
+    qed
+    show ?thesis
+      using h ab ac bc by (cases "a \<in> X"; cases "b \<in> X"; cases "c \<in> X") simp_all
+  qed
+  then show ?case by auto
+next
+  case 3
+  then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>\<open>\<P>(0,5)\<close>: an E configuration, spine \<open>{a,b,c}\<close> and pairwise disjoint arms \<open>{a,d,e}\<close>,
+  \<open>{b,f,g}\<close>, \<open>{c,h,i}\<close>, with \<open>a\<close>, \<open>b\<close>, \<open>c\<close> in no other clause.\<close>
+
+lemma p05:
+  assumes deg: "\<And>x. card {C\<in>F. x \<in> C} \<le> 2" and np: "npair F"
+    and T: "{a,b,c} \<in> F" "{a,d,e} \<in> F" "{b,f,g} \<in> F" "{c,h,i} \<in> F"
+    and dist: "distinct [a,b,c,d,e,f,g,h,i]"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({a},{b,c},T2d), ({b},{a,c},T2d), ({c},{a,b},T2d),
+    ({b,c},{a,f,g,h,i},T1), ({a,c},{b,d,e,h,i},T1), ({a,b},{c,d,e,f,g},T1),
+    ({a,b,c},{d,e,f,g,h,i},T0)]"], goal_cases)
+  case 1
+  have npr: "npair (restr F J E)" for J E using npair_restr[OF finF np] .
+  have m: "C - E \<in> twos (restr F J E)" if "C \<in> F" "C \<inter> J = {}" "card (C - E) = 2" for C J E
+    using restr_mem[OF that(1,2)] that(3) by (simp add: twos_def)
+  have "{f,g} \<in> twos (restr F {a} {b,c})"
+    by (rule two_mem[OF T(3), of "{a}" "{b,c}"]) (use dist in auto)
+  moreover have "{h,i} \<in> twos (restr F {a} {b,c})"
+    by (rule two_mem[OF T(4), of "{a}" "{b,c}"]) (use dist in auto)
+  ultimately have 1: "infam T2d (restr F {a} {b,c})" using npr by (rule infam_2d) (use dist in auto)
+  have "{d,e} \<in> twos (restr F {b} {a,c})"
+    by (rule two_mem[OF T(2), of "{b}" "{a,c}"]) (use dist in auto)
+  moreover have "{h,i} \<in> twos (restr F {b} {a,c})"
+    by (rule two_mem[OF T(4), of "{b}" "{a,c}"]) (use dist in auto)
+  ultimately have 2: "infam T2d (restr F {b} {a,c})" using npr by (rule infam_2d) (use dist in auto)
+  have "{d,e} \<in> twos (restr F {c} {a,b})"
+    by (rule two_mem[OF T(2), of "{c}" "{a,b}"]) (use dist in auto)
+  moreover have "{f,g} \<in> twos (restr F {c} {a,b})"
+    by (rule two_mem[OF T(3), of "{c}" "{a,b}"]) (use dist in auto)
+  ultimately have 3: "infam T2d (restr F {c} {a,b})" using npr by (rule infam_2d) (use dist in auto)
+  have "{d,e} \<in> twos (restr F {b,c} {a,f,g,h,i})"
+    by (rule two_mem[OF T(2), of "{b,c}" "{a,f,g,h,i}"]) (use dist in auto)
+  then have 4: "infam T1 (restr F {b,c} {a,f,g,h,i})" by auto
+  have "{f,g} \<in> twos (restr F {a,c} {b,d,e,h,i})"
+    by (rule two_mem[OF T(3), of "{a,c}" "{b,d,e,h,i}"]) (use dist in auto)
+  then have 5: "infam T1 (restr F {a,c} {b,d,e,h,i})" by auto
+  have "{h,i} \<in> twos (restr F {a,b} {c,d,e,f,g})"
+    by (rule two_mem[OF T(4), of "{a,b}" "{c,d,e,f,g}"]) (use dist in auto)
+  then have 6: "infam T1 (restr F {a,b} {c,d,e,f,g})" by auto
+  show ?case using 1 2 3 4 5 6 sub[OF T(1)] sub[OF T(2)] sub[OF T(3)] sub[OF T(4)] dist
+    unfolding rows_ok_def by auto
+next
+  case 2
+  have ne: "{a,b,c} \<noteq> {a,d,e}" "{a,b,c} \<noteq> {b,f,g}" "{a,b,c} \<noteq> {c,h,i}" using dist by auto
+  have oa: "D = {a,b,c} \<or> D = {a,d,e}" if "D \<in> F" "a \<in> D" for D
+    using two_only[OF deg T(1) T(2) _ _ ne(1) that] by simp
+  have ob: "D = {a,b,c} \<or> D = {b,f,g}" if "D \<in> F" "b \<in> D" for D
+    using two_only[OF deg T(1) T(3) _ _ ne(2) that] by simp
+  have oc: "D = {a,b,c} \<or> D = {c,h,i}" if "D \<in> F" "c \<in> D" for D
+    using two_only[OF deg T(1) T(4) _ _ ne(3) that] by simp
+  have "(a \<in> X \<and> b \<notin> X \<and> c \<notin> X) \<or> (b \<in> X \<and> a \<notin> X \<and> c \<notin> X) \<or> (c \<in> X \<and> a \<notin> X \<and> b \<notin> X)
+      \<or> (b \<in> X \<and> c \<in> X \<and> a \<notin> X \<and> f \<notin> X \<and> g \<notin> X \<and> h \<notin> X \<and> i \<notin> X)
+      \<or> (a \<in> X \<and> c \<in> X \<and> b \<notin> X \<and> d \<notin> X \<and> e \<notin> X \<and> h \<notin> X \<and> i \<notin> X)
+      \<or> (a \<in> X \<and> b \<in> X \<and> c \<notin> X \<and> d \<notin> X \<and> e \<notin> X \<and> f \<notin> X \<and> g \<notin> X)
+      \<or> (a \<in> X \<and> b \<in> X \<and> c \<in> X \<and> d \<notin> X \<and> e \<notin> X \<and> f \<notin> X \<and> g \<notin> X \<and> h \<notin> X \<and> i \<notin> X)"
+    if X: "X \<in> trans V F t" for X
+  proof -
+    have h: "a \<in> X \<or> b \<in> X \<or> c \<in> X" using hit[OF X T(1)] by auto
+    have ca: "d \<notin> X \<and> e \<notin> X" if "a \<in> X" "b \<in> X \<or> c \<in> X"
+    proof -
+      show ?thesis using that(2)
+      proof
+        assume "b \<in> X"
+        show ?thesis by (rule crit_excl[OF X that(1) oa, of b]) (use dist \<open>b \<in> X\<close> in auto)
+      next
+        assume "c \<in> X"
+        show ?thesis by (rule crit_excl[OF X that(1) oa, of c]) (use dist \<open>c \<in> X\<close> in auto)
+      qed
+    qed
+    have cb: "f \<notin> X \<and> g \<notin> X" if "b \<in> X" "a \<in> X \<or> c \<in> X"
+    proof -
+      show ?thesis using that(2)
+      proof
+        assume "a \<in> X"
+        show ?thesis by (rule crit_excl[OF X that(1) ob, of a]) (use dist \<open>a \<in> X\<close> in auto)
+      next
+        assume "c \<in> X"
+        show ?thesis by (rule crit_excl[OF X that(1) ob, of c]) (use dist \<open>c \<in> X\<close> in auto)
+      qed
+    qed
+    have cc: "h \<notin> X \<and> i \<notin> X" if "c \<in> X" "a \<in> X \<or> b \<in> X"
+    proof -
+      show ?thesis using that(2)
+      proof
+        assume "a \<in> X"
+        show ?thesis by (rule crit_excl[OF X that(1) oc, of a]) (use dist \<open>a \<in> X\<close> in auto)
+      next
+        assume "b \<in> X"
+        show ?thesis by (rule crit_excl[OF X that(1) oc, of b]) (use dist \<open>b \<in> X\<close> in auto)
+      qed
+    qed
+    show ?thesis
+      using h ca cb cc by (cases "a \<in> X"; cases "b \<in> X"; cases "c \<in> X") simp_all
+  qed
+  then show ?case by auto
+next
+  case 3
+  then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>\<open>\<P>(0,6)\<close>: \<open>a\<close> lies only in \<open>{a,b,c}\<close>, so \<open>a = 1\<close> forces \<open>b = c = 0\<close>.  First case: \<open>b\<close>
+  and \<open>c\<close> lie in further clauses \<open>{b,d,e}\<close> and \<open>{c,f,g}\<close>, disjoint since there is no
+  triangle.\<close>
+
+lemma p06_both:
+  assumes deg: "\<And>x. card {C\<in>F. x \<in> C} \<le> 2" and np: "npair F"
+    and T: "{a,b,c} \<in> F" "{b,d,e} \<in> F" "{c,f,g} \<in> F" and dist: "distinct [a,b,c,d,e,f,g]"
+    and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = {a,b,c}"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({a},{b,c},T2d), ({b},{a,c},T1), ({c},{a,b},T1),
+    ({b,c},{a,d,e,f,g},T0)]"], goal_cases)
+  case 1
+  have npr: "npair (restr F J E)" for J E using npair_restr[OF finF np] .
+  have m: "C - E \<in> twos (restr F J E)" if "C \<in> F" "C \<inter> J = {}" "card (C - E) = 2" for C J E
+    using restr_mem[OF that(1,2)] that(3) by (simp add: twos_def)
+  have "{d,e} \<in> twos (restr F {a} {b,c})"
+    by (rule two_mem[OF T(2), of "{a}" "{b,c}"]) (use dist in auto)
+  moreover have "{f,g} \<in> twos (restr F {a} {b,c})"
+    by (rule two_mem[OF T(3), of "{a}" "{b,c}"]) (use dist in auto)
+  ultimately have 1: "infam T2d (restr F {a} {b,c})" using npr by (rule infam_2d) (use dist in auto)
+  have "{f,g} \<in> twos (restr F {b} {a,c})"
+    by (rule two_mem[OF T(3), of "{b}" "{a,c}"]) (use dist in auto)
+  then have 2: "infam T1 (restr F {b} {a,c})" by auto
+  have "{d,e} \<in> twos (restr F {c} {a,b})"
+    by (rule two_mem[OF T(2), of "{c}" "{a,b}"]) (use dist in auto)
+  then have 3: "infam T1 (restr F {c} {a,b})" by auto
+  show ?case using 1 2 3 sub[OF T(1)] sub[OF T(2)] sub[OF T(3)] dist unfolding rows_ok_def by auto
+next
+  case 2
+  have ne: "{a,b,c} \<noteq> {b,d,e}" "{a,b,c} \<noteq> {c,f,g}" using dist by auto
+  have ob: "D = {a,b,c} \<or> D = {b,d,e}" if "D \<in> F" "b \<in> D" for D
+    using two_only[OF deg T(1) T(2) _ _ ne(1) that] by simp
+  have oc: "D = {a,b,c} \<or> D = {c,f,g}" if "D \<in> F" "c \<in> D" for D
+    using two_only[OF deg T(1) T(3) _ _ ne(2) that] by simp
+  have "(a \<in> X \<and> b \<notin> X \<and> c \<notin> X) \<or> (b \<in> X \<and> a \<notin> X \<and> c \<notin> X) \<or> (c \<in> X \<and> a \<notin> X \<and> b \<notin> X)
+      \<or> (b \<in> X \<and> c \<in> X \<and> a \<notin> X \<and> d \<notin> X \<and> e \<notin> X \<and> f \<notin> X \<and> g \<notin> X)"
+    if X: "X \<in> trans V F t" for X
+  proof -
+    have h: "a \<in> X \<or> b \<in> X \<or> c \<in> X" using hit[OF X T(1)] by auto
+    have ca: "b \<notin> X \<and> c \<notin> X" if "a \<in> X"
+      by (rule excl3[OF only_clause[OF X that oa]]) (use dist in auto)
+    have cb: "d \<notin> X \<and> e \<notin> X" if "b \<in> X" "c \<in> X"
+      by (rule crit_excl[OF X that(1) ob, of c]) (use dist that in auto)
+    have cc: "f \<notin> X \<and> g \<notin> X" if "c \<in> X" "b \<in> X"
+      by (rule crit_excl[OF X that(1) oc, of b]) (use dist that in auto)
+    show ?thesis
+      using h ca cb cc by (cases "a \<in> X"; cases "b \<in> X"; cases "c \<in> X") simp_all
+  qed
+  then show ?case by auto
+next
+  case 3
+  then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>Second case: \<open>a\<close> and \<open>b\<close> lie only in \<open>{a,b,c}\<close>.  The paper also treats \<open>c\<close> lying in
+  another clause, by domination; here the type-0 bound covers both at once.\<close>
+
+lemma p06_one:
+  assumes T: "{a,b,c} \<in> F" and dist: "distinct [a,b,c]"
+    and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = {a,b,c}"
+    and ob: "\<And>D. D \<in> F \<Longrightarrow> b \<in> D \<Longrightarrow> D = {a,b,c}"
+  shows "real (card (trans V F t)) \<le> bound T0 s t"
+proof (rule table[where rs = "[({c},{a,b},T0), ({a},{b,c},T0), ({b},{a,c},T0)]"], goal_cases)
+  case 1
+  then show ?case using sub[OF T] dist unfolding rows_ok_def by auto
+next
+  case 2
+  have "(c \<in> X \<and> a \<notin> X \<and> b \<notin> X) \<or> (a \<in> X \<and> b \<notin> X \<and> c \<notin> X) \<or> (b \<in> X \<and> a \<notin> X \<and> c \<notin> X)"
+    if X: "X \<in> trans V F t" for X
+  proof -
+    have h: "{a,b,c} \<inter> X \<noteq> {}" using hit[OF X T] .
+    show ?thesis
+    proof (cases "a \<in> X")
+      case True
+      have "{a,b,c} \<inter> X = {a}" using only_clause[OF X True oa] .
+      then have "b \<notin> X" "c \<notin> X"
+        using single_out[of "{a,b,c}" X a b] single_out[of "{a,b,c}" X a c] dist by simp_all
+      then show ?thesis using True by simp
+    next
+      case na: False
+      show ?thesis
+      proof (cases "b \<in> X")
+        case True
+        have "{a,b,c} \<inter> X = {b}" using only_clause[OF X True ob] .
+        then have "c \<notin> X" using single_out[of "{a,b,c}" X b c] dist by simp
+        then show ?thesis using True na by simp
+      next
+        case False
+        then have "c \<in> X" using h na by auto
+        then show ?thesis using False na by simp
+      qed
+    qed
+  qed
+  then show ?case by auto
+next
+  case 3
+  then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
 qed
 
 end
