@@ -1,115 +1,151 @@
-# Handoff: formalize Gurumukhani et al., monotone Σ₃³ for Majority (arXiv:2601.04072)
+# Handoff: formalizing Gurumukhani et al., monotone Σ₃³ for Majority (arXiv:2601.04072)
 
-## The new task
+## The task, and where it stands
 
 Formalize in Isabelle the main theorem of Gurumukhani, Kleber, Paturi, Rosin, Saks and
 Talebanfard, *Optimal Monotone Depth-Three Circuit Lower Bounds for Majority*
-(arXiv:2601.04072v2, Feb 2026). It is the same kind of job as the Lecomte–Ramakrishnan
-verification below: check a recent proof formally, and report any gaps.
+(arXiv:2601.04072v2). As with the Lecomte–Ramakrishnan verification below, the point is to
+check a recent proof formally and report any gaps.
 
 **Claim.** A monotone 3-CNF with no transversal of size $< n/2$ has at most $6^{n/4}$
-transversals of size $\lfloor n/2\rfloor$. A *transversal* is a set of variables meeting
-every clause, i.e. a satisfying assignment, given by its set of ones. So a monotone OR of
-3-CNFs computing Majority needs at least $\binom{n}{n/2}/6^{n/4} \approx 1.278^{n-o(n)}$ CNFs.
-This is tight: blocks of 4 variables, with all 3-subsets of each block as clauses.
+transversals of size $\lfloor n/2\rfloor$. Hence a monotone OR of 3-CNFs computing Majority
+needs $\binom{n}{n/2}/6^{n/4} \approx 1.278^{n-o(n)}$ CNFs. The paper writes $n = 3t - s$
+and proves $N_i(s,t) \le c_i(2/3)^{s/2}3^t$ (even $s$) or $c'_i(2/3)^{(s-1)/2}3^t$ (odd $s$),
+for six families $i$, by an induction that uses 58 branching tables.
 
 **Sources** (none of these may be staged):
-- LaTeX sources: `notes/gkprst26-src/`, git-ignored, extracted from `arXiv-2601.04072v2.tar.gz`
-  in the root.
-- PDF: `2601.04072v2.pdf` in the root.
-- Summary and proof-method notes: `notes/summaries/2601.04072-GKPRST26.md`.
-- Ignore every `archive/` directory, which holds old drafts.
+- LaTeX: `notes/gkprst26-src/`.
+- PDF: `2601.04072v2.pdf`.
+- Summary: `notes/summaries/2601.04072-GKPRST26.md`.
+- Ignore `archive/` directories.
 - Map of the sources:
-  - `UpperBounds/upperbounds.tex`: the families, Theorem `thm:upperbounds` with all constants,
-    and the outline.
-  - `UpperBounds/upper-bound-head.tex`: the configurations (triangle, E, path, cycle).
-  - `UpperBounds/modified-outline.tex`: how a table is read.
-  - The cases: `UpperBounds/phi0.tex` (type 0), `oneclause/phi1.tex`,
-    `twooverlapping/phi2o.tex`, `twodisjoint/phi2d.tex`, and `threeclause/*.tex` (types 3 and
-    4: path, triangle, isolated, four 2-clauses).
-  - The property statements are macros in `setup/cases.tex` (`\czeroI`, …, `\csI`, …,
-    `\cdI`, …); the range conditions `\econd`, `\ocond` are in `setup/local.tex`.
-  - `Constructions/` and `appendix.tex` hold the matching constructions; these are optional.
+  - `UpperBounds/upperbounds.tex`: the theorem and the outline.
+  - `upper-bound-head.tex`: the configurations.
+  - The cases: `phi0.tex`, `oneclause/phi1.tex`, `twooverlapping/phi2o.tex` (17 tables),
+    `twodisjoint/phi2d.tex` (8), `threeclause/*.tex` (23).
+  - The property macros are in `setup/cases.tex`.
 
-**The structure of the proof.**
-- **Parameters.** Write $n = 3t - s$ ($s$ is the *deficit*). $N_i(s,t)$ is the largest number
-  of $t$-transversals of a family-$i$ monotone 3-CNF on $3t - s$ variables with no smaller
-  transversal.
-- **Families.**
-  - 0: all monotone 3-CNFs.
-  - 1: at least one 2-clause.
-  - 2o: two 2-clauses sharing a variable.
-  - 2d: two disjoint 2-clauses.
-  - 3: three 2-clauses with no common variable.
-  - 4: four 2-clauses.
-  - For 2o, 2d, 3 and 4 the maximum is taken only over CNFs in which no pair of variables
-    lies in three clauses. Check this side condition carefully wherever it is used.
-- **Claimed bounds**, in the form $c\,(2/3)^{s/2}3^t$ for even $s$ and $c'\,(2/3)^{(s-1)/2}3^t$
-  for odd $s$, valid for $t \ge 0$ and $s \le 3t$:
+**Findings so far** are in `gkprst26/NOTES.md` (committed); keep it up to date.
+- The main one is **a gap in P0.4 (triangle)**: the table omits $a=b=c=0$. The prism is a
+  counterexample to the table's coverage.
+- The repair: $d,e,f$ are distinct because P0.3 fails, so three rows fix 5 variables, not 4.
+  With the missing row added the sums are $103/108$ and $1$.
+- Everything else checked so far is correct, apart from some unnecessary assumptions.
 
-  | family | $c$ (even $s$) | $c'$ (odd $s$) |
-  |---|---|---|
-  | 0 | $1$ | $7/9$ |
-  | 1 | $5/6$ | $2/3$ |
-  | 2o | $2/3$ | $5/9$ |
-  | 2d | $25/36$ | $5/9$ |
-  | 3 | $7/12$ | $1/2$ |
-  | 4 | $7/12$ | $17/36$ |
+### The formal development: `isabelle/gkprst/Monotone_3CNF.thy`
 
-  $s = t = n/2$ gives $6^{n/4}$.
-- **Induction.** Simultaneous induction on $n = 3t - s$ and $t$. Each family is covered by
-  an ordered list of properties (configurations). Each property gives an *anchor*. Branching
-  on its core variables, with forced variables, gives restricted CNFs:
-  - setting $j$ variables to 1 removes the clauses they meet;
-  - setting $e$ variables to 0 deletes them from the clauses;
-  - the result has $t' = t - j$ and $s' = s - 2j + e$.
-  
-  Each table's ratios must sum to at most 1.
-- **Size.** 58 tables in all: type 0 has 8, type 1 has 2, 2o has 17, 2d has 8, and types 3
-  and 4 have 23.
-- **Facts used without proof:**
-  - $N_i(s,t) \le N_i(s',t)$ for $s' \le s$;
-  - $N_{2o} \le N_{2d}$;
-  - the properties are applied in the stated order, so later cases may assume that earlier
-    properties fail.
-- **Already checked by hand** (previous session): P0.1 (both tables), P0.2 and P0.3. The
-  parameters, types and ratios are right. Several steps are tight, with the ratios summing to
-  exactly 1.
+The session is **`Monotone_Sigma3`**, in `isabelle/ROOT` as `in "gkprst"`, with parent
+`HOL-Library`, so it is separate from `Majority_AC0`. Build with:
 
-**Where errors are most likely:**
-- the prose coverage lemmas (e.g. "every type-0 CNF satisfies one of P0.1–P0.6");
-- the claimed family of each restricted CNF, including the side conditions "no pair in three
-  clauses" and "no three 2-clauses with a common variable";
-- the handling of 1-clauses and empty clauses created by setting variables to 0;
-- the boundary of the range ($s \le 3t$, small $t$, and $s' < 0$).
+    WALL_TIMEOUT=60 WATCHDOG_TIMEOUT=20 .venv/bin/isabelle-build --session Monotone_Sigma3 -m "…"
 
-**Suggested plan:**
-1. A new theory, e.g. `isabelle/Monotone_3CNF.thy`. Consider a separate session in
-   `isabelle/ROOT` with parent `Majority_AC0` (or `HOL-Library`), to keep builds within the
-   60 s budget.
-   - A CNF is a `nat set set` of clauses of size $\le 3$ over a finite variable set `V`.
-   - `transversal F X`: `X ⊆ V` and `X` meets every clause.
-   - `threshold F t`: every transversal has at least `t` elements.
-   - `trans F t`: the transversals of size `t`.
-2. Restriction lemma. For disjoint `J` (included) and `E` (excluded), the
-   `t`-transversals `X` with `J ⊆ X` and `X ∩ E = {}` correspond bijectively to the
-   `(t - card J)`-transversals of the restricted CNF, and the threshold is inherited.
-3. Critical clauses: in a minimum transversal every included variable has a private clause.
-   This gives the "forced variables" in the tables. Compare `critical_clause` in
-   `isabelle/Depth3_Lower.thy`, which is stated for literal clauses.
-4. The six bound functions as reals, and a lemma computing the ratio
-   `bound i (s - 2j + e) (t - j) / bound 0 s t` in closed form for each parity. Then each
-   table row is one evaluation.
-5. The induction framework: one statement covering all six families, by strong induction on
-   `n` and then `t`. Then the cases, table by table, starting with P0.1–P0.3. Commit after
-   each verified case.
-6. The corollary for Majority: `slice_lower` in `isabelle/Binomial_Estimates.thy` gives
-   $\binom{n}{\lfloor n/2\rfloor} \ge 2^n/(n+1)$.
-7. Record findings, especially gaps, in a new document, e.g. `gkprst26/NOTES.md`. Do not touch
-   `VERDICT.md`, which is frozen.
+It currently takes about 6 s. There is no `sorry`.
 
-Prove by hand, then formalize. No brute-force or exhaustive computer search, even for
-checking the small configurations.
+- **Definitions.**
+  - `cnf V F`: clauses $\subseteq V$, of size $\le 3$, $V$ finite.
+  - `hits F X`.
+  - `trans V F t`: the $t$-transversals.
+  - `thr V F t`: no smaller transversal.
+  - `restr F J E = (λC. C - E) ` {C∈F. C ∩ J = {}}`: $J$ set to 1, $E$ set to 0.
+  - `twos F`: the 2-clauses.
+  - `npair F`: no pair of variables in 3 clauses.
+  - `datatype fam = T0 | T1 | T2o | T2d | T3 | T4`, with `infam`. For T3, "no three
+    2-clauses share a variable" is `card {C∈twos F. x ∈ C} ≤ 2`.
+  - `coef`, `bound i s t = coef i (even s) * (2/3) powi (s div 2) * 3^t` (with `s :: int`), and
+    `ratio k j e i p`, the closed-form ratio for a row with $j$ ones, $e$ zeros and restricted
+    family $k$ (lemma `bound_shift`).
+  - `bound_mono`: the bound decreases in $s$.
+- **Induction.**
+  - `IH m`: the bound holds for every CNF with fewer than $m$ variables, in family $i$
+    **or with a clause of size $\le 1$**. That disjunct absorbs restrictions that create
+    1-clauses.
+  - The induction is on $\lvert V\rvert$ alone; every row fixes a variable.
+- **`locale core V F t`.** Assumptions: `cnf`, `thr`, `IH (card V)`, every clause has size
+  2 or 3, an antichain (`anti`), `⋃F = V`, `1 ≤ t`. It provides `s`, `critical` (the critical
+  clause), `row`, and **`table`**.
+- **`locale core0 = core +`** every clause has size 3. All type-0 tables live here.
+- **How to state a table** (copy `p05` or `p06_both`):
+
+      proof (rule table[where rs = "[({J…},{E…},Tk), …]"], goal_cases)
+        case 1: rows_ok    — restricted families via two_mem / del_two / infam_2d, npair_restr
+        case 2: coverage   — prove a disjunction of literal facts (a ∈ X ∧ b ∉ X ∨ …) for
+                             X ∈ trans V F t, then `show ?case by auto`
+        case 3: the sum    — `by (cases "even s") (simp_all add: ratio_simps)`
+
+  Coverage helpers:
+  - `hit`.
+  - `forced_out`: $a$ always with $b$ forces $b \notin X$.
+  - `two_only`: degree $\le 2$ means the clauses of $x$ are exactly $C_1, C_2$.
+  - `crit_other` / `crit_other'` / `crit_excl`: the other clause is critical, so its other
+    two variables are out.
+  - `only_clause`, `single_out`, `excl3`.
+  - Configuration extraction: `three_form`, `card2_obtain`, `card3_obtain`.
+- **Done (type 0):** `p01` (from `¬ npair F`; uses `p01_with`, `p01_sep`), `p02` (uses
+  `del_type3`), `p03`, `p04` (corrected), `p05`, `p06_both`, `p06_one`.
+
+### Next steps, in order
+
+1. **The type-0 coverage lemma** `type0` (in `core0`): `bound T0 s t`. Worked out by hand:
+   - `¬ npair` → `p01`.
+   - Some $a$ in $\ge 3$ clauses → `p02`.
+   - A pair in two clauses → `p03`. Extract with `card2_obtain` and `three_form`.
+   - Otherwise every variable is in $\le 2$ clauses and every pair in $\le 1$ clause. Prove
+     `meet_tri`: if $\lbrace a,b,c\rbrace \in F$, $D_1 \ni b$, $D_2 \ni c$ are other clauses
+     and $D_1 \cap D_2 \ne \emptyset$, then a triangle with 6 distinct variables exists. Write
+     $D_1 = \lbrace b,x,u\rbrace$, $D_2 = \lbrace c,x,v\rbrace$; the triangle is $(b,c,x)$ with
+     $d=a$, $e=v$, $f=u$. ($u \ne v$ by the pair condition.) If a triangle exists → `p04`.
+   - Otherwise, if some variable lies in exactly one clause $\lbrace a,b,c\rbrace$: if $b$ and
+     $c$ both lie in other clauses, these are disjoint by `meet_tri`, giving `p06_both`;
+     otherwise `p06_one`, swapping $b$ and $c$ if needed.
+   - Else every variable is in exactly 2 clauses ($F \ne \emptyset$ since $t \ge 1$). Take any
+     clause; its three other clauses are pairwise disjoint by `meet_tri`, giving an E
+     configuration → `p05`.
+2. **Type 1** (`phi1.tex`, 2 tables) in `core`, with the hypothesis `twos F ≠ {}`.
+   - In P1.2, $a$'s second clause may be a 2-clause $\lbrace a,c\rbrace$. Then the restriction
+     has the 1-clause $\lbrace c\rbrace$, which is covered by the size-$\le 1$ disjunct.
+3. **Types 2o, 2d, 3, 4** (48 tables). Read each table's prose coverage claim critically. The
+   likely errors:
+   - coverage;
+   - the family of each restricted CNF (`npair` is inherited by `npair_restr`; "no 3
+     two-clauses with a common variable" is *not* inherited);
+   - variables that may coincide ($n'$ uncertain: use `bound_mono`);
+   - 1-clauses.
+   Commit after each verified table.
+4. **The reductions and main theorem**, by strong induction on `card V`:
+   - $t = 0$: count $\le 1$, and 0 outside T0.
+   - An empty clause gives 0. A 1-clause: force it, giving $\le \tfrac12$ `bound T0`
+     $\le$ `bound i`.
+   - Remove subsumed clauses (same $V$; family preserved).
+   - Remove unused variables (via `bound_mono`).
+   - At a fixed $n$, prove the families with 2-clauses before T0. A T0 CNF with a 2-clause
+     uses the T1 bound, since `bound T1 ≤ bound T0`.
+5. **Corollary** with $s = t = \lfloor n/2\rfloor$: $6^{n/4}$. Then the Majority size bound.
+   `slice_lower` lives in `Majority_AC0`, so put the corollary in a theory or session that
+   can import both.
+   - Add the headline theorems to an audit, as `Audit.thy` does.
+6. Keep `gkprst26/NOTES.md` current. Never edit `VERDICT.md`.
+
+Prove by hand, then formalize. No brute-force or exhaustive search.
+
+### Proof-engineering hints
+
+They are in memory (`ndtht-isabelle-tips.md`) and in `~/projects/watchdog/docs/proof-hints.md`.
+Before a second tactic attempt, search `~/projects/ndtht/bin/kb KEYWORD`. The ones that
+mattered most here:
+- Give automation literal facts, never set equations.
+- Use `rule …[OF …]`, not guessed `metis`/`elim`.
+- `simp` won't flip $a \ne c$ into $c \ne a$; use `auto` for such side goals.
+- No `case_prod` bounded quantifiers.
+- Give `finite_subset[OF …]` explicitly.
+- Keep `moreover` chains contiguous.
+- Act on the build summary; read the full log only when the summary truncates what is
+  needed.
+
+### Left uncommitted in other repos (the user's call)
+
+- `~/projects/ndtht/insights/361.md`: a `have` breaking a `moreover` chain.
+- `~/projects/ndtht/insights/362.md`: negative `powi`.
+- `~/projects/watchdog/docs/proof-hints.md`.
 
 ## Background: the previous work (Lecomte–Ramakrishnan and its extensions)
 
