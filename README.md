@@ -26,7 +26,9 @@ argument of Håstad, Jukna and Pudlák and of Paturi, Pudlák and Zane:
 - **Wide critical clauses** are critical for few points (`crit_count`).
 
 The general statement (`sigma3_threshold`) holds for every threshold. Lower bounds for
-depth $d > 3$ need the switching lemma and are not formalized.
+depth $d > 3$ need the switching lemma and are not formalized. The constant $1/4$ is
+weaker than the best known, $0.849$ (Håstad, Jukna and Pudlák); only the order
+$\sqrt n$ matters for the optimality claim.
 
 The Isabelle statement (`isabelle/Majority_Circuits.thy`) is slightly stronger than the
 paper's claim. It bounds formula (tree) size rather than circuit size, and the formulas
@@ -40,7 +42,12 @@ $2^{O(k)}$ CNFs with clauses of width $k' = 2\lceil n/k \rceil$. For $k \le n$ t
 $2^{O(n/k')}$ CNFs. This is tight: by PPZ, any OR of width-$w$ CNFs for Majority has at least
 $2^{n/(2ew)}/(n+1)$ CNFs (`majority_cnfs_lower_e` in `isabelle/Depth3_Lower.thy`). So for
 $w \le 2\sqrt n$ the number of width-$w$ CNFs needed is $2^{\Theta(n/w)}$, with both directions
-formal. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
+formal. The statement is about growing $w$. For fixed small $w$ the constants matter, and ours
+are far from the best known. For $w = 3$ the bound gives about $1.043^n$, whereas
+Gurumukhani, Paturi, Pudlák, Saks and Talebanfard (CCC 2024) prove $1.251^n$ for general
+circuits. Gurumukhani, Kleber, Paturi, Rosin, Saks and Talebanfard
+([arXiv:2601.04072](https://arxiv.org/abs/2601.04072)) determine the monotone case exactly,
+$(2/6^{1/4})^{n \pm o(n)} \approx 1.278^n$. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
 only inputs of weight $t$, and accepts at least $\binom{n}{t}/2^{O(n/k')}$ of them
 (`enum_output_lower_bound`). Any algorithm for the local enumeration problem
 $\mathrm{Enum}(k', t)$ of Gurumukhani et al. (CCC 2024) must list all of them. So the
