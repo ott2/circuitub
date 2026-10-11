@@ -1,6 +1,117 @@
-# Handoff: monotone tests for Majority, after Theorems B and C
+# Handoff: formalize Gurumukhani et al., monotone Σ₃³ for Majority (arXiv:2601.04072)
 
-## Context
+## The new task
+
+Formalize in Isabelle the main theorem of Gurumukhani, Kleber, Paturi, Rosin, Saks and
+Talebanfard, *Optimal Monotone Depth-Three Circuit Lower Bounds for Majority*
+(arXiv:2601.04072v2, Feb 2026). It is the same kind of job as the Lecomte–Ramakrishnan
+verification below: check a recent proof formally, and report any gaps.
+
+**Claim.** A monotone 3-CNF with no transversal of size $< n/2$ has at most $6^{n/4}$
+transversals of size $\lfloor n/2\rfloor$. A *transversal* is a set of variables meeting
+every clause, i.e. a satisfying assignment, given by its set of ones. So a monotone OR of
+3-CNFs computing Majority needs at least $\binom{n}{n/2}/6^{n/4} \approx 1.278^{n-o(n)}$ CNFs.
+This is tight: blocks of 4 variables, with all 3-subsets of each block as clauses.
+
+**Sources** (none of these may be staged):
+- LaTeX sources: `notes/gkprst26-src/`, git-ignored, extracted from `arXiv-2601.04072v2.tar.gz`
+  in the root.
+- PDF: `2601.04072v2.pdf` in the root.
+- Summary and proof-method notes: `notes/summaries/2601.04072-GKPRST26.md`.
+- Ignore every `archive/` directory, which holds old drafts.
+- Map of the sources:
+  - `UpperBounds/upperbounds.tex`: the families, Theorem `thm:upperbounds` with all constants,
+    and the outline.
+  - `UpperBounds/upper-bound-head.tex`: the configurations (triangle, E, path, cycle).
+  - `UpperBounds/modified-outline.tex`: how a table is read.
+  - The cases: `UpperBounds/phi0.tex` (type 0), `oneclause/phi1.tex`,
+    `twooverlapping/phi2o.tex`, `twodisjoint/phi2d.tex`, and `threeclause/*.tex` (types 3 and
+    4: path, triangle, isolated, four 2-clauses).
+  - The property statements are macros in `setup/cases.tex` (`\czeroI`, …, `\csI`, …,
+    `\cdI`, …); the range conditions `\econd`, `\ocond` are in `setup/local.tex`.
+  - `Constructions/` and `appendix.tex` hold the matching constructions; these are optional.
+
+**The structure of the proof.**
+- **Parameters.** Write $n = 3t - s$ ($s$ is the *deficit*). $N_i(s,t)$ is the largest number
+  of $t$-transversals of a family-$i$ monotone 3-CNF on $3t - s$ variables with no smaller
+  transversal.
+- **Families.**
+  - 0: all monotone 3-CNFs.
+  - 1: at least one 2-clause.
+  - 2o: two 2-clauses sharing a variable.
+  - 2d: two disjoint 2-clauses.
+  - 3: three 2-clauses with no common variable.
+  - 4: four 2-clauses.
+  - For 2o, 2d, 3 and 4 the maximum is taken only over CNFs in which no pair of variables
+    lies in three clauses. Check this side condition carefully wherever it is used.
+- **Claimed bounds**, in the form $c\,(2/3)^{s/2}3^t$ for even $s$ and $c'\,(2/3)^{(s-1)/2}3^t$
+  for odd $s$, valid for $t \ge 0$ and $s \le 3t$:
+
+  | family | $c$ (even $s$) | $c'$ (odd $s$) |
+  |---|---|---|
+  | 0 | $1$ | $7/9$ |
+  | 1 | $5/6$ | $2/3$ |
+  | 2o | $2/3$ | $5/9$ |
+  | 2d | $25/36$ | $5/9$ |
+  | 3 | $7/12$ | $1/2$ |
+  | 4 | $7/12$ | $17/36$ |
+
+  $s = t = n/2$ gives $6^{n/4}$.
+- **Induction.** Simultaneous induction on $n = 3t - s$ and $t$. Each family is covered by
+  an ordered list of properties (configurations). Each property gives an *anchor*. Branching
+  on its core variables, with forced variables, gives restricted CNFs:
+  - setting $j$ variables to 1 removes the clauses they meet;
+  - setting $e$ variables to 0 deletes them from the clauses;
+  - the result has $t' = t - j$ and $s' = s - 2j + e$.
+  
+  Each table's ratios must sum to at most 1.
+- **Size.** 58 tables in all: type 0 has 8, type 1 has 2, 2o has 17, 2d has 8, and types 3
+  and 4 have 23.
+- **Facts used without proof:**
+  - $N_i(s,t) \le N_i(s',t)$ for $s' \le s$;
+  - $N_{2o} \le N_{2d}$;
+  - the properties are applied in the stated order, so later cases may assume that earlier
+    properties fail.
+- **Already checked by hand** (previous session): P0.1 (both tables), P0.2 and P0.3. The
+  parameters, types and ratios are right. Several steps are tight, with the ratios summing to
+  exactly 1.
+
+**Where errors are most likely:**
+- the prose coverage lemmas (e.g. "every type-0 CNF satisfies one of P0.1–P0.6");
+- the claimed family of each restricted CNF, including the side conditions "no pair in three
+  clauses" and "no three 2-clauses with a common variable";
+- the handling of 1-clauses and empty clauses created by setting variables to 0;
+- the boundary of the range ($s \le 3t$, small $t$, and $s' < 0$).
+
+**Suggested plan:**
+1. A new theory, e.g. `isabelle/Monotone_3CNF.thy`. Consider a separate session in
+   `isabelle/ROOT` with parent `Majority_AC0` (or `HOL-Library`), to keep builds within the
+   60 s budget.
+   - A CNF is a `nat set set` of clauses of size $\le 3$ over a finite variable set `V`.
+   - `transversal F X`: `X ⊆ V` and `X` meets every clause.
+   - `threshold F t`: every transversal has at least `t` elements.
+   - `trans F t`: the transversals of size `t`.
+2. Restriction lemma. For disjoint `J` (included) and `E` (excluded), the
+   `t`-transversals `X` with `J ⊆ X` and `X ∩ E = {}` correspond bijectively to the
+   `(t - card J)`-transversals of the restricted CNF, and the threshold is inherited.
+3. Critical clauses: in a minimum transversal every included variable has a private clause.
+   This gives the "forced variables" in the tables. Compare `critical_clause` in
+   `isabelle/Depth3_Lower.thy`, which is stated for literal clauses.
+4. The six bound functions as reals, and a lemma computing the ratio
+   `bound i (s - 2j + e) (t - j) / bound 0 s t` in closed form for each parity. Then each
+   table row is one evaluation.
+5. The induction framework: one statement covering all six families, by strong induction on
+   `n` and then `t`. Then the cases, table by table, starting with P0.1–P0.3. Commit after
+   each verified case.
+6. The corollary for Majority: `slice_lower` in `isabelle/Binomial_Estimates.thy` gives
+   $\binom{n}{\lfloor n/2\rfloor} \ge 2^n/(n+1)$.
+7. Record findings, especially gaps, in a new document, e.g. `gkprst26/NOTES.md`. Do not touch
+   `VERDICT.md`, which is frozen.
+
+Prove by hand, then formalize. No brute-force or exhaustive computer search, even for
+checking the small configurations.
+
+## Background: the previous work (Lecomte–Ramakrishnan and its extensions)
 
 This repo (github.com:ott2/circuitub, public) formalizes in Isabelle2025-2 the main theorem of
 Lecomte–Ramakrishnan, *Optimal Shallow Circuits for Majority* (arXiv:2609.34029). That
