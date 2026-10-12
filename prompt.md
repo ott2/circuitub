@@ -128,17 +128,13 @@ It currently takes about 6 s. There is no `sorry`.
    - variables that may coincide ($n'$ uncertain: use `bound_mono`);
    - 1-clauses.
    Commit after each verified table.
-4. **The reductions and main theorem**, by strong induction on `card V`:
-   - $t = 0$: count $\le 1$, and 0 outside T0.
-   - An empty clause gives 0. A 1-clause: force it, giving $\le \tfrac12$ `bound T0`
-     $\le$ `bound i`.
-   - Remove subsumed clauses (same $V$; family preserved).
-   - Remove unused variables (via `bound_mono`).
-   - At a fixed $n$, prove the families with 2-clauses before T0. A T0 CNF with a 2-clause
-     uses the T1 bound, since `bound T1 ≤ bound T0`.
-5. **Corollary** with $s = t = \lfloor n/2\rfloor$: $6^{n/4}$. Then the Majority size bound.
-   `slice_lower` lives in `Majority_AC0`, so put the corollary in a theory or session that
-   can import both.
+4. **Done:** the reductions and the main theorem.
+   - `step`, `IH_all`, and `theorem gkprst_bound`, the paper's theorem.
+   - `corollary gkprst_half`: for $n = 2t$, at most $6^{n/4}$ transversals of size $n/2$.
+   - `full_bound` combines the family theorems in the order 3, 4, 2o, 2d, 1, 0.
+5. **Remaining:** the Majority size bound, $\binom{n}{n/2}/6^{n/4}$ CNFs.
+   - `slice_lower` lives in `Majority_AC0`, so put this in a theory or session that can import
+     both.
    - Add the headline theorems to an audit, as `Audit.thy` does.
 6. Keep `gkprst26/NOTES.md` current. Never edit `VERDICT.md`.
 

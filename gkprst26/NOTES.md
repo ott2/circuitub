@@ -218,9 +218,30 @@ The coverage proofs use bounds for other families at the same $n$ only through d
 
 So the order is 3, 4, 2o, 2d, 1, 0. All restricted CNFs have fewer variables.
 
+## The main theorem (formal)
+
+- **`gkprst_bound`.** Let $F$ be a monotone CNF over $V$ with clauses of size $\le 3$
+  (`cnf V F`) and no transversal of size $< t$ (`thr V F t`). Then it has at most
+  $\mathrm{bound}_0(3t - n, t)$ transversals of size $t$: $(2/3)^{s/2}3^t$ for even $s$, and
+  $\tfrac79(2/3)^{(s-1)/2}3^t$ for odd $s$.
+- **`gkprst_half`.** For $n = 2t$ the bound is at most $6^{n/4}$. It is exact for $4 \mid n$;
+  for $n \equiv 2 \pmod 4$ it is $\tfrac73 6^{(n-2)/4} \le \sqrt6\, 6^{(n-2)/4}$.
+- **The reductions** (`step`), checked formally:
+  - $t = 0$: at most one transversal, $\emptyset$, and only if $F = \emptyset$, which forces
+    family 0 (`bound_T0_0`).
+  - An empty clause gives no transversals.
+  - A 1-clause is forced (ratio $\le 14/17$, `ratio_T0_1_0`).
+  - Keeping only the inclusion-minimal clauses changes neither the transversals nor the
+    family (`infam_mono`).
+  - Unused variables lie in no minimum transversal, so they are dropped (`bound_mono`).
+- **`IH_all`**: induction on $n$ alone.
+- **Conclusion.** The paper's theorem is true. Every gap found has a repair within the same
+  induction; no bound or constant changes.
+
 ## Still to do
 
-- The reductions and the main induction (`IH` at every $n$).
-- The Majority corollary.
+- The Majority size bound: $\binom{n}{n/2}/6^{n/4}$ CNFs, via `slice_lower` in `Majority_AC0`, in
+  a theory that imports both sessions.
+- Add the headline theorems to an audit, as `Audit.thy` does.
 - The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
 - The main induction and the Majority corollary.
