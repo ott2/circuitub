@@ -258,6 +258,37 @@ proof -
   from this[of "nat (s' - s)"] show ?thesis using assms by simp
 qed
 
+text \<open>Domination between families: \<open>fam_le k' k\<close> if the bound for \<open>k'\<close> is at most that for \<open>k\<close>.
+  The families form a chain \<open>T4 \<le> T3 \<le> T2o \<le> T2d \<le> T1 \<le> T0\<close>.\<close>
+
+definition fam_le :: "fam \<Rightarrow> fam \<Rightarrow> bool" where
+  "fam_le k' k \<longleftrightarrow> (\<forall>p. coef k' p \<le> coef k p)"
+
+lemma fam_leI:
+  assumes "coef k' True \<le> coef k True" "coef k' False \<le> coef k False"
+  shows "fam_le k' k"
+  unfolding fam_le_def
+proof
+  fix p show "coef k' p \<le> coef k p" using assms by (cases p) auto
+qed
+
+lemma fam_le_refl: "fam_le k k"
+  by (simp add: fam_le_def)
+
+lemma fam_le_2o_2d: "fam_le T2o T2d"
+  by (rule fam_leI) simp_all
+
+lemma fam_le_4_3: "fam_le T4 T3"
+  by (rule fam_leI) simp_all
+
+lemma bound_le:
+  assumes "fam_le k' k"
+  shows "bound k' s t \<le> bound k s t"
+proof -
+  have "coef k' (even s) \<le> coef k (even s)" using assms unfolding fam_le_def by blast
+  then show ?thesis unfolding bound_def by (intro mult_right_mono) (auto intro: less_imp_le)
+qed
+
 subsection \<open>The induction framework\<close>
 
 text \<open>
@@ -270,6 +301,34 @@ definition IH :: "nat \<Rightarrow> bool" where
   "IH m \<longleftrightarrow> (\<forall>(V::nat set) F t i. card V < m \<longrightarrow> cnf V F \<longrightarrow> thr V F t \<longrightarrow>
      (infam i F \<or> (\<exists>C\<in>F. card C \<le> 1)) \<longrightarrow>
      real (card (trans V F t)) \<le> bound i (3 * int t - int (card V)) t)"
+
+text \<open>A row may use family \<open>k\<close> if the restriction is in \<open>k\<close>, has a clause of size at most 1, or
+  is in a family dominated by \<open>k\<close>.\<close>
+
+abbreviation fam_ok :: "fam \<Rightarrow> nat set set \<Rightarrow> bool" where
+  "fam_ok k G \<equiv> infam k G \<or> (\<exists>C\<in>G. card C \<le> 1) \<or> (\<exists>k'. fam_le k' k \<and> infam k' G)"
+
+lemma ih_fam:
+  fixes W :: "nat set"
+  assumes ih: "IH m" and lt: "card W < m" and c: "cnf W G" and th: "thr W G t'"
+    and k: "fam_ok k G"
+  shows "real (card (trans W G t')) \<le> bound k (3 * int t' - int (card W)) t'"
+proof -
+  have base: "real (card (trans W G t')) \<le> bound j (3 * int t' - int (card W)) t'"
+    if "infam j G \<or> (\<exists>C\<in>G. card C \<le> 1)" for j
+    using ih lt c th that unfolding IH_def by blast
+  show ?thesis using k
+  proof (elim disjE)
+    assume "infam k G" then show ?thesis using base by blast
+  next
+    assume "\<exists>C\<in>G. card C \<le> 1" then show ?thesis using base by blast
+  next
+    assume "\<exists>k'. fam_le k' k \<and> infam k' G"
+    then obtain k' where k': "fam_le k' k" "infam k' G" by blast
+    show ?thesis
+      using base[of k'] k'(2) bound_le[OF k'(1), of "3 * int t' - int (card W)" t'] by linarith
+  qed
+qed
 
 text \<open>
   The normalized situation: every clause has two or three variables, no clause contains
@@ -315,7 +374,7 @@ qed
 
 lemma row:
   assumes J: "J \<subseteq> V" and E: "E \<subseteq> V" and JE: "J \<inter> E = {}" "J \<union> E \<noteq> {}"
-    and k: "infam k (restr F J E) \<or> (\<exists>C\<in>restr F J E. card C \<le> 1)"
+    and k: "fam_ok k (restr F J E)"
   shows "real (card {X\<in>trans V F t. J \<subseteq> X \<and> X \<inter> E = {}})
     \<le> ratio k (card J) (card E) i (even s) * bound i s t"
 proof (cases "card J \<le> t")
@@ -333,7 +392,7 @@ proof (cases "card J \<le> t")
       \<le> real (card (trans (V - J - E) (restr F J E) (t - card J)))"
     using row_card[OF finV J] by simp
   also have "\<dots> \<le> bound k (3 * int (t - card J) - int (card (V - J - E))) (t - card J)"
-    using ih lt restr_cnf[OF cnf] restr_thr[OF cnf thr J] k unfolding IH_def by blast
+    by (rule ih_fam[OF ih lt restr_cnf[OF cnf] restr_thr[OF cnf thr J] k])
   also have "3 * int (t - card J) - int (card (V - J - E)) = s - 2 * int (card J) + int (card E)"
     using cV le True by simp
   also have "bound k (s - 2 * int (card J) + int (card E)) (t - card J)
@@ -350,7 +409,7 @@ qed
 
 definition rows_ok :: "(nat set \<times> nat set \<times> fam) list \<Rightarrow> bool" where
   "rows_ok rs \<longleftrightarrow> (\<forall>(J,E,k)\<in>set rs. J \<subseteq> V \<and> E \<subseteq> V \<and> J \<inter> E = {} \<and> J \<union> E \<noteq> {}
-     \<and> (infam k (restr F J E) \<or> (\<exists>C\<in>restr F J E. card C \<le> 1)))"
+     \<and> fam_ok k (restr F J E))"
 
 lemma table_sum:
   assumes ok: "rows_ok rs" and S: "S \<subseteq> trans V F t"
@@ -368,7 +427,7 @@ next
   have fin: "finite (trans V F t)"
     by (rule finite_subset[of _ "Pow V"]) (use finV in \<open>auto simp: trans_def\<close>)
   have okr: "J \<subseteq> V" "E \<subseteq> V" "J \<inter> E = {}" "J \<union> E \<noteq> {}"
-      "infam k (restr F J E) \<or> (\<exists>C\<in>restr F J E. card C \<le> 1)"
+      "fam_ok k (restr F J E)"
     using Cons.prems(1) r unfolding rows_ok_def by auto
   have ok2: "rows_ok rs" using Cons.prems(1) unfolding rows_ok_def by simp
   have cov2: "\<forall>X\<in>?S2. \<exists>r\<in>set rs. fst r \<subseteq> X \<and> X \<inter> fst (snd r) = {}" by blast
