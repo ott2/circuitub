@@ -133,12 +133,16 @@ The full list is in memory (`ndtht-isabelle-tips.md`) and in
   per rule.
 - Act on the build summary; when a step loops, check `grep "running for"` in the log.
 
-### Left uncommitted in other repos (the user's call)
+### Documents
 
-- `~/projects/ndtht/insights/361.md` and `362.md`.
-- `~/projects/watchdog/docs/proof-hints.md`.
+- **The results document is `extensions/monotone-3cnf.md`.** It is linked from `README.md` and
+  from §2.1 of `extensions/locality-and-monotonicity.md`. Update it as work lands; for
+  example, move the Majority bound and the audit to "formal" when they are done.
+- GitHub's math renderer rejects `\operatorname`. Use `\mathrm`, or `\mathbin{\mathrm{…}}`
+  for binary operators. Write braces as `\lbrace`/`\rbrace`.
+- The ndtht insights and the watchdog proof hints have been taken up by those projects.
 
-Also uncommitted, by design: `notes/summaries/chukhin-tr26-248.md` (a hand-checked summary of
+Uncommitted, by design: `notes/summaries/chukhin-tr26-248.md` (a hand-checked summary of
 ECCC TR26-248).
 
 ## Background: the previous work (Lecomte–Ramakrishnan and its extensions)
