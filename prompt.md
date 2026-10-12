@@ -106,8 +106,11 @@ It currently takes about 6 s. There is no `sorry`.
    with the hypothesis `infam T1 F`).
    - In P1.2, $a$'s second clause may be a 2-clause $\lbrace a,c\rbrace$. Then the restriction
      has the 1-clause $\lbrace c\rbrace$, which is covered by the size-$\le 1$ disjunct.
-3. **Types 2o, 2d, 3, 4** (48 tables). Read each table's prose coverage claim critically. The
-   likely errors:
+3. **Types 2o, 2d, 3, 4** (48 tables). **2d is done** (`theorem type2d`, hypothesis
+   `¬ infam T2o F`; see the coverage gap in NOTES.md). So 2o, 3 and 4 must be proved at each $n$
+   without the 2d bound at the same $n$. Rows may use dominated families (`fam_ok`,
+   `t3_or_t4`, `infam_2`); state the rows with `rows_ok_ConsI`. Read each table's prose
+   coverage claim critically. The likely errors:
    - coverage;
    - the family of each restricted CNF (`npair` is inherited by `npair_restr`; "no 3
      two-clauses with a common variable" is *not* inherited);

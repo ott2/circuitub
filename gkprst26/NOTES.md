@@ -65,8 +65,48 @@ Theory: `isabelle/gkprst/Monotone_3CNF.thy` (session `Monotone_Sigma3`).
 - **Coverage** (`type1`): immediate. Either $a$ or $b$ lies only in $\lbrace a,b\rbrace$ (P1.1,
   swapping if needed), or $b$ lies in a further clause (P1.2 with $a$ and $b$ swapped).
 
+## Families: domination
+
+- A row may use family $k$ when the restriction lies in any family $k'$ with
+  $\mathrm{coef}_{k'} \le \mathrm{coef}_k$ (`fam_le`, `fam_ok`). The families form a chain:
+  $4 \le 3 \le 2o \le 2d \le 1 \le 0$.
+- This is needed in two places:
+  - Rows whose restriction the paper calls type 3 can have four or more 2-clauses, since the
+    other 2-clauses of $F$ survive. That is type 4 (`t3_or_t4`).
+  - Where the paper says "type 2", the restriction is 2o or 2d (`infam_2`).
+
+## Type 2d
+
+- **Coverage gap: P2d.1–P2d.5 do not cover type 2d as stated.** The paper's lemma before
+  P2d.1 takes the further clauses of $a$ and $b$ to be 3-clauses $\lbrace a,e,f\rbrace$,
+  $\lbrace b,g,h\rbrace$. They can be 2-clauses.
+  - Example: 2-clauses $\lbrace a,b\rbrace,\lbrace a,e\rbrace,\lbrace b,e\rbrace$ and
+    $\lbrace c,d\rbrace,\lbrace c,g\rbrace,\lbrace d,g\rbrace$. Each of $a,b,c,d$ is in exactly two
+    clauses, no clause meets both pairs, and no pair is in two 3-clauses. So none of
+    P2d.1–P2d.4 holds, and P2d.5 fails because $\lbrace e\rbrace = \lbrace e\rbrace$.
+  - Repair: a CNF with two 2-clauses that meet is of type 2o, and $N_{2o} \le N_{2d}$. So prove
+    2o before 2d at each $n$, and in the 2d proof assume $\neg$2o (`type2d` has the
+    hypothesis `¬ infam T2o F`). Then every further clause through $a,b,c,d$ is a 3-clause
+    (`no2o_three`), and the paper's case analysis goes through.
+- **P2d.1** (`p2d1_sep`, `p2d1_com`, `p2d1`): correct (sums $24/25$, $19/20$ and $47/50$, $23/24$).
+  - In the first case the row $a=0$, $b=1$ is of type 3 only if $F$ has no other 2-clauses;
+    otherwise it is of type 4.
+  - In the second case the paper's "$e=f=d$" means that both further clauses contain $d$.
+- **P2d.2** (`p2d2`): correct and tight (sums $1$, $1$). The clause through $a$ and $c$ may be
+  the 2-clause $\lbrace a,c\rbrace$, which leaves a 1-clause.
+- **P2d.3** (`p2d3_cross`, `p2d3_uniq`, `p2d3_other`): correct (sums $24/25$, $19/20$; $1$, $1$;
+  $49/50$, $1$).
+  - Case 3 needs only a further clause through $e$; the paper also assumes one through $f$.
+    So the split is "$e$ is in no other clause" (Case 2) versus "$e$ is" (Case 3).
+  - $e$'s further clause may be a 2-clause, which leaves a 1-clause.
+- **P2d.4** (`p2d4`): correct (sums $24/25$, $1$).
+- **P2d.5** (`p2d5`): correct (sums $24/25$, $1$). The row $a=b=1$ fixes three zeros, chosen as
+  $e$, $f$ and a $g \notin \lbrace e,f\rbrace$, so its size is exactly 3.
+- **Coverage** (`type2d`, assuming $\neg$2o): P2d.1 → P2d.2 → P2d.3 → P2d.4 → P2d.5, with the
+  symmetries $a \leftrightarrow b$, $c \leftrightarrow d$, $\lbrace a,b\rbrace \leftrightarrow \lbrace c,d\rbrace$.
+
 ## Still to do
 
-- Types 2o, 2d, 3, 4.
+- Types 2o, 3, 4. (2o must not use the 2d bound at the same $n$.)
 - The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
 - The main induction and the Majority corollary.
