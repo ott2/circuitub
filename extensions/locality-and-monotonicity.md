@@ -24,7 +24,7 @@ Notation:
 `symmetric_or_of_cnfs_local` strengthens Remark 1 of the paper's v2. Suppose $k^2 \ge n$.
 Then every symmetric function is an OR of at most $2^{Ck}$ CNFs of clause width
 $2\lceil n/k \rceil$. Moreover, there are block sizes $s_0, s_1 \le \lceil n/k \rceil$ such that
-**every clause reads variables from at most two blocks $\lbrace v : v \operatorname{div} s_l = i\rbrace$
+**every clause reads variables from at most two blocks $\lbrace v : v \mathbin{\mathrm{div}} s_l = i\rbrace$
 of a single partition $l \in \lbrace 0, 1\rbrace$**.
 
 The two partitions correspond to the construction's two moduli. Each clause comes from
@@ -76,7 +76,7 @@ bottom fan-in to grow with n".
 | Monotone upper bound $2^{O(\sqrt{n \log n})}$ (still the best known) | KPPY, STOC 1984 |
 | Lower bound $2^{\Omega(\sqrt n)}$, monotone | Boppana, JCSS 1986 |
 | Lower bound $2^{(d-o(1))\sqrt n}$ with $d = 1/\sqrt{\ln 4} \approx 0.849$, general circuits | Håstad–Jukna–Pudlák, Comput. Complexity 1995 |
-| Bottom fan-in 3, monotone: exactly $(2/6^{1/4})^{n \pm o(n)} \approx 1.27785^n$ | Gurumukhani et al., arXiv:2601.04072 (2026) |
+| Bottom fan-in 3, monotone: exactly $(2/6^{1/4})^{n \pm o(n)} \approx 1.27785^n$ | Gurumukhani et al., arXiv:2601.04072 (2026); the upper bound on transversals is formally checked, with six gaps in the proof repaired ([`monotone-3cnf.md`](monotone-3cnf.md)) |
 
 **Amano (ISAAC 2023).** This paper compares $\Sigma_3$ circuits whose bottom clauses have at
 most $k$ positive and $\ell$ negative literals with monotone ones.

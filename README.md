@@ -47,7 +47,9 @@ are far from the best known. For $w = 3$ the bound gives about $1.043^n$, wherea
 Gurumukhani, Paturi, Pudlák, Saks and Talebanfard (CCC 2024) prove $1.251^n$ for general
 circuits. Gurumukhani, Kleber, Paturi, Rosin, Saks and Talebanfard
 ([arXiv:2601.04072](https://arxiv.org/abs/2601.04072)) determine the monotone case exactly,
-$(2/6^{1/4})^{n \pm o(n)} \approx 1.278^n$. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
+$(2/6^{1/4})^{n \pm o(n)} \approx 1.278^n$. We have checked their upper bound formally:
+see [`extensions/monotone-3cnf.md`](extensions/monotone-3cnf.md). The theorem holds, and six
+gaps in its proof have repairs. By pigeonhole, for every $t \le n$ some $k'$-CNF in the cover accepts
 only inputs of weight $t$, and accepts at least $\binom{n}{t}/2^{O(n/k')}$ of them
 (`enum_output_lower_bound`). Any algorithm for the local enumeration problem
 $\mathrm{Enum}(k', t)$ of Gurumukhani et al. (CCC 2024) must list all of them. So the
@@ -162,8 +164,9 @@ Only solving this for $Z$ remains on paper.
 | `isabelle/Monotone_Formula.thy` | Theorem E′ in finite form, from a formula of block-symmetric CNF tests for Majority to an explicit bound on the number of tests |
 | `isabelle/Depth3_Lower.thy` | The matching depth-3 lower bound: $\Sigma_3$ and $\Pi_3$ formulas for Majority need $2^{\Omega(\sqrt n)}$ gates (PPZ with critical clauses) |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
+| `isabelle/gkprst/Monotone_3CNF.thy` | Session `Monotone_Sigma3`: the theorem of Gurumukhani et al. (arXiv:2601.04072), at most $6^{n/4}$ transversals of size $n/2$ in a monotone 3-CNF with no smaller transversal |
 | `control/` | Positive control: the same audit detects a `sorry` |
-| `extensions/` | Beyond the paper: block locality (formalized) and the monotone case (analysis) |
+| `extensions/` | Beyond the paper: block locality (formalized), the monotone case (analysis), and the formal check of Gurumukhani et al. (`monotone-3cnf.md`) |
 | `VERDICT.md` | The verdict, the trusted definitions, and a step-by-step correspondence with the paper |
 | `writeup/main.pdf` | Short exposition, including how the formal proof differs from the paper's |
 
@@ -174,6 +177,7 @@ HOL-Library.
 
 ```sh
 isabelle build -d isabelle Majority_AC0
+isabelle build -d isabelle Monotone_Sigma3   # Gurumukhani et al., about 20 s
 isabelle build -d control Oracle_Control   # positive control for the oracle audit
 ```
 
