@@ -2,163 +2,144 @@
 
 ## The task, and where it stands
 
-Formalize in Isabelle the main theorem of Gurumukhani, Kleber, Paturi, Rosin, Saks and
-Talebanfard, *Optimal Monotone Depth-Three Circuit Lower Bounds for Majority*
-(arXiv:2601.04072v2). As with the Lecomte–Ramakrishnan verification below, the point is to
-check a recent proof formally and report any gaps.
+The task is to formalize in Isabelle the main theorem of Gurumukhani, Kleber, Paturi, Rosin,
+Saks and Talebanfard, *Optimal Monotone Depth-Three Circuit Lower Bounds for Majority*
+(arXiv:2601.04072v2). The point is to check a recent proof formally and report any gaps, as
+with the Lecomte–Ramakrishnan verification described below.
 
-**Claim.** A monotone 3-CNF with no transversal of size $< n/2$ has at most $6^{n/4}$
-transversals of size $\lfloor n/2\rfloor$. Hence a monotone OR of 3-CNFs computing Majority
-needs $\binom{n}{n/2}/6^{n/4} \approx 1.278^{n-o(n)}$ CNFs. The paper writes $n = 3t - s$
-and proves $N_i(s,t) \le c_i(2/3)^{s/2}3^t$ (even $s$) or $c'_i(2/3)^{(s-1)/2}3^t$ (odd $s$),
-for six families $i$, by an induction that uses 58 branching tables.
+**Status: the paper's main theorem is formally proved, with no `sorry`.** Two results:
 
-**Sources** (none of these may be staged):
-- LaTeX: `notes/gkprst26-src/`.
-- PDF: `2601.04072v2.pdf`.
-- Summary: `notes/summaries/2601.04072-GKPRST26.md`.
-- Ignore `archive/` directories.
-- Map of the sources:
-  - `UpperBounds/upperbounds.tex`: the theorem and the outline.
-  - `upper-bound-head.tex`: the configurations.
-  - The cases: `phi0.tex`, `oneclause/phi1.tex`, `twooverlapping/phi2o.tex` (17 tables),
-    `twodisjoint/phi2d.tex` (8), `threeclause/*.tex` (23).
-  - The property macros are in `setup/cases.tex`.
+- **`theorem gkprst_bound`.** Let $F$ be a monotone CNF over $V$ with clauses of size
+  $\le 3$, with no transversal of size $< t$, and let $s = 3t-n$. Then $F$ has at most
+  `bound T0 s t` transversals of size $t$: $(2/3)^{s/2}3^t$ for even $s$, and
+  $\tfrac79(2/3)^{(s-1)/2}3^t$ for odd $s$.
+- **`corollary gkprst_half`.** For $n = 2t$ the bound is at most $6^{n/4}$.
 
-**Findings so far** are in `gkprst26/NOTES.md` (committed); keep it up to date.
-- The main one is **a gap in P0.4 (triangle)**: the table omits $a=b=c=0$. The prism is a
-  counterexample to the table's coverage.
-- The repair: $d,e,f$ are distinct because P0.3 fails, so three rows fix 5 variables, not 4.
-  With the missing row added the sums are $103/108$ and $1$.
-- Everything else checked so far is correct, apart from some unnecessary assumptions.
+**The paper's proof has six genuine gaps.** Each is repaired within the same induction,
+and no constant changes. The details, with counterexamples, are in `gkprst26/NOTES.md`
+(committed); keep it current.
 
-### The formal development: `isabelle/gkprst/Monotone_3CNF.thy`
+1. **P0.4:** the table misses the row $a=b=c=0$ (the prism is a counterexample).
+2. **2d coverage:** it misses CNFs in which $a$'s and $b$'s further clauses are 2-clauses.
+   The repair is to prove 2o first and assume $\neg$2o.
+3. **2o coverage:** it misses the case where $b$ and $c$ share one clause and $c$ has no other
+   clause. The repair is a new table, `p2o5_gap`, with sum exactly 1.
+4. **P3p.1:** the table is wrong. Its claim "$a=1$ forces $b=0$" fails, for example in
+   $\lbrace ab,bc,cd,axy,duv\rbrace$. The repair is to split on $c$; the sum is 1.
+5. **P3ie.2:** a claimed type-1 row is only of type 0 in two subcases (sum $43/42$). The
+   repairs are a type-2o row (`p3i_e3a`, `p3i_e3b`) and the new table `p3i_eG`.
+6. **Type 4 for even $s$:** stars (a variable in three or more 2-clauses) are not covered.
+   The repair is two new tables, `p4_e4` and `p4_e3`.
 
-The session is **`Monotone_Sigma3`**, in `isabelle/ROOT` as `in "gkprst"`, with parent
-`HOL-Library`, so it is separate from `Majority_AC0`. Build with:
+The paper also has many unnecessary assumptions and over-complicated case splits; they are
+listed in NOTES.md.
 
-    WALL_TIMEOUT=60 WATCHDOG_TIMEOUT=20 .venv/bin/isabelle-build --session Monotone_Sigma3 -m "…"
+**Sources** (none of these may be staged): the LaTeX is in `notes/gkprst26-src/`
+(the cases are under `UpperBounds/`), the PDF is `2601.04072v2.pdf`, and the summary is
+`notes/summaries/2601.04072-GKPRST26.md`.
 
-It currently takes about 6 s. There is no `sorry`.
+### The formal development: `isabelle/gkprst/Monotone_3CNF.thy` (about 5,400 lines)
 
+The session is **`Monotone_Sigma3`**, declared in `isabelle/ROOT` as `in "gkprst"` with parent
+`HOL-Library`. The theory imports only `Complex_Main`. Build with:
+
+    WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=30 .venv/bin/isabelle-build --session Monotone_Sigma3 -m "…"
+
+It takes about 15–20 s. If another session's build loads the machine (`uptime` shows load
+around 15), raise the limits instead of hunting for a slow step.
+
+**Structure:**
 - **Definitions.**
-  - `cnf V F`: clauses $\subseteq V$, of size $\le 3$, $V$ finite.
-  - `hits F X`.
-  - `trans V F t`: the $t$-transversals.
-  - `thr V F t`: no smaller transversal.
-  - `restr F J E = (λC. C - E) ` {C∈F. C ∩ J = {}}`: $J$ set to 1, $E$ set to 0.
+  - `cnf V F`: every clause is a subset of $V$ of size $\le 3$, and $V$ is finite.
+  - `hits F X`: $X$ meets every clause of $F$.
+  - `trans V F t`: the transversals of size $t$.
+  - `thr V F t`: no transversal of size $< t$.
+  - `restr F J E`: the CNF with $J$ set to 1 and $E$ set to 0.
   - `twos F`: the 2-clauses.
-  - `npair F`: no pair of variables in 3 clauses.
-  - `datatype fam = T0 | T1 | T2o | T2d | T3 | T4`, with `infam`. For T3, "no three
-    2-clauses share a variable" is `card {C∈twos F. x ∈ C} ≤ 2`.
-  - `coef`, `bound i s t = coef i (even s) * (2/3) powi (s div 2) * 3^t` (with `s :: int`), and
-    `ratio k j e i p`, the closed-form ratio for a row with $j$ ones, $e$ zeros and restricted
-    family $k$ (lemma `bound_shift`).
-  - `bound_mono`: the bound decreases in $s$.
-- **Induction.**
-  - `IH m`: the bound holds for every CNF with fewer than $m$ variables, in family $i$
-    **or with a clause of size $\le 1$**. That disjunct absorbs restrictions that create
-    1-clauses.
-  - The induction is on $\lvert V\rvert$ alone; every row fixes a variable.
-- **`locale core V F t`.** Assumptions: `cnf`, `thr`, `IH (card V)`, every clause has size
-  2 or 3, an antichain (`anti`), `⋃F = V`, `1 ≤ t`. It provides `s`, `critical` (the critical
-  clause), `row`, and **`table`**.
-- **`locale core0 = core +`** every clause has size 3. All type-0 tables live here.
-- **How to state a table** (copy `p05` or `p06_both`):
+  - `npair F`: no pair of variables lies in three clauses.
+  - `fam`: the families $T0 | T1 | T2o | T2d | T3 | T4$, with membership `infam`.
+  - The bounds: `coef`, `bound`, `ratio`, and the lemma `bound_shift`.
+- **Domination.**
+  - `fam_le k' k`: the bound for $k'$ is at most that for $k$. The families form a chain,
+    $4 \le 3 \le 2o \le 2d \le 1 \le 0$.
+  - `fam_ok k G`: $G$ is in family $k$, has a clause of size $\le 1$, or is in a family
+    dominated by $k$.
+- **The induction hypothesis** `IH m` quantifies over every CNF with fewer than $m$
+  variables, in any family or with a clause of size $\le 1$.
+- **`locale core`** collects the normalized situation: every clause has 2 or 3 variables, no
+  clause contains another, every variable occurs in some clause, $t \ge 1$, and `IH (card V)`
+  holds. It provides `table` (rows `(J,E,family)`), `rows_ok_ConsI`, and the critical-clause
+  helpers.
+- **`locale core0`** adds that every clause has 3 variables (type 0).
+- **The coverage theorems**, one per family:
+  - `type0` (in `core0`) and `type1`;
+  - `type2o`, which assumes $\neg$T3 and $\neg$T4;
+  - `type2d`, which assumes $\neg$2o;
+  - `type3`, and `type4`, which uses `type3`.
+- **Combining them.** `full2o` and `full2d` handle the dominating families, and `full_bound`
+  combines everything.
+- **The reductions** (`step`):
+  - $t=0$;
+  - an empty clause;
+  - a 1-clause, which is forced;
+  - subsumed clauses, by keeping only the minimal clauses;
+  - unused variables.
+- **`IH_all`, then `gkprst_bound` and `gkprst_half`.**
 
-      proof (rule table[where rs = "[({J…},{E…},Tk), …]"], goal_cases)
-        case 1: rows_ok    — restricted families via two_mem / del_two / infam_2d, npair_restr
-        case 2: coverage   — prove a disjunction of literal facts (a ∈ X ∧ b ∉ X ∨ …) for
-                             X ∈ trans V F t, then `show ?case by auto`
-        case 3: the sum    — `by (cases "even s") (simp_all add: ratio_simps)`
+### Next steps
 
-  Coverage helpers:
-  - `hit`.
-  - `forced_out`: $a$ always with $b$ forces $b \notin X$.
-  - `two_only`: degree $\le 2$ means the clauses of $x$ are exactly $C_1, C_2$.
-  - `crit_other` / `crit_other'` / `crit_excl`: the other clause is critical, so its other
-    two variables are out.
-  - `only_clause`, `single_out`, `excl3`.
-  - Configuration extraction: `three_form`, `card2_obtain`, `card3_obtain`.
-- **Done (type 0):** `p01` (from `¬ npair F`; uses `p01_with`, `p01_sep`), `p02` (uses
-  `del_type3`), `p03`, `p04` (corrected), `p05`, `p06_both`, `p06_one`, and the coverage
-  theorem `type0` (uses `three_elems`, `tri`, `meet_tri`).
-
-### Next steps, in order
-
-1. **Done:** the type-0 coverage lemma, `theorem type0` (in `core0`): `bound T0 s t`. The
-   formal version follows this plan exactly:
-   - `¬ npair` → `p01`.
-   - Some $a$ in $\ge 3$ clauses → `p02`.
-   - A pair in two clauses → `p03`. Extract with `card2_obtain` and `three_form`.
-   - Otherwise every variable is in $\le 2$ clauses and every pair in $\le 1$ clause. Prove
-     `meet_tri`: if $\lbrace a,b,c\rbrace \in F$, $D_1 \ni b$, $D_2 \ni c$ are other clauses
-     and $D_1 \cap D_2 \ne \emptyset$, then a triangle with 6 distinct variables exists. Write
-     $D_1 = \lbrace b,x,u\rbrace$, $D_2 = \lbrace c,x,v\rbrace$; the triangle is $(b,c,x)$ with
-     $d=a$, $e=v$, $f=u$. ($u \ne v$ by the pair condition.) If a triangle exists → `p04`.
-   - Otherwise, if some variable lies in exactly one clause $\lbrace a,b,c\rbrace$: if $b$ and
-     $c$ both lie in other clauses, these are disjoint by `meet_tri`, giving `p06_both`;
-     otherwise `p06_one`, swapping $b$ and $c$ if needed.
-   - Else every variable is in exactly 2 clauses ($F \ne \emptyset$ since $t \ge 1$). Take any
-     clause; its three other clauses are pairwise disjoint by `meet_tri`, giving an E
-     configuration → `p05`.
-2. **Done:** type 1 (`phi1.tex`, 2 tables): `p11`, `p12`, and `theorem type1` (in `core`,
-   with the hypothesis `infam T1 F`).
-   - In P1.2, $a$'s second clause may be a 2-clause $\lbrace a,c\rbrace$. Then the restriction
-     has the 1-clause $\lbrace c\rbrace$, which is covered by the size-$\le 1$ disjunct.
-3. **Types 2o, 2d, 3, 4** (48 tables). **2d and 2o are done.**
-   - `theorem type2d` assumes `¬ infam T2o F`.
-   - `theorem type2o` assumes `¬ infam T3 F` and `¬ infam T4 F`.
-   - Both have coverage gaps, now repaired; see NOTES.md.
-   - **Types 3 and 4 are done too** (`theorem type3`, `theorem type4`, which uses `type3`).
-     So all six families have formal tables and coverage. At each $n$ the order is 3, 4, 2o,
-     2d, 1, 0.
-   - The gaps found are listed in NOTES.md:
-     - P0.4;
-     - P2d coverage;
-     - P2o coverage;
-     - P3p.1 (a wrong table);
-     - P3ie.2;
-     - type 4 for even $s$. Rows may use dominated families (`fam_ok`,
-   `t3_or_t4`, `infam_2`); state the rows with `rows_ok_ConsI`. Read each table's prose
-   coverage claim critically. The likely errors:
-   - coverage;
-   - the family of each restricted CNF (`npair` is inherited by `npair_restr`; "no 3
-     two-clauses with a common variable" is *not* inherited);
-   - variables that may coincide ($n'$ uncertain: use `bound_mono`);
-   - 1-clauses.
-   Commit after each verified table.
-4. **Done:** the reductions and the main theorem.
-   - `step`, `IH_all`, and `theorem gkprst_bound`, the paper's theorem.
-   - `corollary gkprst_half`: for $n = 2t$, at most $6^{n/4}$ transversals of size $n/2$.
-   - `full_bound` combines the family theorems in the order 3, 4, 2o, 2d, 1, 0.
-5. **Remaining:** the Majority size bound, $\binom{n}{n/2}/6^{n/4}$ CNFs.
-   - `slice_lower` lives in `Majority_AC0`, so put this in a theory or session that can import
-     both.
-   - Add the headline theorems to an audit, as `Audit.thy` does.
-6. Keep `gkprst26/NOTES.md` current. Never edit `VERDICT.md`.
+1. **The Majority size bound.** A monotone OR of 3-CNFs computing Majority on $n$ (even)
+   variables needs at least $\binom{n}{n/2}/6^{n/4}$ CNFs.
+   - Each CNF accepts only inputs of weight $\ge n/2$, which is `thr V F (n/2)`. So it
+     accepts at most $6^{n/4}$ inputs of weight $n/2$ (`gkprst_half`).
+   - The CNFs together must accept all $\binom{n}{n/2}$ such inputs.
+   - **Where to put it.** `slice_lower` ($2^n \le (n+1)\binom{n}{n/2}$) and the formula
+     definitions (`Formula.thy`, `Depth3_Lower.thy`, whose `majority_depth3_sqrt` is a
+     template) live in session `Majority_AC0`.
+   - So add a new session, for example `session GKPRST_Majority in "gkprst" = Majority_AC0 +
+     sessions Monotone_Sigma3 theories Majority_3CNF`, or a new theory that imports both.
+   - Connect monotone Σ₃ formulas with bottom fan-in 3 to the `cnf`/`trans` view: a
+     satisfying assignment of a monotone CNF is a transversal of its clause sets.
+   - State the result both as a count and as $\approx 1.278^{n}$.
+2. **An audit.** Add the headline theorems (`gkprst_bound`, `gkprst_half`, and the Majority
+   bound) to an audit, as `isabelle/Audit.thy` does.
+3. **Optional: the writeup.** Write up the gaps for the authors, from NOTES.md. Ask the user
+   before sending anything externally.
+4. **Optional: the extension document.** Record in `extensions/locality-and-monotonicity.md`,
+   §2.1, that the $k=3$ monotone case is now formally checked; the table row for
+   Gurumukhani et al. is there. That document also notes Chukhin (ECCC TR26-248).
 
 Prove by hand, then formalize. No brute-force or exhaustive search.
 
 ### Proof-engineering hints
 
-They are in memory (`ndtht-isabelle-tips.md`) and in `~/projects/watchdog/docs/proof-hints.md`.
-Before a second tactic attempt, search `~/projects/ndtht/bin/kb KEYWORD`. The ones that
-mattered most here:
-- Give automation literal facts, never set equations.
-- Use `rule …[OF …]`, not guessed `metis`/`elim`.
-- `simp` won't flip $a \ne c$ into $c \ne a$; use `auto` for such side goals.
-- No `case_prod` bounded quantifiers.
-- Give `finite_subset[OF …]` explicitly.
-- Keep `moreover` chains contiguous.
-- Act on the build summary; read the full log only when the summary truncates what is
-  needed.
+The full list is in memory (`ndtht-isabelle-tips.md`) and in
+`~/projects/watchdog/docs/proof-hints.md`. Before a second tactic attempt, search
+`~/projects/ndtht/bin/kb KEYWORD`. The ones that mattered most here:
+
+- Give automation literal facts, never set equations. This includes equations like
+  $\lbrace a,b\rbrace = \lbrace b,a\rbrace$, and equations chained in through `then`.
+- Use `rule …[OF …]`, never a guessed `metis`. Consume `obtains` lemmas with `rule` on an
+  explicit instance, not `blast`.
+- `OF` cannot fill a `⋀x. … ⟹ False` premise with a rule-shaped fact (insights/116).
+  Pass plain `∀…` or `¬(∃…)` formulas instead.
+- After `rule X[OF …]` with rule-shaped facts in the `OF`, pass the remaining facts by name
+  in the `OF` too; chaining them in fails.
+- Inside `obtain … using …`, `that` means the obtain's own continuation. Name the `have … if`
+  assumptions.
+- `simp` won't flip $a \ne c$ into $c \ne a$, so give it flipped facts. For example,
+  `card {c,b}` needs `c ≠ b`.
+- `rule two_mem[OF K(1)] two_mem[OF K(2)]` always picks the first rule. Write one subgoal
+  per rule.
+- Act on the build summary; when a step loops, check `grep "running for"` in the log.
 
 ### Left uncommitted in other repos (the user's call)
 
-- `~/projects/ndtht/insights/361.md`: a `have` breaking a `moreover` chain.
-- `~/projects/ndtht/insights/362.md`: negative `powi`.
+- `~/projects/ndtht/insights/361.md` and `362.md`.
 - `~/projects/watchdog/docs/proof-hints.md`.
+
+Also uncommitted, by design: `notes/summaries/chukhin-tr26-248.md` (a hand-checked summary of
+ECCC TR26-248).
 
 ## Background: the previous work (Lecomte–Ramakrishnan and its extensions)
 
