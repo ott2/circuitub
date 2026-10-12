@@ -1,5 +1,8 @@
 # Monotone 3-CNFs with no small transversal: a formal check of Gurumukhani et al.
 
+<!-- Source: github.com/ott2/circuitub, extensions/monotone-3cnf.md.
+     Written on top of commit 4bf1bfdc4eef6315c7bff475b8de61570b3ab2a5 (2026-10-12). -->
+
 This document reports a formal verification, in Isabelle2025-2, of the main theorem of
 Gurumukhani, Kleber, Paturi, Rosin, Saks and Talebanfard, *Optimal Monotone Depth-Three
 Circuit Lower Bounds for Majority* ([arXiv:2601.04072v2](https://arxiv.org/abs/2601.04072)).
