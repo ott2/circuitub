@@ -260,4 +260,132 @@ proof -
   then show ?thesis using that by (simp add: P_def N_def)
 qed
 
+subsection \<open>Greedy covering\<close>
+
+text \<open>After \<open>k\<close> greedy copies, at most \<open>N (1 - T/N)\<^sup>k\<close> points of the slice are uncovered.\<close>
+
+lemma greedy:
+  assumes A: "finite A" and S: "S \<subseteq> slice A t" and N: "N = card (slice A t)"
+  shows "\<exists>ps. length ps = k \<and> (\<forall>p\<in>set ps. p permutes A) \<and>
+    card (slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S)) * N ^ k \<le> N * (N - card S) ^ k"
+proof (induction k)
+  case 0
+  show ?case using N by (intro exI[of _ "[]"]) simp
+next
+  case (Suc k)
+  then obtain ps where ps: "length ps = k" "\<forall>p\<in>set ps. p permutes A"
+    and b: "card (slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S)) * N ^ k \<le> N * (N - card S) ^ k"
+    by blast
+  define U where "U = slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S)"
+  have U: "U \<subseteq> slice A t" by (auto simp: U_def)
+  have finSl: "finite (slice A t)" unfolding slice_def using A by simp
+  have finU: "finite U" using U finSl by (rule finite_subset)
+  obtain p where p: "p permutes A" and g: "card S * card U \<le> card {X\<in>S. p ` X \<in> U} * card (slice A t)"
+    by (rule good_perm[OF A S U])
+  define c where "c = card {X\<in>S. p ` X \<in> U}"
+  define U' where "U' = U - (\<lambda>X. p ` X) ` S"
+  have eq: "slice A t - (\<Union>q\<in>set (p # ps). (\<lambda>X. q ` X) ` S) = U'" by (auto simp: U_def U'_def)
+  have c1: "c \<le> card (U \<inter> (\<lambda>X. p ` X) ` S)" unfolding c_def
+  proof (rule card_inj_on_le)
+    show "inj_on (\<lambda>X. p ` X) {X\<in>S. p ` X \<in> U}"
+      using inj_image_eq_iff[OF permutes_inj[OF p]] by (auto simp: inj_on_def)
+    show "(\<lambda>X. p ` X) ` {X\<in>S. p ` X \<in> U} \<subseteq> U \<inter> (\<lambda>X. p ` X) ` S" by blast
+    show "finite (U \<inter> (\<lambda>X. p ` X) ` S)" using finU by simp
+  qed
+  have c2: "card U' = card U - card (U \<inter> (\<lambda>X. p ` X) ` S)"
+    unfolding U'_def by (rule card_Diff_subset_Int) (use finU in simp)
+  have gN: "card S * card U \<le> c * N" using g by (simp add: c_def N)
+  have "card U' \<le> card U - c" unfolding c2 by (rule diff_le_mono2[OF c1])
+  then have "card U' * N \<le> (card U - c) * N" by (rule mult_right_mono) simp
+  also have "\<dots> = card U * N - c * N" by (simp add: diff_mult_distrib)
+  also have "\<dots> \<le> card U * N - card S * card U" using gN by simp
+  also have "\<dots> = card U * (N - card S)" by (simp add: diff_mult_distrib2 mult.commute)
+  finally have st: "card U' * N \<le> card U * (N - card S)" .
+  have "card U' * N ^ Suc k = (card U' * N) * N ^ k" by simp
+  also have "\<dots> \<le> card U * (N - card S) * N ^ k" using st by (rule mult_right_mono) simp
+  also have "\<dots> = (card U * N ^ k) * (N - card S)" by simp
+  also have "\<dots> \<le> N * (N - card S) ^ k * (N - card S)" using b by (simp add: U_def)
+  also have "\<dots> = N * (N - card S) ^ Suc k" by simp
+  finally have "card U' * N ^ Suc k \<le> N * (N - card S) ^ Suc k" .
+  then show ?case using ps p eq by (intro exI[of _ "p # ps"]) simp
+qed
+
+lemma exp_one_ge_2: "(2::real) \<le> exp 1"
+  using exp_ge_add_one_self[of "1::real"] by simp
+
+text \<open>With \<open>k T \<ge> (n+1) N\<close>, fewer than one point is left: \<open>N e\<^sup>-\<^sup>k\<^sup>T\<^sup>/\<^sup>N \<le> 2\<^sup>n e\<^sup>-\<^sup>(\<^sup>n\<^sup>+\<^sup>1\<^sup>) < 1\<close>.\<close>
+
+lemma greedy_cover:
+  assumes A: "finite A" and S: "S \<subseteq> slice A t" and T: "0 < card S"
+    and k: "(card A + 1) * card (slice A t) \<le> k * card S"
+  obtains ps where "length ps = k" "\<forall>p\<in>set ps. p permutes A"
+    "slice A t \<subseteq> (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S)"
+proof -
+  define N where "N = card (slice A t)"
+  define n where "n = card A"
+  obtain ps where ps: "length ps = k" "\<forall>p\<in>set ps. p permutes A"
+    and b: "card (slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S)) * N ^ k \<le> N * (N - card S) ^ k"
+    using greedy[OF A S N_def, of k] by blast
+  define c where "c = card (slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S))"
+  have finSl: "finite (slice A t)" unfolding slice_def using A by simp
+  have TN: "card S \<le> N" unfolding N_def using S finSl by (rule card_mono[rotated])
+  have N0: "0 < N" using T TN by simp
+  have N2: "real N \<le> 2 ^ n"
+  proof -
+    have "N \<le> card (Pow A)" unfolding N_def
+      by (rule card_mono) (use A in \<open>auto simp: slice_def\<close>)
+    also have "\<dots> = 2 ^ n" using A by (simp add: card_Pow n_def)
+    finally have "real N \<le> real ((2::nat) ^ n)" by (simp only: of_nat_le_iff)
+    then show ?thesis by simp
+  qed
+  define q :: real where "q = (real N - real (card S)) / real N"
+  have q0: "0 \<le> q" using TN N0 by (simp add: q_def)
+  have qe: "q \<le> exp (- (real (card S) / real N))"
+  proof -
+    have "q = 1 + - (real (card S) / real N)" using N0 by (simp add: q_def field_simps)
+    then show ?thesis using exp_ge_add_one_self[of "- (real (card S) / real N)"] by simp
+  qed
+  have cr: "real c * real N ^ k \<le> real N * (real N - real (card S)) ^ k"
+  proof -
+    have "real (c * N ^ k) \<le> real (N * (N - card S) ^ k)" using b by (simp only: of_nat_le_iff c_def)
+    then show ?thesis using TN by (simp add: of_nat_diff)
+  qed
+  have "real c \<le> real N * q ^ k"
+  proof -
+    have pos: "0 < real N ^ k" using N0 by simp
+    have "real c = real c * real N ^ k / real N ^ k" using pos by simp
+    also have "\<dots> \<le> real N * (real N - real (card S)) ^ k / real N ^ k"
+      using cr pos by (intro divide_right_mono) simp_all
+    also have "\<dots> = real N * q ^ k" by (simp add: q_def power_divide)
+    finally show ?thesis .
+  qed
+  also have "\<dots> \<le> real N * exp (- (real (card S) / real N)) ^ k"
+    using q0 qe by (intro mult_left_mono power_mono) simp_all
+  also have "\<dots> = real N * exp (real k * - (real (card S) / real N))"
+    by (simp only: exp_of_nat_mult)
+  also have "\<dots> \<le> real N * exp (- real (n + 1))"
+  proof -
+    have "real ((n + 1) * N) \<le> real (k * card S)" using k by (simp only: of_nat_le_iff n_def N_def)
+    then have "real (n + 1) * real N \<le> real k * real (card S)" by (simp only: of_nat_mult)
+    then have "real (n + 1) \<le> real k * real (card S) / real N" using N0
+      by (simp only: le_divide_eq) simp
+    then have "real k * - (real (card S) / real N) \<le> - real (n + 1)" by simp
+    then show ?thesis by (intro mult_left_mono) simp_all
+  qed
+  also have "\<dots> = real N / exp (real (n + 1))" by (simp only: exp_minus divide_inverse)
+  also have "\<dots> \<le> 2 ^ n / 2 ^ (n + 1)"
+  proof -
+    have "(2::real) ^ (n + 1) \<le> exp 1 ^ (n + 1)" using exp_one_ge_2 by (intro power_mono) simp_all
+    also have "\<dots> = exp (real (n + 1))"
+      by (rule exp_of_nat_mult[of "n + 1" "1::real", unfolded mult_1_right, symmetric])
+    finally have e: "(2::real) ^ (n + 1) \<le> exp (real (n + 1))" .
+    show ?thesis using N2 e by (intro frac_le) simp_all
+  qed
+  also have "\<dots> < 1" by simp
+  finally have "c = 0" by simp
+  moreover have "finite (slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S))" using finSl by simp
+  ultimately have "slice A t - (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S) = {}" by (simp add: c_def)
+  then show ?thesis using that ps by blast
+qed
+
 end
