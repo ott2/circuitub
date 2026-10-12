@@ -109,9 +109,12 @@ sessions sharing one. Build it with `--session GKPRST_Majority`, in about 20 s o
 
 1. **Optional: odd $n$.** The Majority bound for odd $n$ follows from `gkprst_bound` with
    $t = (n+1)/2$.
-2. **Optional: the writeup.** Write up the gaps for the authors, from NOTES.md. Ask the user
-   before sending anything externally.
-3. Then return to the open directions below. For example, monotone $\Sigma_3^k$ for $k \ge 4$
+2. **The writeup is drafted:** `gkprst26/gaps-for-authors.md`. Every counterexample and every
+   repaired table was re-checked by hand against the paper's LaTeX. Ask the user before
+   sending anything externally.
+3. **Watermarks.** Run `tools/watermark.py FILE.md …` to restamp documents with the current
+   commit, and use `--check` to see what would change. Never run it on `VERDICT.md`.
+4. Then return to the open directions below. For example, monotone $\Sigma_3^k$ for $k \ge 4$
    (§2.10, item 5).
 
 Prove by hand, then formalize. No brute-force or exhaustive search.
