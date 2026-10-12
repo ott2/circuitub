@@ -43,9 +43,18 @@ Theory: `isabelle/gkprst/Monotone_3CNF.thy` (session `Monotone_Sigma3`).
   "domination" remark in the second case is unnecessary: the type-0 bound covers $c$ lying
   in another clause directly.
 
+- **Coverage** (`type0`, with `meet_tri`): correct; every type-0 CNF with $t \ge 1$ meets one of
+  P0.1–P0.6.
+  - The paper states `lemma:Egraph` without proof. The proof is short. Suppose the further
+    clauses $D_1 = \lbrace b,x,u\rbrace$ and $D_2 = \lbrace c,x,v\rbrace$ of two variables of
+    $\lbrace a,b,c\rbrace$ share $x$. Then $\lbrace b,x,u\rbrace,\lbrace x,c,v\rbrace,\lbrace b,c,a\rbrace$
+    is a triangle, and its six variables are distinct because no pair is in two clauses.
+  - The lemma needs only that P0.3 and P0.4 fail. The paper also assumes that P0.2 fails,
+    which is not needed.
+  - The E configuration needs a clause to exist, which follows from $t \ge 1$.
+
 ## Still to do
 
-- The type-0 coverage lemma (choosing among P0.1–P0.6).
 - Types 1, 2o, 2d, 3, 4.
 - The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
 - The main induction and the Majority corollary.

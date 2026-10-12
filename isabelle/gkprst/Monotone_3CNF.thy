@@ -976,6 +976,183 @@ next
   then show ?case using dist by (cases "even s") (simp_all add: ratio_simps)
 qed
 
+subsection \<open>Type 0: choosing the configuration\<close>
+
+lemma three_elems:
+  assumes C: "C \<in> F" "a \<in> C"
+  obtains b c where "C = {a,b,c}" "distinct [a,b,c]"
+proof -
+  have "card (C - {a}) = 2"
+    using three[OF C(1)] C(2) cnf_clause_finite[OF cnf C(1)] by simp
+  then obtain b c where bc: "C - {a} = {b,c}" "b \<noteq> c" unfolding card_2_iff by blast
+  have e: "C = {a,b,c}" using bc(1) C(2) by blast
+  have "a \<noteq> b" "a \<noteq> c" using bc(1) by auto
+  then show ?thesis using that[OF e] bc(2) by simp
+qed
+
+definition tri :: bool where
+  "tri \<longleftrightarrow> (\<exists>a b c d e f. {a,b,d} \<in> F \<and> {b,c,e} \<in> F \<and> {a,c,f} \<in> F \<and> distinct [a,b,c,d,e,f])"
+
+text \<open>If no pair lies in two clauses and there is no triangle, then the further clauses of two
+  variables of a clause are disjoint: a common variable \<open>x\<close> of \<open>D\<^sub>1 = {b,x,u}\<close> and
+  \<open>D\<^sub>2 = {c,x,v}\<close> gives the triangle \<open>{b,x,u}\<close>, \<open>{x,c,v}\<close>, \<open>{b,c,a}\<close>.\<close>
+
+lemma meet_tri:
+  assumes p1: "\<And>x y C D. x \<noteq> y \<Longrightarrow> C \<in> F \<Longrightarrow> D \<in> F \<Longrightarrow> x \<in> C \<Longrightarrow> y \<in> C \<Longrightarrow> x \<in> D \<Longrightarrow> y \<in> D \<Longrightarrow> C = D"
+    and notri: "\<not> tri"
+    and C: "C \<in> F" "b \<in> C" "c \<in> C" "b \<noteq> c"
+    and D: "D1 \<in> F" "b \<in> D1" "D1 \<noteq> C" "D2 \<in> F" "c \<in> D2" "D2 \<noteq> C"
+  shows "D1 \<inter> D2 = {}"
+proof (rule ccontr)
+  assume "D1 \<inter> D2 \<noteq> {}"
+  then obtain x where x: "x \<in> D1" "x \<in> D2" by blast
+  obtain a where a: "C = {b,c,a}" "a \<noteq> b" "a \<noteq> c" using three_form[OF C] by blast
+  have aC: "a \<in> C" using a(1) by simp
+  have cD1: "c \<notin> D1" using p1[of b c D1 C] C D by blast
+  have bD2: "b \<notin> D2" using p1[of b c D2 C] C D by blast
+  have aD1: "a \<notin> D1" using p1[of a b D1 C] a(2) aC C D by blast
+  have aD2: "a \<notin> D2" using p1[of a c D2 C] a(3) aC C D by blast
+  have bx: "b \<noteq> x" using bD2 x(2) by blast
+  have cx: "c \<noteq> x" using cD1 x(1) by blast
+  obtain u where u: "D1 = {b,x,u}" "u \<noteq> b" "u \<noteq> x" using three_form[OF D(1) D(2) x(1) bx] by blast
+  obtain v where v: "D2 = {c,x,v}" "v \<noteq> c" "v \<noteq> x" using three_form[OF D(4) D(5) x(2) cx] by blast
+  have "D1 \<noteq> D2" using bD2 D(2) by blast
+  then have uv: "u \<noteq> v" using p1[of x u D1 D2] u v D(1,4) by auto
+  have F3: "{b,x,u} \<in> F" "{x,c,v} \<in> F" "{b,c,a} \<in> F"
+    using D(1,4) C(1) u(1) v(1) a(1) by (auto simp: insert_commute)
+  have "distinct [b,x,c,u,v,a]"
+    using a(2,3) bx cx u v uv aD1 aD2 cD1 bD2 C(4) by auto
+  then have tri unfolding tri_def using F3 by blast
+  then show False using notri by blast
+qed
+
+theorem type0: "real (card (trans V F t)) \<le> bound T0 s t"
+proof (cases "npair F")
+  case False
+  then show ?thesis by (rule p01)
+next
+  case np: True
+  show ?thesis
+  proof (cases "\<exists>a. 3 \<le> card {C\<in>F. a \<in> C}")
+    case True
+    then obtain a where "3 \<le> card {C\<in>F. a \<in> C}" by blast
+    then show ?thesis by (rule p02[OF np])
+  next
+    case False
+    have deg: "card {C\<in>F. x \<in> C} \<le> 2" for x
+    proof -
+      have "\<not> 3 \<le> card {C\<in>F. x \<in> C}" using False by blast
+      then show ?thesis by simp
+    qed
+    show ?thesis
+    proof (cases "\<exists>a b C D. a \<noteq> b \<and> C \<in> F \<and> D \<in> F \<and> C \<noteq> D \<and> a \<in> C \<and> b \<in> C \<and> a \<in> D \<and> b \<in> D")
+      case True
+      then obtain a b C D where ab: "a \<noteq> b" "C \<in> F" "D \<in> F" "C \<noteq> D" "a \<in> C" "b \<in> C" "a \<in> D" "b \<in> D"
+        by blast
+      obtain c where c: "C = {a,b,c}" "c \<noteq> a" "c \<noteq> b" using three_form[OF ab(2) ab(5) ab(6) ab(1)] by blast
+      obtain d where d: "D = {a,b,d}" "d \<noteq> a" "d \<noteq> b" using three_form[OF ab(3) ab(7) ab(8) ab(1)] by blast
+      have "c \<noteq> d" using c(1) d(1) ab(4) by blast
+      then have dist: "distinct [a,b,c,d]" using ab(1) c(2,3) d(2,3) by auto
+      have "{a,b,c} \<in> F" "{a,b,d} \<in> F" using ab(2,3) c(1) d(1) by simp_all
+      then show ?thesis by (rule p03[OF np deg _ _ dist])
+    next
+      case False
+      have p1: "C = D" if "x \<noteq> y" "C \<in> F" "D \<in> F" "x \<in> C" "y \<in> C" "x \<in> D" "y \<in> D" for x y C D
+        using False that by blast
+      show ?thesis
+      proof (cases tri)
+        case True
+        then obtain a b c d e f where "{a,b,d} \<in> F" "{b,c,e} \<in> F" "{a,c,f} \<in> F" "distinct [a,b,c,d,e,f]"
+          unfolding tri_def by blast
+        then show ?thesis by (rule p04[OF deg])
+      next
+        case notri: False
+        have mt: "D1 \<inter> D2 = {}"
+          if "C \<in> F" "b \<in> C" "c \<in> C" "b \<noteq> c" "D1 \<in> F" "b \<in> D1" "D1 \<noteq> C" "D2 \<in> F" "c \<in> D2" "D2 \<noteq> C"
+          for C b c D1 D2
+          by (rule meet_tri[OF p1 notri that])
+        show ?thesis
+        proof (cases "\<exists>a C. C \<in> F \<and> a \<in> C \<and> (\<forall>D\<in>F. a \<in> D \<longrightarrow> D = C)")
+          case True
+          then obtain a C where aC: "C \<in> F" "a \<in> C" and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = C"
+            by blast
+          obtain b c where bc: "C = {a,b,c}" "distinct [a,b,c]" by (rule three_elems[OF aC])
+          have T: "{a,b,c} \<in> F" using aC(1) bc(1) by simp
+          have bC: "b \<in> C" "c \<in> C" "b \<noteq> c" using bc by auto
+          have oa': "D = {a,b,c}" if "D \<in> F" "a \<in> D" for D using oa[OF that] bc(1) by simp
+          show ?thesis
+          proof (cases "(\<exists>D1\<in>F. b \<in> D1 \<and> D1 \<noteq> C) \<and> (\<exists>D2\<in>F. c \<in> D2 \<and> D2 \<noteq> C)")
+            case True
+            then obtain D1 D2 where D: "D1 \<in> F" "b \<in> D1" "D1 \<noteq> C" "D2 \<in> F" "c \<in> D2" "D2 \<noteq> C"
+              by blast
+            have disj: "D1 \<inter> D2 = {}" by (rule mt[OF aC(1) bC D])
+            have aD: "a \<notin> D1" "a \<notin> D2" using oa D(1,3,4,6) by blast+
+            have cD1: "c \<notin> D1" using p1[of b c D1 C] D(1,2,3) bC aC(1) by blast
+            have bD2: "b \<notin> D2" using p1[of b c D2 C] D(4,5,6) bC aC(1) by blast
+            obtain d e where de: "D1 = {b,d,e}" "distinct [b,d,e]" by (rule three_elems[OF D(1) D(2)])
+            obtain f g where fg: "D2 = {c,f,g}" "distinct [c,f,g]" by (rule three_elems[OF D(4) D(5)])
+            have T2: "{b,d,e} \<in> F" "{c,f,g} \<in> F" using D(1,4) de(1) fg(1) by simp_all
+            have "distinct [a,b,c,d,e,f,g]"
+              using bc(2) de fg disj aD cD1 bD2 by auto
+            then show ?thesis by (rule p06_both[OF deg np T T2 _ oa'])
+          next
+            case False
+            then consider (b) "\<And>D. D \<in> F \<Longrightarrow> b \<in> D \<Longrightarrow> D = C" | (c) "\<And>D. D \<in> F \<Longrightarrow> c \<in> D \<Longrightarrow> D = C"
+              by blast
+            then show ?thesis
+            proof cases
+              case b
+              have ob: "D = {a,b,c}" if "D \<in> F" "b \<in> D" for D using b[OF that] bc(1) by simp
+              show ?thesis by (rule p06_one[OF T bc(2) oa' ob])
+            next
+              case c
+              have e: "{a,c,b} = {a,b,c}" by auto
+              have T': "{a,c,b} \<in> F" using T unfolding e .
+              have d': "distinct [a,c,b]" using bc(2) by auto
+              have oa'': "D = {a,c,b}" if "D \<in> F" "a \<in> D" for D using oa'[OF that] unfolding e .
+              have oc: "D = {a,c,b}" if "D \<in> F" "c \<in> D" for D using c[OF that] bc(1) unfolding e by simp
+              show ?thesis by (rule p06_one[OF T' d' oa'' oc])
+            qed
+          qed
+        next
+          case False
+          then have two: "\<exists>D\<in>F. x \<in> D \<and> D \<noteq> C" if "C \<in> F" "x \<in> C" for x C
+            using that by blast
+          have "F \<noteq> {}"
+          proof
+            assume "F = {}"
+            then have "hits F {}" by (simp add: hits_def)
+            then have "t \<le> card ({}::nat set)" using thrD[OF thr] by blast
+            then show False using t1 by simp
+          qed
+          then obtain C where C: "C \<in> F" by blast
+          have "C \<noteq> {}" using three[OF C] by auto
+          then obtain a where a: "a \<in> C" by blast
+          obtain b c where bc: "C = {a,b,c}" "distinct [a,b,c]" by (rule three_elems[OF C a])
+          have abc: "b \<in> C" "c \<in> C" "a \<noteq> b" "a \<noteq> c" "b \<noteq> c" using bc by auto
+          obtain Da where Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> C" using two[OF C a] by blast
+          obtain Db where Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> C" using two[OF C abc(1)] by blast
+          obtain Dc where Dc: "Dc \<in> F" "c \<in> Dc" "Dc \<noteq> C" using two[OF C abc(2)] by blast
+          have disj: "Da \<inter> Db = {}" "Da \<inter> Dc = {}" "Db \<inter> Dc = {}"
+            by (rule mt[OF C a abc(1) abc(3) Da Db], rule mt[OF C a abc(2) abc(4) Da Dc],
+                rule mt[OF C abc(1) abc(2) abc(5) Db Dc])
+          have out: "b \<notin> Da" "c \<notin> Da" "a \<notin> Db" "c \<notin> Db" "a \<notin> Dc" "b \<notin> Dc"
+            using p1[of a b Da C] p1[of a c Da C] p1[of a b Db C] p1[of b c Db C]
+              p1[of a c Dc C] p1[of b c Dc C] C a abc Da Db Dc by blast+
+          obtain d e where de: "Da = {a,d,e}" "distinct [a,d,e]" by (rule three_elems[OF Da(1) Da(2)])
+          obtain f g where fg: "Db = {b,f,g}" "distinct [b,f,g]" by (rule three_elems[OF Db(1) Db(2)])
+          obtain h i where hi: "Dc = {c,h,i}" "distinct [c,h,i]" by (rule three_elems[OF Dc(1) Dc(2)])
+          have T: "{a,b,c} \<in> F" "{a,d,e} \<in> F" "{b,f,g} \<in> F" "{c,h,i} \<in> F"
+            using C Da(1) Db(1) Dc(1) bc(1) de(1) fg(1) hi(1) by simp_all
+          have "distinct [a,b,c,d,e,f,g,h,i]"
+            using bc(2) de fg hi disj out by auto
+          then show ?thesis by (rule p05[OF deg np T])
+        qed
+      qed
+    qed
+  qed
+qed
+
 end
 
 

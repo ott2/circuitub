@@ -81,11 +81,13 @@ It currently takes about 6 s. There is no `sorry`.
   - `only_clause`, `single_out`, `excl3`.
   - Configuration extraction: `three_form`, `card2_obtain`, `card3_obtain`.
 - **Done (type 0):** `p01` (from `¬ npair F`; uses `p01_with`, `p01_sep`), `p02` (uses
-  `del_type3`), `p03`, `p04` (corrected), `p05`, `p06_both`, `p06_one`.
+  `del_type3`), `p03`, `p04` (corrected), `p05`, `p06_both`, `p06_one`, and the coverage
+  theorem `type0` (uses `three_elems`, `tri`, `meet_tri`).
 
 ### Next steps, in order
 
-1. **The type-0 coverage lemma** `type0` (in `core0`): `bound T0 s t`. Worked out by hand:
+1. **Done:** the type-0 coverage lemma, `theorem type0` (in `core0`): `bound T0 s t`. The
+   formal version follows this plan exactly:
    - `¬ npair` → `p01`.
    - Some $a$ in $\ge 3$ clauses → `p02`.
    - A pair in two clauses → `p03`. Extract with `card2_obtain` and `three_form`.
