@@ -1,5 +1,5 @@
 theory Audit_GKPRST
-  imports Majority_3CNF
+  imports Majority_3CNF Majority_3CNF_Upper
 begin
 
 text \<open>
@@ -13,7 +13,10 @@ ML \<open>
     [@{thm gkprst_bound}, @{thm gkprst_half}, @{thm gkprst_half_odd}, @{thm IH_all},
      @{thm majority_mcnfs_slice}, @{thm majority_mcnfs}, @{thm majority_mcnfs_odd},
      @{thm majority_mcnfs_any}, @{thm majority_mcnfs_exp}, @{thm majority_mcnfs_exp_any},
-     @{thm majority_mcnf_formula(1)}, @{thm majority_mcnf_formula(2)}];
+     @{thm majority_mcnf_formula(1)}, @{thm majority_mcnf_formula(2)},
+     @{thm good_perm}, @{thm greedy_cover}, @{thm threshold_cover},
+     @{thm K4_thr}, @{thm K4_trans}, @{thm Q4_card},
+     @{thm majority_mcnfs_upper}, @{thm majority_mcnfs_tight(1)}, @{thm majority_mcnfs_tight(2)}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

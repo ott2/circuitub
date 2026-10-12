@@ -549,4 +549,291 @@ proof -
   then show ?thesis using that m ev g by blast
 qed
 
+subsection \<open>The extremal CNF: disjoint 4-cliques\<close>
+
+text \<open>Blocks of four consecutive variables, and all 3-subsets of each of the first \<open>m\<close> blocks.\<close>
+
+definition blk :: "nat \<Rightarrow> nat set" where
+  "blk i = {4 * i..<4 * i + 4}"
+
+definition K4 :: "nat \<Rightarrow> nat set set" where
+  "K4 m = {C. \<exists>i<m. C \<subseteq> blk i \<and> card C = 3}"
+
+lemma blk_div: "v \<in> blk i \<longleftrightarrow> v div 4 = i"
+proof
+  assume "v \<in> blk i"
+  then have "4 * i \<le> v" "v < 4 * Suc i" by (auto simp: blk_def)
+  then show "v div 4 = i" by (rule div_nat_eqI)
+next
+  assume d: "v div 4 = i"
+  have "v div 4 * 4 + v mod 4 = v" by (rule div_mult_mod_eq)
+  moreover have "v mod 4 < 4" by simp
+  ultimately show "v \<in> blk i" using d by (auto simp: blk_def)
+qed
+
+lemma blk_card: "card (blk i) = 4"
+  by (simp add: blk_def)
+
+lemma blk_fin: "finite (blk i)"
+  by (simp add: blk_def)
+
+lemma blk_below: "i < m \<Longrightarrow> blk i \<subseteq> {..<4 * m}"
+  by (auto simp: blk_def)
+
+lemma below_blk: "v < 4 * m \<Longrightarrow> v \<in> blk (v div 4) \<and> v div 4 < m"
+  by (simp add: blk_div less_mult_imp_div_less mult.commute)
+
+lemma blk_disj:
+  assumes "i \<noteq> j"
+  shows "blk i \<inter> blk j = {}"
+proof (rule equals0I)
+  fix v assume v: "v \<in> blk i \<inter> blk j"
+  have "v div 4 = i" using v blk_div[of v i] by blast
+  moreover have "v div 4 = j" using v blk_div[of v j] by blast
+  ultimately show False using assms by simp
+qed
+
+lemma four_choose: "(4::nat) choose 2 = 6" "(4::nat) choose 3 = 4"
+  by (simp_all add: numeral_eq_Suc)
+
+lemma K4_cnf: "cnf {..<4 * m} (K4 m)"
+  unfolding cnf_def K4_def using blk_below by fastforce
+
+lemma hits_K4: "hits (K4 m) X \<longleftrightarrow> (\<forall>i<m. 2 \<le> card (X \<inter> blk i))"
+proof
+  assume h: "hits (K4 m) X"
+  show "\<forall>i<m. 2 \<le> card (X \<inter> blk i)"
+  proof (intro allI impI, rule ccontr)
+    fix i assume i: "i < m" and c: "\<not> 2 \<le> card (X \<inter> blk i)"
+    have "card (blk i - X) = card (blk i) - card (blk i \<inter> X)"
+      by (rule card_Diff_subset_Int) (simp add: blk_fin)
+    moreover have "blk i \<inter> X = X \<inter> blk i" by blast
+    ultimately have "3 \<le> card (blk i - X)" using c blk_card[of i] by simp
+    then obtain C where C: "C \<subseteq> blk i - X" "card C = 3" by (rule obtain_subset_with_card_n)
+    have "C \<in> K4 m" using C i by (auto simp: K4_def)
+    moreover have "C \<inter> X = {}" using C(1) by blast
+    ultimately show False using h by (auto simp: hits_def)
+  qed
+next
+  assume b: "\<forall>i<m. 2 \<le> card (X \<inter> blk i)"
+  show "hits (K4 m) X" unfolding hits_def
+  proof
+    fix C assume "C \<in> K4 m"
+    then obtain i where i: "i < m" "C \<subseteq> blk i" "card C = 3" by (auto simp: K4_def)
+    show "C \<inter> X \<noteq> {}"
+    proof
+      assume e: "C \<inter> X = {}"
+      have "X \<inter> blk i \<subseteq> blk i - C" using e by blast
+      then have "card (X \<inter> blk i) \<le> card (blk i - C)" by (rule card_mono[rotated]) (simp add: blk_fin)
+      also have "\<dots> = 1" using card_Diff_subset[OF finite_subset[OF i(2) blk_fin] i(2)] i(3) blk_card[of i]
+        by simp
+      finally show False using b i(1) by fastforce
+    qed
+  qed
+qed
+
+lemma card_blocks:
+  assumes X: "X \<subseteq> {..<4 * m}"
+  shows "card X = (\<Sum>i<m. card (X \<inter> blk i))"
+proof -
+  have eq: "X = (\<Union>i<m. X \<inter> blk i)" using X below_blk by blast
+  have "card (\<Union>i<m. X \<inter> blk i) = (\<Sum>i<m. card (X \<inter> blk i))"
+  proof (rule card_UN_disjoint)
+    show "\<forall>i\<in>{..<m}. finite (X \<inter> blk i)" by (simp add: blk_fin)
+    show "\<forall>i\<in>{..<m}. \<forall>j\<in>{..<m}. i \<noteq> j \<longrightarrow> X \<inter> blk i \<inter> (X \<inter> blk j) = {}"
+      using blk_disj by blast
+  qed simp
+  then show ?thesis using eq by simp
+qed
+
+lemma K4_thr: "thr {..<4 * m} (K4 m) (2 * m)"
+  unfolding thr_def
+proof (intro allI impI)
+  fix X assume X: "X \<subseteq> {..<4 * m}" and h: "hits (K4 m) X"
+  have "(\<Sum>i<m. 2) \<le> (\<Sum>i<m. card (X \<inter> blk i))" using h hits_K4 by (intro sum_mono) auto
+  then show "2 * m \<le> card X" using card_blocks[OF X] by simp
+qed
+
+definition Q4 :: "nat \<Rightarrow> nat set set" where
+  "Q4 m = {X. X \<subseteq> {..<4 * m} \<and> (\<forall>i<m. card (X \<inter> blk i) = 2)}"
+
+lemma K4_trans: "trans {..<4 * m} (K4 m) (2 * m) = Q4 m"
+proof (rule set_eqI)
+  fix X
+  show "X \<in> trans {..<4 * m} (K4 m) (2 * m) \<longleftrightarrow> X \<in> Q4 m"
+  proof
+    assume "X \<in> trans {..<4 * m} (K4 m) (2 * m)"
+    then have X: "X \<subseteq> {..<4 * m}" "hits (K4 m) X" "card X = 2 * m" by (auto simp: trans_def)
+    have ge: "\<forall>i<m. 2 \<le> card (X \<inter> blk i)" using X(2) hits_K4 by blast
+    have "card (X \<inter> blk i) = 2" if i: "i < m" for i
+    proof (rule ccontr)
+      assume "card (X \<inter> blk i) \<noteq> 2"
+      then have lt: "2 < card (X \<inter> blk i)" using ge i by fastforce
+      have "(\<Sum>j<m. 2) < (\<Sum>j<m. card (X \<inter> blk j))"
+        by (rule sum_strict_mono_ex1) (use ge i lt in auto)
+      then show False using card_blocks[OF X(1)] X(3) by simp
+    qed
+    then show "X \<in> Q4 m" using X(1) by (simp add: Q4_def)
+  next
+    assume "X \<in> Q4 m"
+    then have X: "X \<subseteq> {..<4 * m}" "\<forall>i<m. card (X \<inter> blk i) = 2" by (auto simp: Q4_def)
+    have "hits (K4 m) X" using X(2) hits_K4 by simp
+    moreover have "card X = 2 * m" using card_blocks[OF X(1)] X(2) by simp
+    ultimately show "X \<in> trans {..<4 * m} (K4 m) (2 * m)" using X(1) by (simp add: trans_def)
+  qed
+qed
+
+lemma Q4_Suc: "Q4 (Suc m) = (\<lambda>(X, Y). X \<union> Y) ` (Q4 m \<times> {Y. Y \<subseteq> blk m \<and> card Y = 2})"
+proof (rule set_eqI)
+  fix Z
+  have bm: "blk m \<inter> {..<4 * m} = {}" by (auto simp: blk_def)
+  have low: "blk i \<subseteq> {..<4 * m}" if "i < m" for i using blk_below that .
+  show "Z \<in> Q4 (Suc m) \<longleftrightarrow> Z \<in> (\<lambda>(X, Y). X \<union> Y) ` (Q4 m \<times> {Y. Y \<subseteq> blk m \<and> card Y = 2})"
+  proof
+    assume "Z \<in> Q4 (Suc m)"
+    then have Z: "Z \<subseteq> {..<4 * Suc m}" "\<forall>i<Suc m. card (Z \<inter> blk i) = 2" by (auto simp: Q4_def)
+    define X where "X = Z \<inter> {..<4 * m}"
+    define Y where "Y = Z \<inter> blk m"
+    have ZXY: "Z = X \<union> Y" using Z(1) by (auto simp: X_def Y_def blk_def)
+    have "X \<inter> blk i = Z \<inter> blk i" if "i < m" for i using low[OF that] by (auto simp: X_def)
+    then have "X \<in> Q4 m" using Z(2) by (auto simp: Q4_def X_def)
+    moreover have "Y \<subseteq> blk m \<and> card Y = 2" using Z(2) by (simp add: Y_def)
+    ultimately show "Z \<in> (\<lambda>(X, Y). X \<union> Y) ` (Q4 m \<times> {Y. Y \<subseteq> blk m \<and> card Y = 2})"
+      using ZXY by blast
+  next
+    assume "Z \<in> (\<lambda>(X, Y). X \<union> Y) ` (Q4 m \<times> {Y. Y \<subseteq> blk m \<and> card Y = 2})"
+    then obtain X Y where X: "X \<in> Q4 m" and Y: "Y \<subseteq> blk m" "card Y = 2" and Z: "Z = X \<union> Y" by blast
+    have XV: "X \<subseteq> {..<4 * m}" "\<forall>i<m. card (X \<inter> blk i) = 2" using X by (auto simp: Q4_def)
+    have "Z \<subseteq> {..<4 * Suc m}" using XV(1) Y(1) Z by (auto simp: blk_def)
+    moreover have "card (Z \<inter> blk i) = 2" if i: "i < Suc m" for i
+    proof (cases "i < m")
+      case True
+      have "Y \<inter> blk i = {}" using Y(1) blk_disj[of m i] True by blast
+      then have "Z \<inter> blk i = X \<inter> blk i" using Z by blast
+      then show ?thesis using XV(2) True by simp
+    next
+      case False
+      then have im: "i = m" using i by simp
+      have "X \<inter> blk m = {}" using XV(1) bm by blast
+      then have "Z \<inter> blk i = Y" using Z Y(1) im by blast
+      then show ?thesis using Y(2) by simp
+    qed
+    ultimately show "Z \<in> Q4 (Suc m)" by (simp add: Q4_def)
+  qed
+qed
+
+lemma Q4_card: "card (Q4 m) = 6 ^ m"
+proof (induction m)
+  case 0
+  have "Q4 0 = {{}}" by (auto simp: Q4_def)
+  then show ?case by simp
+next
+  case (Suc m)
+  define B where "B = {Y. Y \<subseteq> blk m \<and> card Y = 2}"
+  have cB: "card B = 6" using blk_card[of m] blk_fin[of m] by (simp add: B_def n_subsets four_choose)
+  have finQ: "finite (Q4 m)"
+    by (rule finite_subset[of _ "Pow {..<4 * m}"]) (auto simp: Q4_def)
+  have finB: "finite B" using blk_fin by (simp add: B_def)
+  have inj: "inj_on (\<lambda>(X, Y). X \<union> Y) (Q4 m \<times> B)"
+  proof (rule inj_onI, clarify)
+    fix X Y X' Y' assume X: "X \<in> Q4 m" "X' \<in> Q4 m" and Y: "Y \<in> B" "Y' \<in> B"
+      and e: "X \<union> Y = X' \<union> Y'"
+    have bm: "blk m \<inter> {..<4 * m} = {}" by (auto simp: blk_def)
+    have XL: "X \<subseteq> {..<4 * m}" "X' \<subseteq> {..<4 * m}" using X by (auto simp: Q4_def)
+    have YB: "Y \<subseteq> blk m" "Y' \<subseteq> blk m" using Y by (auto simp: B_def)
+    have "X = (X \<union> Y) \<inter> {..<4 * m}" using XL(1) YB(1) bm by blast
+    also have "\<dots> = (X' \<union> Y') \<inter> {..<4 * m}" by (simp only: e)
+    also have "\<dots> = X'" using XL(2) YB(2) bm by blast
+    finally have xx: "X = X'" .
+    have "Y = (X \<union> Y) \<inter> blk m" using XL(1) YB(1) bm by blast
+    also have "\<dots> = (X' \<union> Y') \<inter> blk m" by (simp only: e)
+    also have "\<dots> = Y'" using XL(2) YB(2) bm by blast
+    finally show "X = X' \<and> Y = Y'" using xx by simp
+  qed
+  have "card (Q4 (Suc m)) = card ((\<lambda>(X, Y). X \<union> Y) ` (Q4 m \<times> B))" by (simp add: Q4_Suc B_def)
+  also have "\<dots> = card (Q4 m \<times> B)" by (rule card_image[OF inj])
+  also have "\<dots> = card (Q4 m) * card B" by (rule card_cartesian_product)
+  finally show ?case using Suc cB by simp
+qed
+
+lemma K4_card: "card (K4 m) = 4 * m"
+proof -
+  define D where "D i = {C. C \<subseteq> blk i \<and> card C = 3}" for i
+  have eq: "K4 m = (\<Union>i<m. D i)" by (auto simp: K4_def D_def)
+  have cD: "card (D i) = 4" for i using blk_card[of i] blk_fin[of i] by (simp add: D_def n_subsets four_choose)
+  have "card (\<Union>i<m. D i) = (\<Sum>i<m. card (D i))"
+  proof (rule card_UN_disjoint)
+    show "\<forall>i\<in>{..<m}. finite (D i)" using blk_fin by (simp add: D_def)
+    show "\<forall>i\<in>{..<m}. \<forall>j\<in>{..<m}. i \<noteq> j \<longrightarrow> D i \<inter> D j = {}"
+    proof (intro ballI impI)
+      fix i j :: nat assume "i \<noteq> j"
+      show "D i \<inter> D j = {}"
+      proof (rule ccontr)
+        assume "D i \<inter> D j \<noteq> {}"
+        then obtain C where C: "C \<subseteq> blk i" "C \<subseteq> blk j" "card C = 3" by (auto simp: D_def)
+        then have "C \<noteq> {}" by auto
+        then show False using C blk_disj[OF \<open>i \<noteq> j\<close>] by blast
+      qed
+    qed
+  qed simp
+  then show ?thesis using eq cD by simp
+qed
+
+subsection \<open>Majority: the tight bound\<close>
+
+text \<open>For \<open>4 | n\<close>, a monotone OR of 3-CNFs computes Majority with at most
+  \<open>(n+1) (n choose n/2) / 6\<^bsup>n/4\<^esup> + 1\<close> CNFs, each with \<open>n + 1\<close> gates.  With \<open>majority_mcnfs\<close>,
+  the least number of CNFs lies between \<open>(n choose n/2) / 6\<^bsup>n/4\<^esup>\<close> and \<open>n + 1\<close> times that, plus 1.\<close>
+
+theorem majority_mcnfs_upper:
+  assumes n: "4 dvd n"
+  obtains gs where "\<forall>g\<in>set gs. MCNF 3 g" "\<forall>\<sigma>. eval \<sigma> (Or gs) \<longleftrightarrow> majority n \<sigma>"
+    "real (length gs) \<le> real (n + 1) * real (n choose (n div 2)) / 6 powr (real n / 4) + 1"
+    "\<forall>g\<in>set gs. gates g = n + 1"
+proof -
+  obtain m where m: "n = 4 * m" using n by blast
+  have t: "n div 2 = 2 * m" using m by simp
+  have T: "card (trans {..<n} (K4 m) (n div 2)) = 6 ^ m" using K4_trans Q4_card m t by simp
+  have T6: "real (6 ^ m :: nat) = 6 powr (real n / 4)" using m by (simp add: powr_realpow)
+  have F: "cnf {..<n} (K4 m)" "thr {..<n} (K4 m) (n div 2)" using K4_cnf K4_thr m t by simp_all
+  have T0: "0 < card (trans {..<n} (K4 m) (n div 2))" using T by simp
+  obtain gs where g: "\<forall>g\<in>set gs. MCNF 3 g" and ev: "\<forall>\<sigma>. eval \<sigma> (Or gs) \<longleftrightarrow> n div 2 \<le> weight n \<sigma>"
+    and len: "real (length gs) \<le> real (n + 1) * real (n choose (n div 2))
+                / real (card (trans {..<n} (K4 m) (n div 2))) + 1"
+    and gt: "\<forall>g\<in>set gs. gates g = card (K4 m) + 1"
+    by (rule threshold_cover[OF F T0])
+  have maj: "majority n \<sigma> \<longleftrightarrow> n div 2 \<le> weight n \<sigma>" for \<sigma> using m by (simp add: majority_def)
+  have "\<forall>\<sigma>. eval \<sigma> (Or gs) \<longleftrightarrow> majority n \<sigma>" using ev maj by simp
+  moreover have "real (length gs) \<le> real (n + 1) * real (n choose (n div 2)) / 6 powr (real n / 4) + 1"
+    using len T T6 by simp
+  moreover have "\<forall>g\<in>set gs. gates g = n + 1" using gt K4_card m by simp
+  ultimately show ?thesis using that g by blast
+qed
+
+text \<open>Both directions together: for \<open>4 | n\<close>, the least number of monotone 3-CNFs whose OR is
+  Majority lies between \<open>(n choose n/2)/6\<^bsup>n/4\<^esup>\<close> and \<open>(n+1)\<close> times that, plus one.\<close>
+
+corollary majority_mcnfs_tight:
+  assumes n: "4 dvd n"
+  shows "\<And>fs. \<forall>f\<in>set fs. MCNF 3 f \<Longrightarrow> \<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma> \<Longrightarrow>
+           real (n choose (n div 2)) / 6 powr (real n / 4) \<le> real (length fs)"
+    and "\<exists>fs. (\<forall>f\<in>set fs. MCNF 3 f) \<and> (\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>) \<and>
+           real (length fs) \<le> real (n + 1) * (real (n choose (n div 2)) / 6 powr (real n / 4)) + 1"
+proof -
+  have ev: "even n" using n by (auto elim: dvdE)
+  fix fs :: "nat form list"
+  assume "\<forall>f\<in>set fs. MCNF 3 f" "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+  then have "real (n choose (n div 2)) \<le> real (length fs) * 6 powr (real n / 4)"
+    using majority_mcnfs ev by blast
+  then show "real (n choose (n div 2)) / 6 powr (real n / 4) \<le> real (length fs)"
+    by (simp add: divide_le_eq)
+next
+  obtain gs where "\<forall>g\<in>set gs. MCNF 3 g" "\<forall>\<sigma>. eval \<sigma> (Or gs) \<longleftrightarrow> majority n \<sigma>"
+    "real (length gs) \<le> real (n + 1) * real (n choose (n div 2)) / 6 powr (real n / 4) + 1"
+    by (rule majority_mcnfs_upper[OF n])
+  then show "\<exists>fs. (\<forall>f\<in>set fs. MCNF 3 f) \<and> (\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>) \<and>
+      real (length fs) \<le> real (n + 1) * (real (n choose (n div 2)) / 6 powr (real n / 4)) + 1"
+    by (intro exI[of _ gs]) simp
+qed
+
 end
