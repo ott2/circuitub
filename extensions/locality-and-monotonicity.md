@@ -98,6 +98,31 @@ So the bounded-fan-in evidence says negations help only slightly at small fan-in
 L-R show that, with unbounded fan-in, negations plus pairwise coupling remove a
 $\sqrt{\log n}$ factor from the exponent.
 
+**Beyond the parity barrier: other functions.** By L-R, no symmetric function needs
+depth-$d$ circuits larger than $2^{O(n^{1/(d-1)})}$. Two recent papers beat this bound with
+non-symmetric explicit functions.
+- OpenAI (Sept 2026) gives a function in P that needs OR–AND–OR circuits of size
+  $2^{\omega(\sqrt n)}$.
+- Chukhin (ECCC TR26-248) shows that every depth-$d$ circuit, $d \ge 3$, for the
+  Goldreich–Tal trilinear function $\sum_{i,j} a_{i+j}x_iy_j \bmod 2$ needs
+  $2^{\Omega((n\log n/\log\log n)^{1/(d-1)})}$ gates. At depth 3 this is $2^{\tilde\Omega(\sqrt{n \log n})}$,
+  about the size of the monotone KPPY formulas for Majority.
+  - The proof is the HJP95 top-down argument with correlations instead of counts. A
+    restriction lemma bounds the expected $\mathrm{size}_b$ of a restricted wide CNF by $1$,
+    and a disjoint sparsification lemma does the rest. The method stops at
+    $(n\log n)^{1/(d-1)}$.
+
+This does not change the questions here. Their answers concern Majority, which is
+symmetric, and for monotone formulas Majority's depth-3 complexity is still between
+$2^{\Omega(\sqrt n)}$ and $2^{O(\sqrt{n\log n})}$. Two reasons the new technique does not
+transfer:
+- Random restrictions push Majority's threshold outside the window of the live variables.
+- The restriction lemma writes $H_\rho$ as a signed sum of narrow CNFs. That loses the
+  monotone count ("few accepted points of weight $n/2$") on which our covering bounds rest.
+
+It does change the context: since L-R, the open question for Majority is a
+monotone/non-monotone separation, not a route past the parity barrier.
+
 ### 2.2 The class
 
 Fix a partition into $k$ blocks of size $b$, so $n = kb$. The class consists of **monotone,
