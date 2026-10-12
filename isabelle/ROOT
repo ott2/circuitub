@@ -29,7 +29,8 @@ session Monotone_Sigma3 in "gkprst" = "HOL-Library" +
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
   options [timeout = 600]
-  sessions Monotone_Sigma3
+  sessions Monotone_Sigma3 "HOL-Combinatorics"
   theories
     Majority_3CNF
+    Majority_3CNF_Upper
     Audit_GKPRST
