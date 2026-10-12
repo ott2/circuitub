@@ -1,6 +1,6 @@
 # Monotone 3-CNFs with no small transversal: a formal check of Gurumukhani et al.
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-3cnf.md, on top of commit 04b9df55e511d45a5593cc0f418229da454217b8 (2026-10-12)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-3cnf.md, on top of commit 2914f680589cc0705774e787e6e5d4ad34bb4c1c (2026-10-13)}$
 
 This document reports a formal verification, in Isabelle2025-2, of the main theorem of
 Gurumukhani, Kleber, Paturi, Rosin, Saks and Talebanfard, *Optimal Monotone Depth-Three
@@ -17,6 +17,7 @@ Status:
 | The main theorem and the $6^{n/4}$ corollary | `isabelle/gkprst/Monotone_3CNF.thy` (session `Monotone_Sigma3`) | Formal end to end |
 | The Majority size bound $\binom{n}{n/2}/6^{n/4}$, and $\binom{n}{\lfloor n/2\rfloor}/6^{(n+1)/4}$ for every $n$ | `isabelle/gkprst/majority/Majority_3CNF.thy` (session `GKPRST_Majority`) | Formal |
 | The matching upper bound: $(n+1)\binom{n}{n/2}/6^{n/4} + 1$ CNFs suffice for $4 \mid n$ | `isabelle/gkprst/majority/Majority_3CNF_Upper.thy` | Formal; the paper cites it rather than proving it |
+| The upper bound for every $n$: $6^{1/4}(n+1)\binom{n}{\lfloor n/2\rfloor}/6^{n/4} + 1$ CNFs, within $\sqrt6\,(n+1)$ of the lower bound | `isabelle/gkprst/majority/Majority_3CNF_Any.thy` | Formal |
 | Audit of the headline theorems | `isabelle/gkprst/majority/Audit_GKPRST.thy` | Formal: no oracles |
 
 The working notes, case by case, are in `gkprst26/NOTES.md`.
@@ -85,6 +86,31 @@ scratch.
   each copy has threshold $t$. It accepts every weight-$t$ input, since the copies cover the
   slice, and so by monotonicity every heavier input too. This holds for any threshold-$t$
   monotone 3-CNF, not just $K_4^{(3)}$ blocks.
+
+**Every $n$** (`majority_mcnfs_upper_any`, `majority_mcnfs_tight_any`). Write $n = 4m + r$
+with $r < 4$. Add to the $m$ blocks of $K_4^{(3)}$ one small clique on the last $r$ variables:
+all $k$-subsets of them, with $k = 1$ for $r \le 1$ and $k = 2$ otherwise.
+- A set hits every clause of the small clique exactly when it misses fewer than $k$ of its
+  variables (`hits_KC`). So its threshold is $r + 1 - k = \lceil r/2\rceil$, and it has
+  $c_r = \binom{r}{\lceil r/2\rceil} = 1, 1, 2, 3$ minimum transversals (`KC_thr`,
+  `KC_trans_card`).
+- For CNFs on disjoint variable sets, thresholds add and minimum transversals multiply
+  (`union_thr`, `union_trans_card`). The whole CNF therefore has threshold
+  $2m + \lceil r/2\rceil = \lceil n/2\rceil$, at most $n$ clauses, and $6^m c_r$ minimum
+  transversals (`XF`).
+- With $q = 6^{1/4}$, $q^r \le q\,c_r$ for each $r < 4$: this is $1 \le q$, an equality,
+  $q \le 2$ (that is, $6 \le 16$), and $q^2 \le 3$ (that is, $6 \le 9$). So
+  $6^m c_r \ge 6^{(n-1)/4}$ (`quarter_bound`).
+
+So `threshold_cover` gives, for every $n$,
+
+$$L \le 6^{1/4}(n+1)\,\frac{\binom{n}{\lfloor n/2\rfloor}}{6^{n/4}} + 1,$$
+
+with at most $n+1$ gates per CNF. With `majority_mcnfs_any`, the least $L$ is determined up
+to a factor $\sqrt6\,(n+1)$ for every $n$. For odd $n$ the constant could be improved: the
+lower bound counts against $6^{(n+1)/4}$, the construction offers only $6^m c_r$. The
+paper's 6-variable necklace (threshold 3, 14 transversals) would raise $c_2$ to
+$14/6 \approx 2.33$ for $n \equiv 2 \pmod 4$. Neither changes the factor $n+1$.
 
 The formulas are those of `Formula.thy` in `Majority_AC0`. `MCNF 3 f` says that $f$ is an
 AND of ORs of at most 3 positive literals, and `majority n σ` says that $n \le 2\,\mathrm{weight}$.
@@ -238,7 +264,8 @@ isabelle build -d isabelle GKPRST_Majority
 `Monotone_Sigma3` depends only on HOL-Library and builds in about 20 seconds; the theory has
 about 5,400 lines. `GKPRST_Majority` builds on `Majority_AC0` and `Monotone_Sigma3`. It adds
 the Majority bounds (about 300 lines), the matching upper bound (about 840 lines, using
-`permutes` from HOL-Combinatorics), and the oracle audit `Audit_GKPRST`. The audit fails the
+`permutes` from HOL-Combinatorics), its extension to every $n$ (about 360 lines), and the
+oracle audit `Audit_GKPRST`. The audit fails the
 build if any headline theorem depends on an oracle such as `sorry`.
 
 The theorem names:
@@ -248,13 +275,11 @@ The theorem names:
 - `gkprst_half_odd`, the odd case;
 - `majority_mcnfs`, `majority_mcnfs_odd`, `majority_mcnfs_any`, `majority_mcnfs_exp`,
   `majority_mcnfs_exp_any` and `majority_mcnf_formula`, the Majority lower bound;
-- `threshold_cover`, `majority_mcnfs_upper` and `majority_mcnfs_tight`, the matching upper bound.
+- `threshold_cover`, `majority_mcnfs_upper` and `majority_mcnfs_tight`, the matching upper bound;
+- `union_trans_card`, `KC_trans_card`, `XF`, `quarter_bound`, `majority_mcnfs_upper_any` and
+  `majority_mcnfs_tight_any`, the upper bound for every $n$.
 
 ## 6. Next steps
 
 1. A write-up of the six gaps for the authors is drafted in `gkprst26/gaps-for-authors.md`.
-2. The upper bound for $n \not\equiv 0 \pmod 4$ needs extremal CNFs for the other residues.
-   The paper builds them from small blocks (`Constructions/`). For example, its 6-variable
-   necklace has threshold 3 and 14 transversals of size 3, and with $K_4^{(3)}$ blocks it
-   covers $n \equiv 2 \pmod 4$. `threshold_cover` accepts any such CNF unchanged.
-3. Monotone $\Sigma_3^k$ for $k \ge 4$ is open. See §2.10 of `locality-and-monotonicity.md`.
+2. Monotone $\Sigma_3^k$ for $k \ge 4$ is open. See §2.10 of `locality-and-monotonicity.md`.

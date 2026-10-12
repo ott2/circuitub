@@ -1,6 +1,6 @@
 # Locality and monotonicity in the Lecomte–Ramakrishnan construction
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit 04b9df55e511d45a5593cc0f418229da454217b8 (2026-10-12)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit 2914f680589cc0705774e787e6e5d4ad34bb4c1c (2026-10-13)}$
 
 This document is separate from the verification of Lecomte and Ramakrishnan,
 *Optimal Shallow Circuits for Majority* (arXiv:2609.34029). It asks how much of the
@@ -78,7 +78,7 @@ bottom fan-in to grow with n".
 | Monotone upper bound $2^{O(\sqrt{n \log n})}$ (still the best known) | KPPY, STOC 1984 |
 | Lower bound $2^{\Omega(\sqrt n)}$, monotone | Boppana, JCSS 1986 |
 | Lower bound $2^{(d-o(1))\sqrt n}$ with $d = 1/\sqrt{\ln 4} \approx 0.849$, general circuits | Håstad–Jukna–Pudlák, Comput. Complexity 1995 |
-| Bottom fan-in 3, monotone: exactly $(2/6^{1/4})^{n \pm o(n)} \approx 1.27785^n$ | Gurumukhani et al., arXiv:2601.04072 (2026); the upper bound on transversals, the resulting lower bound for Majority, and (for $4 \mid n$) the matching upper bound up to a factor $n+1$ are formally checked, with six gaps in the proof repaired ([`monotone-3cnf.md`](monotone-3cnf.md)) |
+| Bottom fan-in 3, monotone: exactly $(2/6^{1/4})^{n \pm o(n)} \approx 1.27785^n$ | Gurumukhani et al., arXiv:2601.04072 (2026); the upper bound on transversals, the resulting lower bound for Majority, and the matching upper bound (up to a factor $n+1$, or $\sqrt6\,(n+1)$ when $4 \nmid n$) are formally checked, with six gaps in the proof repaired ([`monotone-3cnf.md`](monotone-3cnf.md)) |
 
 **Amano (ISAAC 2023).** This paper compares $\Sigma_3$ circuits whose bottom clauses have at
 most $k$ positive and $\ell$ negative literals with monotone ones.

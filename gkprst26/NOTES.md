@@ -275,6 +275,20 @@ gives $L \le (n+1)\binom{n}{n/2}/6^{n/4} + 1$ CNFs, each with $n+1$ gates.
 - The paper attributes this direction to GKP24 ("exploiting the symmetries"). Nothing in it
   needed repair; it is just not proved in the paper.
 
+## The upper bound for every $n$ (formal)
+
+`isabelle/gkprst/majority/Majority_3CNF_Any.thy`. For $n = 4m + r$, take $m$ blocks of
+$K_4^{(3)}$ and a clique of all $k$-subsets of the last $r$ variables ($k = 1$ for $r \le 1$,
+else $k = 2$): threshold $\lceil n/2\rceil$, and $6^m\binom{r}{\lceil r/2\rceil} \ge
+6^{(n-1)/4}$ minimum transversals. `majority_mcnfs_upper_any` gives
+$L \le 6^{1/4}(n+1)\binom{n}{\lfloor n/2\rfloor}/6^{n/4} + 1$, and `majority_mcnfs_tight_any`
+pairs it with `majority_mcnfs_any`, a ratio of $\sqrt6\,(n+1)$.
+- The paper's necklace blocks (`Constructions/`) were not needed; they improve only the
+  constant.
+- Generic pieces: `union_thr` and `union_trans_card` (disjoint unions add thresholds and
+  multiply minimum transversals), `hits_KC` (a set hits all $k$-subsets of $B$ exactly when
+  $\lvert B \setminus X\rvert < k$).
+
 ## Still to do
 
-- The upper bound for $n \not\equiv 0 \pmod 4$, from the paper's other building blocks.
+- Nothing for the paper's theorem and its Majority consequence. Open: monotone $k \ge 4$.

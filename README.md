@@ -165,7 +165,7 @@ Only solving this for $Z$ remains on paper.
 | `isabelle/Depth3_Lower.thy` | The matching depth-3 lower bound: $\Sigma_3$ and $\Pi_3$ formulas for Majority need $2^{\Omega(\sqrt n)}$ gates (PPZ with critical clauses) |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `isabelle/gkprst/Monotone_3CNF.thy` | Session `Monotone_Sigma3`: the theorem of Gurumukhani et al. (arXiv:2601.04072), at most $6^{n/4}$ transversals of size $n/2$ in a monotone 3-CNF with no smaller transversal |
-| `isabelle/gkprst/majority/` | Session `GKPRST_Majority`: hence a monotone OR of 3-CNFs for Majority needs $\binom{n}{n/2}/6^{n/4}$ CNFs, and for $4 \mid n$ at most $n+1$ times that (plus one) suffice; with an oracle audit |
+| `isabelle/gkprst/majority/` | Session `GKPRST_Majority`: hence a monotone OR of 3-CNFs for Majority needs $\binom{n}{\lfloor n/2\rfloor}/6^{(n+1)/4}$ CNFs ($\binom{n}{n/2}/6^{n/4}$ for even $n$), and $\sqrt6\,(n+1)$ times the former (plus one) suffice, $n+1$ times the latter for $4 \mid n$; with an oracle audit |
 | `tools/watermark.py` | Stamps Markdown files with an invisible TeX provenance line (repository, path, current commit); re-run to update |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized), the monotone case (analysis), and the formal check of Gurumukhani et al. (`monotone-3cnf.md`) |

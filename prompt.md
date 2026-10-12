@@ -23,6 +23,10 @@ with the Lecomte–Ramakrishnan verification described below.
   $(n+1)\binom{n}{n/2}/6^{n/4} + 1$ CNFs suffice, each with $n+1$ gates. So the minimum is
   pinned down up to a factor $n+1$. The paper only cites this direction (GKP24); here it is
   proved.
+- **`majority_mcnfs_upper_any`, `majority_mcnfs_tight_any`** (`Majority_3CNF_Any.thy`). For
+  every $n$, $6^{1/4}(n+1)\binom{n}{\lfloor n/2\rfloor}/6^{n/4} + 1$ CNFs suffice, within
+  $\sqrt6\,(n+1)$ of `majority_mcnfs_any`. So the paper's theorem and its Majority
+  consequence are now settled formally in both directions.
 
 **The paper's proof has six genuine gaps.** Each is repaired within the same induction,
 and no constant changes. The details, with counterexamples, are in `gkprst26/NOTES.md`
@@ -128,22 +132,24 @@ The theories:
   - `blk`, `K4`, `Q4`, `K4_thr`, `K4_trans`, `Q4_card`: the extremal CNF, $n/4$ disjoint
     $K_4^{(3)}$ blocks with $6^{n/4}$ transversals.
   - `majority_mcnfs_upper`, `majority_mcnfs_tight`.
+- **`Majority_3CNF_Any.thy`** (about 360 lines), every $n = 4m + r$:
+  - `union_cnf`, `union_thr`, `union_trans`, `union_trans_card`: for CNFs on disjoint variable
+    sets, thresholds add and minimum transversals multiply.
+  - `KC B k` (all $k$-subsets of $B$), `hits_KC` ($\lvert B\setminus X\rvert < k$), `KC_thr`,
+    `KC_trans_card`.
+  - `XF m r`: $m$ blocks of $K_4^{(3)}$ plus `KC` of size `kg r` on the last $r$ variables;
+    threshold $2m + \lceil r/2\rceil$, $6^m\binom{r}{\lceil r/2\rceil}$ transversals.
+  - `quarter_bound`: that count is $\ge 6^{(n-1)/4}$, via $q = 6^{1/4}$, $q \le 2$, $q^2 \le 3$.
+  - `majority_mcnfs_upper_any`, `majority_mcnfs_tight_any`.
 - **`Audit_GKPRST.thy`:** the oracle check for all of the above. The `type*` theorems are
   local to the locales, so they have no global names; they are covered through
   `gkprst_bound`.
 
 ### Next steps
 
-1. **The upper bound for $n \not\equiv 0 \pmod 4$.**
-   - `threshold_cover` applies to any extremal CNF, so only the construction and its
-     transversal count are missing.
-   - The paper's building blocks are in `notes/gkprst26-src/Constructions/` (`cons0a.tex`,
-     `basis/`). For example, its 6-variable necklace has threshold 3 and 14 transversals. With
-     $K_4^{(3)}$ blocks it gives $n \equiv 2 \pmod 4$, at $14 \cdot 6^{(n-6)/4}$.
-   - Check by hand first that this is within a constant of $6^{n/4}$. Then generalize
-     `Q4_card` to a disjoint union of two kinds of blocks, using the product rule for
-     transversals of disjoint unions.
-   - For odd $n$, compare with `gkprst_half_odd` and decide what to claim.
+1. **Done: the upper bound for every $n$** (`Majority_3CNF_Any`). Small cliques sufficed
+   instead of the paper's necklace; the necklace would only improve the constant
+   ($c_2 = 2$ to $14/6$).
 2. **The writeup is drafted:** `gkprst26/gaps-for-authors.md`. Every counterexample and every
    repaired table was re-checked by hand against the v2 LaTeX, which is byte-identical to the
    arXiv v2 tarball. There is no v3 yet (the user checked on 2026-10-13). The user decides
@@ -159,8 +165,8 @@ The theories:
    - This is research with no guarantee of success. Discuss it with the user before
      formalizing.
 
-My recommendation for the next session: item 1, which is bounded and builds directly on this
-session's work. Then item 4, starting with a short pen-and-paper exploration.
+My recommendation for the next session: item 4, starting with a short pen-and-paper
+exploration to discuss with the user.
 
 Prove by hand, then formalize. No brute-force or exhaustive search.
 
