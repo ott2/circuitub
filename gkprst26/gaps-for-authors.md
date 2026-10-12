@@ -23,6 +23,9 @@ repaired inside the same induction, with no change to any bound. Below, each gap
 location, a counterexample or the failing computation, and the repair. Every repaired table has
 been checked by machine.
 
+All locations and quotations refer to the LaTeX source of v2 as posted on arXiv; file names
+such as `phi0.tex` are those of that source.
+
 Notation:
 - A table row sets $j$ variables to 1 and $e$ variables to 0, so $n' = n - j - e$,
   $t' = t - j$ and $s' = s - 2j + e$.
