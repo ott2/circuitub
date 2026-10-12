@@ -7,15 +7,22 @@ Saks and Talebanfard, *Optimal Monotone Depth-Three Circuit Lower Bounds for Maj
 (arXiv:2601.04072v2). The point is to check a recent proof formally and report any gaps, as
 with the Lecomte–Ramakrishnan verification described below.
 
-**Status: the paper's main theorem is formally proved, with no `sorry`.** Two results:
+**Status: the paper's main theorem, its Majority consequence, and the matching upper bound
+(for $4 \mid n$) are formally proved, with no `sorry`. All are oracle-audited.**
 
 - **`theorem gkprst_bound`.** Let $F$ be a monotone CNF over $V$ with clauses of size
   $\le 3$, with no transversal of size $< t$, and let $s = 3t-n$. Then $F$ has at most
   `bound T0 s t` transversals of size $t$: $(2/3)^{s/2}3^t$ for even $s$, and
   $\tfrac79(2/3)^{(s-1)/2}3^t$ for odd $s$.
-- **`corollary gkprst_half`.** For $n = 2t$ the bound is at most $6^{n/4}$.
-- **`theorem majority_mcnfs`** (session `GKPRST_Majority`). A monotone OR of 3-CNFs for
-  Majority on even $n$ needs $\binom{n}{n/2}/6^{n/4}$ CNFs. All are oracle-audited.
+- **`gkprst_half`, `gkprst_half_odd`.** For $n = 2t$ the bound is at most $6^{n/4}$; for
+  $n = 2t-1$ it is at most $6^{(n+1)/4}$.
+- **`majority_mcnfs`, `majority_mcnfs_any`** (session `GKPRST_Majority`). A monotone OR of
+  3-CNFs for Majority needs $\binom{n}{n/2}/6^{n/4}$ CNFs for even $n$, and
+  $\binom{n}{\lfloor n/2\rfloor}/6^{(n+1)/4}$ for every $n$.
+- **`majority_mcnfs_upper`, `majority_mcnfs_tight`.** For $4 \mid n$,
+  $(n+1)\binom{n}{n/2}/6^{n/4} + 1$ CNFs suffice, each with $n+1$ gates. So the minimum is
+  pinned down up to a factor $n+1$. The paper only cites this direction (GKP24); here it is
+  proved.
 
 **The paper's proof has six genuine gaps.** Each is repaired within the same induction,
 and no constant changes. The details, with counterexamples, are in `gkprst26/NOTES.md`
@@ -45,7 +52,7 @@ listed in NOTES.md.
 The session is **`Monotone_Sigma3`**, declared in `isabelle/ROOT` as `in "gkprst"` with parent
 `HOL-Library`. The theory imports only `Complex_Main`. Build with:
 
-    WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=30 .venv/bin/isabelle-build --session Monotone_Sigma3 -m "…"
+    WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=30 isabelle-build --session Monotone_Sigma3 -m "…"
 
 It takes about 15–20 s. If another session's build loads the machine (`uptime` shows load
 around 15), raise the limits instead of hunting for a slow step.
@@ -88,40 +95,72 @@ around 15), raise the limits instead of hunting for a slow step.
   - unused variables.
 - **`IH_all`, then `gkprst_bound` and `gkprst_half`.**
 
-### The Majority bound and the audit (done)
+### Session `GKPRST_Majority` (done)
 
-Session **`GKPRST_Majority`** (`isabelle/gkprst/majority/`, parent `Majority_AC0`, with
-`sessions Monotone_Sigma3`). It needs its own directory, because Isabelle rejects two
-sessions sharing one. Build it with `--session GKPRST_Majority`, in about 20 s once the
-`Majority_AC0` heap exists.
-- **`Majority_3CNF.thy`:**
+The session lives in `isabelle/gkprst/majority/`. Its parent is `Majority_AC0`, with
+`sessions Monotone_Sigma3 "HOL-Combinatorics"`. It needs its own directory, because Isabelle
+rejects two sessions sharing one.
+- **Build** with
+  `LOOP_PROGRESS_THRESHOLD=20 WALL_TIMEOUT=600 WATCHDOG_TIMEOUT=120 isabelle-build --session GKPRST_Majority -m "…"`.
+  It takes 20–40 s.
+- **Why the loop threshold.** The audit is one long `ML` command. Under machine load (another
+  session's builds, load around 18) it trips the default loop heuristic of three warnings
+  without actually looping. Check first that the other theories reached 100%.
+- **The venv is now active,** so `isabelle-build` and `isabelle-query` are on `PATH`.
+
+The theories:
+- **`Majority_3CNF.thy`** (about 290 lines), the lower bounds:
   - `MCNF w f`: an AND of ORs of at most $w$ positive literals.
-  - `pclause`, `pcnf`: the clause sets restricted below $n$.
-  - `eval_pcnf`, the bridge to `hits`, and `pcnf_cnf`.
-  - `majority_mcnfs`: $\binom{n}{n/2} \le L \cdot 6^{n/4}$ for even $n$.
-  - `majority_mcnfs_exp`: $(2/6^{1/4})^n \le (n+1)L$.
-  - `majority_mcnf_formula`: both bounds with the gates of `Or gs`.
-- **`Audit_GKPRST.thy`:** the oracle check for `gkprst_bound`, `gkprst_half`, `IH_all` and
-  the three Majority theorems. The `type*` theorems are local to the locales, so they have
-  no global names; they are covered through `gkprst_bound`.
+  - `pclause`, `pcnf`, `eval_pcnf`, `pcnf_cnf`: the bridge from formulas to `hits`.
+  - `majority_mcnfs_slice`: the generic count. For $n \le 2t \le n+1$ and a bound $B$ on
+    every threshold-$t$ CNF, $\binom{n}{t} \le L B$.
+  - From it: `majority_mcnfs` (even $n$), `majority_mcnfs_odd`, `majority_mcnfs_any`,
+    `majority_mcnfs_exp`, `majority_mcnfs_exp_any` and `majority_mcnf_formula` (gates).
+- **`Majority_3CNF_Upper.thy`** (about 840 lines), the matching upper bound:
+  - `pmap`: permuted CNFs keep cnf, thr and transversals.
+  - `slice`, `perm_exists`, `fiber_card`, `fiber_ratio`. The fibres $\lbrace p : pX = Y\rbrace$
+    are cosets, so $pX$ is uniform on the slice; no factorials are needed.
+  - `good_perm` (averaging), then `greedy` and `greedy_cover`: $kT \ge (n+1)N$ copies cover
+    the slice.
+  - `cform`, `fform`, `MCNF_fform`, `gates_fform`: from clause sets to formulas.
+  - `threshold_cover`: for any threshold-$t$ CNF with $T$ transversals, an OR of
+    $(n+1)N/T + 1$ copies computes "weight $\ge t$".
+  - `blk`, `K4`, `Q4`, `K4_thr`, `K4_trans`, `Q4_card`: the extremal CNF, $n/4$ disjoint
+    $K_4^{(3)}$ blocks with $6^{n/4}$ transversals.
+  - `majority_mcnfs_upper`, `majority_mcnfs_tight`.
+- **`Audit_GKPRST.thy`:** the oracle check for all of the above. The `type*` theorems are
+  local to the locales, so they have no global names; they are covered through
+  `gkprst_bound`.
 
 ### Next steps
 
-1. **Done: odd $n$ and the matching upper bound.**
-   - `gkprst_half_odd` and `majority_mcnfs_odd`/`_any`/`_exp_any` handle odd $n$.
-   - `Majority_3CNF_Upper.thy` gives $L \le (n+1)\binom{n}{n/2}/6^{n/4}+1$ for $4 \mid n$
-     (`majority_mcnfs_upper`), with the two-sided `majority_mcnfs_tight`. Its main lemma,
-     `threshold_cover`, works for any threshold CNF.
-   - Open there: the other residues of $n$ mod 4, which need the paper's other extremal blocks.
-   - The audit is one long `ML` command, and under heavy machine load it trips the watchdog's
-     loop heuristic. Use `LOOP_PROGRESS_THRESHOLD=20` then; it is not a loop.
+1. **The upper bound for $n \not\equiv 0 \pmod 4$.**
+   - `threshold_cover` applies to any extremal CNF, so only the construction and its
+     transversal count are missing.
+   - The paper's building blocks are in `notes/gkprst26-src/Constructions/` (`cons0a.tex`,
+     `basis/`). For example, its 6-variable necklace has threshold 3 and 14 transversals. With
+     $K_4^{(3)}$ blocks it gives $n \equiv 2 \pmod 4$, at $14 \cdot 6^{(n-6)/4}$.
+   - Check by hand first that this is within a constant of $6^{n/4}$. Then generalize
+     `Q4_card` to a disjoint union of two kinds of blocks, using the product rule for
+     transversals of disjoint unions.
+   - For odd $n$, compare with `gkprst_half_odd` and decide what to claim.
 2. **The writeup is drafted:** `gkprst26/gaps-for-authors.md`. Every counterexample and every
-   repaired table was re-checked by hand against the paper's LaTeX. Ask the user before
-   sending anything externally.
+   repaired table was re-checked by hand against the v2 LaTeX, which is byte-identical to the
+   arXiv v2 tarball. There is no v3 yet (the user checked on 2026-10-13). The user decides
+   whether and how to send it; never send anything externally.
 3. **Watermarks.** Run `tools/watermark.py FILE.md …` to restamp documents with the current
-   commit, and use `--check` to see what would change. Never run it on `VERDICT.md`.
-4. Then return to the open directions below. For example, monotone $\Sigma_3^k$ for $k \ge 4$
-   (§2.10, item 5).
+   commit, and use `--check` to see what would change. Run it before committing document
+   edits. Never run it on `VERDICT.md`.
+4. **Then the open directions below.** The most interesting is monotone $\Sigma_3^k$ for
+   $k \ge 4$ (§2.10, item 5).
+   - Start on paper with $k = 4$: can Theorem B's block decoding, which gains
+     $\tfrac12\log b$, be transplanted to arbitrary $k$-CNFs?
+   - PPZ provably loses the $\log k$.
+   - This is research with no guarantee of success. Discuss it with the user before
+     formalizing.
+
+My recommendation for the next session: item 1, which is bounded and builds directly on this
+session's work. Then item 4, starting with a short pen-and-paper exploration.
 
 Prove by hand, then formalize. No brute-force or exhaustive search.
 
@@ -146,12 +185,29 @@ The full list is in memory (`ndtht-isabelle-tips.md`) and in
 - `rule two_mem[OF K(1)] two_mem[OF K(2)]` always picks the first rule. Write one subgoal
   per rule.
 - Act on the build summary; when a step loops, check `grep "running for"` in the log.
+- With quantified premises like `∀σ. … ⟷ majority n σ`, give the instance:
+  `spec[OF maj, of "λv. v ∈ X"]`. `blast` loops trying to instantiate them higher-order.
+- `blast` also loops on conditional equivalences such as `finite C ⟹ eval … ⟷ …`. Use
+  `ball_cong` and apply the lemma with `rule`.
+- `simp` unfolds `∘` before `image_comp` fires. Write the step as
+  `(f ∘ g) ` X = f ` (g ` X)` and use `simp only: image_comp`.
+- `simp` splits `real (n + 1)` and `(n + 1) * N`, and then the facts no longer match.
+  `define M = (n + 1) * N` keeps an atom, and `simp only: of_nat_mult` casts it.
+- Use `exp_of_nat_mult` with `simp only:` or as an exact `rule` instance. Plain `simp`
+  normalizes it away.
+- `simp` won't evaluate `4 choose 2`. Use `simp add: numeral_eq_Suc`.
+- After `intro exI` the witness is schematic, and a later `show` fails to match it. Give the
+  witness: `rule exI[of _ "…"]`.
+- Annotate `fix i j :: nat` when nothing else forces the type.
 
 ### Documents
 
 - **The results document is `extensions/monotone-3cnf.md`.** It is linked from `README.md` and
-  from §2.1 of `extensions/locality-and-monotonicity.md`. Update it as work lands; for
-  example, move the Majority bound and the audit to "formal" when they are done.
+  from §2.1 of `extensions/locality-and-monotonicity.md`. Update its status table, §1 and
+  §5–6 as work lands. `gkprst26/NOTES.md` keeps the case-by-case record.
+- No HTML markup in Markdown: the user is concerned it may trip ML toolchains. Hidden
+  provenance goes in TeX via `tools/watermark.py`. Don't use paper-private LaTeX macros
+  (`\prop`, `\ntrnz`, …) in Markdown either; write P0.4, $N_{2o}$ and so on.
 - GitHub's math renderer rejects `\operatorname`. Use `\mathrm`, or `\mathbin{\mathrm{…}}`
   for binary operators. Write braces as `\lbrace`/`\rbrace`.
 - The ndtht insights and the watchdog proof hints have been taken up by those projects.
