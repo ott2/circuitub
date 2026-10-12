@@ -155,8 +155,72 @@ which are proved first at each $n$. Then every further clause through $b$ or $c$
   5. One common clause: P2o.5, the missed case, or P2o.9.
   6. No common clause: P2o.6, P2o.7, P2o.8, or P2o.10.
 
+## Type 3
+
+Type 3 means at least three 2-clauses, with no variable in three of them. `type3` uses only the
+induction hypothesis, so it holds whatever the number of 2-clauses. Three distinct such 2-clauses
+always form one of three configurations: a triangle, a path of length 3, or one 2-clause
+disjoint from the other two. So the paper's three-way split is exhaustive (`type3`).
+
+- **Triangle** (`p3t1`, `p3t2`, `p3t3`, `p3_tri`): correct (sums $1$, $1$; $1$, $26/27$;
+  $13/14$, $8/9$).
+- **Path P3p.1 (`p3p1`): the table is wrong.** Here $b$ lies only in $\lbrace a,b\rbrace$ and
+  $\lbrace b,c\rbrace$.
+  - The paper claims that $a=1$ forces $b=0$, $c=1$. But $a=b=1$, $c=0$, $d=1$ is possible.
+  - Counterexample: in $F = \lbrace ab, bc, cd, axy, duv\rbrace$ we have $t = 3$, and
+    $\lbrace a,b,d\rbrace$ is a minimum transversal that no row covers.
+  - Adding that row overshoots: $47/42$ for even $s$.
+  - Repair: split on $c$. If $c=0$, then $b=d=1$. If $c=1$, then $b=1$, $a=0$ (by $b$'s
+    critical clause) or $b=0$, $a=1$. The three rows are each $1/3$, so the table is tight:
+    sums $1$, $1$.
+- **Path P3p.2** (`p3p2`): correct (sums $1$, $17/18$). It needs only a further clause through
+  $b$; the paper also assumes one through $c$.
+- **Isolated 2-clause, odd $s$** (`p3i_o1`, `p3i_uniq`, `p3i_o3`): correct (sums $1$, $25/27$,
+  $17/18$). In P3io.3, $a$'s further clause may be a 2-clause.
+- **Isolated 2-clause, even $s$: P3ie.2 is wrong in two subcases, and the coverage is
+  rebuilt** (`p3_iso`).
+  - In P3ie.2 ($a$'s clause $\lbrace a,c,x\rbrace$), the row $a=c=0$ is claimed to be of type 1
+    via $\lbrace e,f\rbrace$. That fails if $x \in \lbrace e,f\rbrace$ or if $d \in \lbrace e,f\rbrace$;
+    with type 0 the sum is $43/42$.
+    - The overlap case is covered with the type-2o row $a=1$ (`p3i_e3a`, `p3i_e3b`: sums $1$,
+      $41/42$).
+    - The case $a$'s only further clause is $\lbrace a,c,e\rbrace$ needs a new four-row table
+      that also uses a further clause of $b$ (`p3i_eG`, sum $39/42$).
+  - P3ie.6 holds without its side conditions. Two further clauses through $a$ make the row
+    $a=0$, $b=1$ of type 4, however they meet (`p3i_e2`).
+  - P3ie.5 likewise holds without its side conditions: it suffices that $D_c - \lbrace c\rbrace
+    \ne D_a - \lbrace a\rbrace$ (`p3i_e6`).
+  - The coverage lemma's final step goes through. If no case applies, then
+    $D_v - \lbrace v\rbrace = D_a - \lbrace a\rbrace$ for $v = c,d$. That puts a pair in three
+    clauses, or a variable in three 2-clauses.
+  - The other tables: `p3i_uniq` (sum $20/21$), `p3i_e4` (sum $37/42$, $a$ in a 2-clause
+    $\lbrace a,c\rbrace$), `p3i_e5` (sum $1$, P3ie.2 when $x$ avoids both pairs).
+
+## Type 4
+
+`type4` uses `type3` (for even $s$).
+
+- **Odd $s$** (`p4_1`, `p4_2`, `p4_3`): correct (sums $16/17$, $16/17$, $1$).
+- **Even $s$: a gap.** The paper says even $s$ "is handled by the three 2-clause case". That
+  holds only when no variable lies in three 2-clauses: then $F$ is of type 3, and the bounds
+  for types 3 and 4 coincide for even $s$ (`bound_T3_T4`).
+  - With such a "star" at $a$, two new tables are needed. If $a$ lies in four 2-clauses: rows
+    $a=1$ (type 0) and $a=0$, forcing four 1s; sum $79/84$ (`p4_e4`).
+  - If $a$ lies in exactly three 2-clauses, some other 2-clause avoids $a$: rows $a=1$ (type 1)
+    and $a=0$; sum $37/42$ (`p4_e3`).
+
+## Order of the families at a fixed $n$
+
+The coverage proofs use bounds for other families at the same $n$ only through domination:
+- 2o assumes $\neg$3 and $\neg$4.
+- 2d assumes $\neg$2o.
+- 4 uses 3 for even $s$.
+
+So the order is 3, 4, 2o, 2d, 1, 0. All restricted CNFs have fewer variables.
+
 ## Still to do
 
-- Types 3, 4. (3 may assume $\neg$4; 2o assumes $\neg$3, $\neg$4; 2d assumes $\neg$2o.)
+- The reductions and the main induction (`IH` at every $n$).
+- The Majority corollary.
 - The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
 - The main induction and the Majority corollary.

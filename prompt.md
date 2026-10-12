@@ -110,8 +110,16 @@ It currently takes about 6 s. There is no `sorry`.
    - `theorem type2d` assumes `¬ infam T2o F`.
    - `theorem type2o` assumes `¬ infam T3 F` and `¬ infam T4 F`.
    - Both have coverage gaps, now repaired; see NOTES.md.
-   - Remaining: types 3 and 4 (`threeclause/*.tex`). Type 3 may assume $\neg$4, and type 4 must
-     use only the IH at smaller $n$. So at each $n$ the order is 4, 3, 2o, 2d, 1, 0. Rows may use dominated families (`fam_ok`,
+   - **Types 3 and 4 are done too** (`theorem type3`, `theorem type4`, which uses `type3`).
+     So all six families have formal tables and coverage. At each $n$ the order is 3, 4, 2o,
+     2d, 1, 0.
+   - The gaps found are listed in NOTES.md:
+     - P0.4;
+     - P2d coverage;
+     - P2o coverage;
+     - P3p.1 (a wrong table);
+     - P3ie.2;
+     - type 4 for even $s$. Rows may use dominated families (`fam_ok`,
    `t3_or_t4`, `infam_2`); state the rows with `rows_ok_ConsI`. Read each table's prose
    coverage claim critically. The likely errors:
    - coverage;
