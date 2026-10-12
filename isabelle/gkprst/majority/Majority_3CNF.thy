@@ -88,16 +88,17 @@ proof -
   show ?thesis using cl by (auto simp: fc hits_def)
 qed
 
-text \<open>The count: the CNFs cover the slice, and each covers at most \<open>6\<^bsup>n/4\<^esup>\<close> of it.\<close>
+text \<open>The count, for any slice \<open>t\<close> with \<open>n \<le> 2t \<le> n + 1\<close>: Majority accepts exactly the
+  weights \<open>\<ge> t\<close>, so the CNFs cover the slice \<open>t\<close> and each has threshold \<open>t\<close>.  If every
+  such CNF has at most \<open>B\<close> transversals of size \<open>t\<close>, the slice needs \<open>(n choose t)/B\<close> CNFs.\<close>
 
-theorem majority_mcnfs:
-  fixes fs :: "nat form list"
+lemma majority_mcnfs_slice:
+  fixes fs :: "nat form list" and B :: real
   assumes cnf: "\<forall>f\<in>set fs. MCNF 3 f" and maj: "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
-    and n: "even n"
-  shows "real (n choose (n div 2)) \<le> real (length fs) * 6 powr (real n / 4)"
+    and t1: "n \<le> 2 * t" and t2: "2 * t \<le> n + 1"
+    and B: "\<And>F. cnf {..<n} F \<Longrightarrow> thr {..<n} F t \<Longrightarrow> real (card (trans {..<n} F t)) \<le> B"
+  shows "real (n choose t) \<le> real (length fs) * B"
 proof -
-  define t where "t = n div 2"
-  have nt: "n = 2 * t" using n by (simp add: t_def)
   define Sl where "Sl = {X. X \<subseteq> {..<n} \<and> card X = t}"
   have ev: "eval (\<lambda>v. v \<in> X) f \<longleftrightarrow> hits (pcnf n f) X" if "f \<in> set fs" "X \<subseteq> {..<n}" for f X
     using eval_pcnf cnf that by blast
@@ -107,43 +108,102 @@ proof -
     fix X assume X: "X \<subseteq> {..<n}" and h: "hits (pcnf n f) X"
     have "eval (\<lambda>v. v \<in> X) f" using ev[OF f X] h by simp
     then have "majority n (\<lambda>v. v \<in> X)" using spec[OF maj, of "\<lambda>v. v \<in> X"] f by blast
-    then show "t \<le> card X" using X nt by (simp add: majority_def weight_set)
+    then show "t \<le> card X" using X t2 by (simp add: majority_def weight_set)
   qed
-  have bnd: "real (card (trans {..<n} (pcnf n f) t)) \<le> 6 powr (real n / 4)" if f: "f \<in> set fs" for f
-  proof -
-    have "cnf {..<n} (pcnf n f)" using pcnf_cnf cnf f by blast
-    moreover have "card {..<n} = 2 * t" using nt by simp
-    ultimately show ?thesis using gkprst_half[of "{..<n}" "pcnf n f" t] thr[OF f] by simp
-  qed
+  have bnd: "real (card (trans {..<n} (pcnf n f) t)) \<le> B" if f: "f \<in> set fs" for f
+    using B[OF pcnf_cnf thr[OF f]] cnf f by blast
   have cover: "Sl \<subseteq> (\<Union>f\<in>set fs. trans {..<n} (pcnf n f) t)"
   proof
     fix X assume "X \<in> Sl"
     then have X: "X \<subseteq> {..<n}" "card X = t" by (auto simp: Sl_def)
-    have "majority n (\<lambda>v. v \<in> X)" using X nt by (simp add: majority_def weight_set)
+    have "majority n (\<lambda>v. v \<in> X)" using X t1 by (simp add: majority_def weight_set)
     then obtain f where f: "f \<in> set fs" "eval (\<lambda>v. v \<in> X) f"
       using spec[OF maj, of "\<lambda>v. v \<in> X"] by blast
     then have "X \<in> trans {..<n} (pcnf n f) t" using ev[OF f(1) X(1)] X by (simp add: trans_def)
     then show "X \<in> (\<Union>f\<in>set fs. trans {..<n} (pcnf n f) t)" using f(1) by blast
   qed
-  have "n choose (n div 2) = card Sl" by (simp add: Sl_def t_def n_subsets)
+  have "n choose t = card Sl" by (simp add: Sl_def n_subsets)
   also have "\<dots> \<le> card (\<Union>f\<in>set fs. trans {..<n} (pcnf n f) t)"
   proof (rule card_mono[OF _ cover])
     have "(\<Union>f\<in>set fs. trans {..<n} (pcnf n f) t) \<subseteq> Pow {..<n}" by (auto simp: trans_def)
     then show "finite (\<Union>f\<in>set fs. trans {..<n} (pcnf n f) t)" by (rule finite_subset) simp
   qed
   also have "\<dots> \<le> (\<Sum>f\<in>set fs. card (trans {..<n} (pcnf n f) t))" by (rule card_UN_le) simp
-  finally have nat: "n choose (n div 2) \<le> (\<Sum>f\<in>set fs. card (trans {..<n} (pcnf n f) t))" .
-  have "real (n choose (n div 2)) \<le> (\<Sum>f\<in>set fs. real (card (trans {..<n} (pcnf n f) t)))"
+  finally have nat: "n choose t \<le> (\<Sum>f\<in>set fs. card (trans {..<n} (pcnf n f) t))" .
+  have "real (n choose t) \<le> (\<Sum>f\<in>set fs. real (card (trans {..<n} (pcnf n f) t)))"
   proof -
-    have "real (n choose (n div 2)) \<le> real (\<Sum>f\<in>set fs. card (trans {..<n} (pcnf n f) t))"
+    have "real (n choose t) \<le> real (\<Sum>f\<in>set fs. card (trans {..<n} (pcnf n f) t))"
       using nat by (simp only: of_nat_le_iff)
     then show ?thesis by simp
   qed
-  also have "\<dots> \<le> (\<Sum>f\<in>set fs. 6 powr (real n / 4))" by (rule sum_mono) (rule bnd)
-  also have "\<dots> = real (card (set fs)) * 6 powr (real n / 4)" by simp
-  also have "\<dots> \<le> real (length fs) * 6 powr (real n / 4)"
-    using card_length[of fs] by (intro mult_right_mono) simp_all
+  also have "\<dots> \<le> (\<Sum>f\<in>set fs. B)" by (rule sum_mono) (rule bnd)
+  also have "\<dots> = real (card (set fs)) * B" by simp
+  also have "\<dots> \<le> real (length fs) * B"
+  proof -
+    have "0 \<le> B" if ne: "fs \<noteq> []"
+    proof -
+      obtain f where "f \<in> set fs" using ne by (cases fs) auto
+      then show ?thesis using bnd by (smt (verit) of_nat_0_le_iff)
+    qed
+    then show ?thesis using card_length[of fs] by (cases "fs = []") (simp_all add: mult_right_mono)
+  qed
   finally show ?thesis .
+qed
+
+text \<open>Even \<open>n\<close>: the slice \<open>n/2\<close>, with \<open>gkprst_half\<close>.\<close>
+
+theorem majority_mcnfs:
+  fixes fs :: "nat form list"
+  assumes cnf: "\<forall>f\<in>set fs. MCNF 3 f" and maj: "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+    and n: "even n"
+  shows "real (n choose (n div 2)) \<le> real (length fs) * 6 powr (real n / 4)"
+proof (rule majority_mcnfs_slice[OF cnf maj])
+  show "n \<le> 2 * (n div 2)" "2 * (n div 2) \<le> n + 1" using n by simp_all
+  fix F assume "cnf {..<n} F" "thr {..<n} F (n div 2)"
+  then show "real (card (trans {..<n} F (n div 2))) \<le> 6 powr (real n / 4)"
+    using gkprst_half[of "{..<n}" F "n div 2"] n by simp
+qed
+
+text \<open>Odd \<open>n\<close>: the slice \<open>(n+1)/2\<close>, with \<open>gkprst_half_odd\<close>; by symmetry of binomials it has
+  the same size as the slice \<open>\<lfloor>n/2\<rfloor>\<close>.\<close>
+
+theorem majority_mcnfs_odd:
+  fixes fs :: "nat form list"
+  assumes cnf: "\<forall>f\<in>set fs. MCNF 3 f" and maj: "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+    and n: "odd n"
+  shows "real (n choose (n div 2)) \<le> real (length fs) * 6 powr ((real n + 1) / 4)"
+proof -
+  define t where "t = (n + 1) div 2"
+  have nt: "n + 1 = 2 * t" using n by (simp add: t_def)
+  have "n choose (n div 2) = n choose t"
+  proof -
+    have "n - n div 2 = t" using nt by simp
+    then show ?thesis using binomial_symmetric[of "n div 2" n] by simp
+  qed
+  moreover have "real (n choose t) \<le> real (length fs) * 6 powr ((real n + 1) / 4)"
+  proof (rule majority_mcnfs_slice[OF cnf maj])
+    show "n \<le> 2 * t" "2 * t \<le> n + 1" using nt by simp_all
+    fix F assume "cnf {..<n} F" "thr {..<n} F t"
+    then show "real (card (trans {..<n} F t)) \<le> 6 powr ((real n + 1) / 4)"
+      using gkprst_half_odd[of "{..<n}" F t] nt by simp
+  qed
+  ultimately show ?thesis by simp
+qed
+
+text \<open>Every \<open>n\<close>: at least \<open>(n choose \<lfloor>n/2\<rfloor>) / 6\<^bsup>(n+1)/4\<^esup>\<close> CNFs.\<close>
+
+corollary majority_mcnfs_any:
+  fixes fs :: "nat form list"
+  assumes cnf: "\<forall>f\<in>set fs. MCNF 3 f" and maj: "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+  shows "real (n choose (n div 2)) \<le> real (length fs) * 6 powr ((real n + 1) / 4)"
+proof (cases "even n")
+  case True
+  have "(6::real) powr (real n / 4) \<le> 6 powr ((real n + 1) / 4)" by (intro powr_mono) simp_all
+  then show ?thesis using majority_mcnfs[OF cnf maj True]
+    by (smt (verit) mult_left_mono of_nat_0_le_iff)
+next
+  case False
+  then show ?thesis using majority_mcnfs_odd[OF cnf maj] by simp
 qed
 
 text \<open>Exponential form: \<open>(2/6\<^bsup>1/4\<^esup>)\<^sup>n \<le> (n+1) \<cdot> #CNFs\<close>, where \<open>2/6\<^bsup>1/4\<^esup> > 1.2779\<close>.\<close>
@@ -169,6 +229,38 @@ proof -
     by (rule powr_divide)
   also have "\<dots> = (2::real) ^ n / a" by (simp add: a_def powr_powr powr_realpow)
   finally show ?thesis using le by simp
+qed
+
+text \<open>Exponential form for every \<open>n\<close>: \<open>(2/6\<^bsup>1/4\<^esup>)\<^sup>n \<le> 6\<^bsup>1/4\<^esup> (n+1) \<cdot> #CNFs\<close>.\<close>
+
+corollary majority_mcnfs_exp_any:
+  fixes fs :: "nat form list"
+  assumes "\<forall>f\<in>set fs. MCNF 3 f" "\<forall>\<sigma>. (\<exists>f\<in>set fs. eval \<sigma> f) \<longleftrightarrow> majority n \<sigma>"
+  shows "(2 / 6 powr (1 / 4)) powr real n \<le> 6 powr (1 / 4) * real (n + 1) * real (length fs)"
+proof -
+  define a :: real where "a = 6 powr (real n / 4)"
+  define c :: real where "c = 6 powr (1 / 4)"
+  have a0: "0 < a" by (simp add: a_def)
+  have ac: "6 powr ((real n + 1) / 4) = a * c"
+  proof -
+    have "(real n + 1) / 4 = real n / 4 + 1 / 4" by simp
+    then show ?thesis unfolding a_def c_def by (simp only: powr_add)
+  qed
+  have "(2::real) ^ n \<le> real (n + 1) * real (n choose (n div 2))"
+  proof -
+    have "(2::nat) ^ n \<le> (n + 1) * (n choose (n div 2))" by (rule slice_lower)
+    then have "real ((2::nat) ^ n) \<le> real ((n + 1) * (n choose (n div 2)))" by (simp only: of_nat_le_iff)
+    then show ?thesis by (simp only: of_nat_mult of_nat_power) simp
+  qed
+  also have "\<dots> \<le> real (n + 1) * (real (length fs) * (a * c))"
+    using majority_mcnfs_any[OF assms] ac by (intro mult_left_mono) simp_all
+  finally have "(2::real) ^ n \<le> a * (c * real (n + 1) * real (length fs))" by (simp add: ac_simps)
+  then have le: "(2::real) ^ n / a \<le> c * real (n + 1) * real (length fs)" using a0
+    by (simp add: divide_le_eq ac_simps)
+  have "(2 / 6 powr (1 / 4)) powr real n = 2 powr real n / (6 powr (1 / 4)) powr real n"
+    by (rule powr_divide)
+  also have "\<dots> = (2::real) ^ n / a" by (simp add: a_def powr_powr powr_realpow)
+  finally show ?thesis using le by (simp add: c_def)
 qed
 
 text \<open>As formula size: an OR of monotone 3-CNFs computing Majority.\<close>

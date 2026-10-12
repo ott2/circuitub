@@ -5326,14 +5326,7 @@ qed
 
 text \<open>For \<open>n = 2t\<close>: at most \<open>6\<^bsup>n/4\<^esup>\<close> transversals of size \<open>n/2\<close>.\<close>
 
-corollary gkprst_half:
-  fixes V :: "nat set"
-  assumes F: "cnf V F" "thr V F t" and n: "card V = 2 * t"
-  shows "real (card (trans V F t)) \<le> 6 powr (real (card V) / 4)"
-proof -
-  have b: "real (card (trans V F t)) \<le> bound T0 (int t) t"
-    using gkprst_bound[OF F] n by simp
-  have "bound T0 (int t) t \<le> 6 powr (real (card V) / 4)"
+lemma bound_T0_half: "bound T0 (int t) t \<le> 6 powr (real (2 * t) / 4)"
   proof (cases "even t")
     case True
     then obtain k where k: "t = 2 * k" by blast
@@ -5346,8 +5339,8 @@ proof -
       moreover have "(2/3 * 9::real) = 6" by simp
       ultimately show ?thesis by simp
     qed
-    also have "\<dots> = 6 powr (real (card V) / 4)"
-      using n k by (simp add: powr_realpow)
+    also have "\<dots> = 6 powr (real (2 * t) / 4)"
+      using k by (simp add: powr_realpow)
     finally show ?thesis by simp
   next
     case False
@@ -5374,17 +5367,41 @@ proof -
       have "(7/3::real) \<le> sqrt 6" by (rule real_le_rsqrt) (simp add: power2_eq_square)
       then show ?thesis by (intro mult_right_mono) simp_all
     qed
-    also have "\<dots> = 6 powr (real (card V) / 4)"
+    also have "\<dots> = 6 powr (real (2 * t) / 4)"
     proof -
-      have e: "real (card V) / 4 = real k + 1/2" using n k by simp
-      have "6 powr (real (card V) / 4) = 6 powr (real k + 1/2)" by (simp only: e)
+      have e: "real (2 * t) / 4 = real k + 1/2" using k by simp
+      have "6 powr (real (2 * t) / 4) = 6 powr (real k + 1/2)" by (simp only: e)
       also have "\<dots> = 6 powr (real k) * 6 powr (1/2)" by (rule powr_add)
       also have "\<dots> = 6 ^ k * sqrt 6" by (simp add: powr_realpow powr_half_sqrt)
       finally show ?thesis by simp
     qed
     finally show ?thesis .
   qed
-  then show ?thesis using b by linarith
+
+corollary gkprst_half:
+  fixes V :: "nat set"
+  assumes F: "cnf V F" "thr V F t" and n: "card V = 2 * t"
+  shows "real (card (trans V F t)) \<le> 6 powr (real (card V) / 4)"
+proof -
+  have "real (card (trans V F t)) \<le> bound T0 (int t) t"
+    using gkprst_bound[OF F] n by simp
+  then show ?thesis using bound_T0_half[of t] n by simp
+qed
+
+text \<open>For \<open>n = 2t - 1\<close>: here \<open>s = t + 1\<close>, and the bound is at most \<open>6\<^bsup>(n+1)/4\<^esup>\<close>.\<close>
+
+corollary gkprst_half_odd:
+  fixes V :: "nat set"
+  assumes F: "cnf V F" "thr V F t" and n: "card V + 1 = 2 * t"
+  shows "real (card (trans V F t)) \<le> 6 powr ((real (card V) + 1) / 4)"
+proof -
+  have s: "3 * int t - int (card V) = int t + 1" using n by simp
+  have "real (card (trans V F t)) \<le> bound T0 (int t + 1) t"
+    using gkprst_bound[OF F] s by simp
+  also have "\<dots> \<le> bound T0 (int t) t" by (rule bound_mono) simp
+  also have "\<dots> \<le> 6 powr (real (2 * t) / 4)" by (rule bound_T0_half)
+  also have "real (2 * t) = real (card V) + 1" using n by linarith
+  finally show ?thesis .
 qed
 
 end

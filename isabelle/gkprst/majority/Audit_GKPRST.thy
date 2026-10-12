@@ -10,8 +10,9 @@ text \<open>
 
 ML \<open>
   val headline =
-    [@{thm gkprst_bound}, @{thm gkprst_half}, @{thm IH_all},
-     @{thm majority_mcnfs}, @{thm majority_mcnfs_exp},
+    [@{thm gkprst_bound}, @{thm gkprst_half}, @{thm gkprst_half_odd}, @{thm IH_all},
+     @{thm majority_mcnfs_slice}, @{thm majority_mcnfs}, @{thm majority_mcnfs_odd},
+     @{thm majority_mcnfs_any}, @{thm majority_mcnfs_exp}, @{thm majority_mcnfs_exp_any},
      @{thm majority_mcnf_formula(1)}, @{thm majority_mcnf_formula(2)}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
