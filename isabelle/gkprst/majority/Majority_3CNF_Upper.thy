@@ -388,4 +388,165 @@ proof -
   then show ?thesis using that ps by blast
 qed
 
+subsection \<open>From clause sets to formulas\<close>
+
+definition cform :: "nat set \<Rightarrow> nat form" where
+  "cform C = Or (map (\<lambda>v. Lit v True) (sorted_list_of_set C))"
+
+definition clist :: "nat set set \<Rightarrow> nat set list" where
+  "clist F = (SOME cs. set cs = F \<and> distinct cs)"
+
+definition fform :: "nat set set \<Rightarrow> nat form" where
+  "fform F = And (map cform (clist F))"
+
+lemma clist: "finite F \<Longrightarrow> set (clist F) = F \<and> distinct (clist F)"
+  unfolding clist_def by (rule someI_ex) (rule finite_distinct_list)
+
+lemma eval_cform: "finite C \<Longrightarrow> eval \<sigma> (cform C) \<longleftrightarrow> (\<exists>v\<in>C. \<sigma> v)"
+  by (auto simp: cform_def)
+
+lemma eval_fform:
+  assumes "finite F" "\<forall>C\<in>F. finite C"
+  shows "eval \<sigma> (fform F) \<longleftrightarrow> hits F {v. \<sigma> v}"
+proof -
+  have "eval \<sigma> (fform F) \<longleftrightarrow> (\<forall>C\<in>F. eval \<sigma> (cform C))"
+    using clist[OF assms(1)] by (simp add: fform_def)
+  also have "\<dots> \<longleftrightarrow> (\<forall>C\<in>F. \<exists>v\<in>C. \<sigma> v)"
+  proof (rule ball_cong[OF refl])
+    fix C assume C: "C \<in> F"
+    show "eval \<sigma> (cform C) \<longleftrightarrow> (\<exists>v\<in>C. \<sigma> v)" by (rule eval_cform) (use assms(2) C in blast)
+  qed
+  also have "\<dots> \<longleftrightarrow> hits F {v. \<sigma> v}" by (auto simp: hits_def)
+  finally show ?thesis .
+qed
+
+lemma cnf_clauses_finite: "cnf V F \<Longrightarrow> C \<in> F \<Longrightarrow> finite C"
+  unfolding cnf_def by (auto intro: finite_subset)
+
+lemma MCNF_fform:
+  assumes F: "cnf V F"
+  shows "MCNF 3 (fform F)"
+  unfolding MCNF_def fform_def
+proof (rule exI[of _ "map cform (clist F)"], intro conjI ballI)
+  fix c assume "c \<in> set (map cform (clist F))"
+  then obtain C where C: "C \<in> F" "c = cform C" using clist[OF cnf_finite[OF F]] by auto
+  have fC: "finite C" by (rule cnf_clauses_finite[OF F C(1)])
+  have "card C \<le> 3" using F C(1) by (simp add: cnf_def)
+  then have "length (map (\<lambda>v. Lit v True) (sorted_list_of_set C)) \<le> 3" by simp
+  then show "\<exists>ls. c = Or ls \<and> length ls \<le> 3 \<and> (\<forall>l\<in>set ls. \<exists>v. l = Lit v True)"
+    using C(2) by (auto simp: cform_def)
+qed simp
+
+lemma gates_fform:
+  assumes "finite F"
+  shows "gates (fform F) = card F + 1"
+proof -
+  have g1: "gates (cform C) = 1" for C
+  proof -
+    have "map gates (map (\<lambda>v. Lit v True) (sorted_list_of_set C)) = map (\<lambda>v. 0) (sorted_list_of_set C)"
+      by simp
+    then show ?thesis by (simp add: cform_def)
+  qed
+  have s: "sum_list (map gates (map cform cs)) = length cs" for cs
+    by (induction cs) (simp_all add: g1)
+  have "gates (fform F) = Suc (length (clist F))" by (simp only: fform_def gates.simps s)
+  also have "length (clist F) = card F" using clist[OF assms] distinct_card by metis
+  finally show ?thesis by simp
+qed
+
+lemma hits_below:
+  assumes "cnf V F"
+  shows "hits F {v. \<sigma> v} \<longleftrightarrow> hits F {v. v \<in> V \<and> \<sigma> v}"
+proof -
+  have "C \<inter> {v. \<sigma> v} = C \<inter> {v. v \<in> V \<and> \<sigma> v}" if "C \<in> F" for C
+    using assms that by (auto simp: cnf_def)
+  then show ?thesis by (simp add: hits_def)
+qed
+
+subsection \<open>Threshold functions from one threshold CNF\<close>
+
+theorem threshold_cover:
+  fixes F :: "nat set set"
+  assumes F: "cnf {..<n} F" "thr {..<n} F t" and T: "0 < card (trans {..<n} F t)"
+  obtains gs where "\<forall>g\<in>set gs. MCNF 3 g" "\<forall>\<sigma>. eval \<sigma> (Or gs) \<longleftrightarrow> t \<le> weight n \<sigma>"
+    "real (length gs) \<le> real (n + 1) * real (n choose t) / real (card (trans {..<n} F t)) + 1"
+    "\<forall>g\<in>set gs. gates g = card F + 1"
+proof -
+  define S where "S = trans {..<n} F t"
+  define N where "N = n choose t"
+  define T where "T = card S"
+  have T0: "0 < T" using assms(3) by (simp add: T_def S_def)
+  have SS: "S \<subseteq> slice {..<n} t" by (auto simp: S_def trans_def slice_def)
+  have NS: "card (slice {..<n} t) = N" unfolding slice_def N_def by (simp add: n_subsets)
+  define M where "M = (n + 1) * N"
+  define k where "k = M div T + 1"
+  have kT: "(n + 1) * card (slice {..<n} t) \<le> k * card S"
+  proof -
+    have e: "M div T * T + M mod T = M" by (rule div_mult_mod_eq)
+    have m: "M mod T < T" using T0 by simp
+    have "M \<le> M div T * T + T" using e m by linarith
+    then have "M \<le> k * T" by (simp add: k_def distrib_right)
+    then show ?thesis by (simp only: NS T_def M_def)
+  qed
+  have kb: "real k \<le> real M / real T + 1"
+  proof -
+    have "M div T * T \<le> M" by (rule div_times_less_eq_dividend)
+    then have "real (M div T) * real T \<le> real M"
+      by (simp only: of_nat_mult[symmetric] of_nat_le_iff)
+    then have "real (M div T) \<le> real M / real T"
+      using T0 by (simp add: le_divide_eq)
+    then show ?thesis by (simp add: k_def)
+  qed
+  have Mr: "real M = real (n + 1) * real N" by (simp only: M_def of_nat_mult)
+  obtain ps where ps: "length ps = k" "\<forall>p\<in>set ps. p permutes {..<n}"
+    and cov: "slice {..<n} t \<subseteq> (\<Union>p\<in>set ps. (\<lambda>X. p ` X) ` S)"
+    using greedy_cover[of "{..<n}" S t k] SS kT T0 by (auto simp: T_def)
+  define gs where "gs = map (\<lambda>p. fform (pmap p F)) ps"
+  have cp: "cnf {..<n} (pmap p F)" if "p \<in> set ps" for p using pmap_cnf ps(2) that F(1) by blast
+  have tp: "thr {..<n} (pmap p F) t" if "p \<in> set ps" for p using pmap_thr ps(2) that F(2) by blast
+  have m: "\<forall>g\<in>set gs. MCNF 3 g" using cp MCNF_fform by (auto simp: gs_def)
+  have g: "\<forall>g\<in>set gs. gates g = card F + 1"
+  proof
+    fix g assume "g \<in> set gs"
+    then obtain p where p: "p \<in> set ps" "g = fform (pmap p F)" by (auto simp: gs_def)
+    have "inj_on (\<lambda>C. p ` C) F"
+      using inj_image_eq_iff[OF permutes_inj[OF ps(2)[rule_format, OF p(1)]]] by (auto simp: inj_on_def)
+    then have "card (pmap p F) = card F" by (simp add: pmap_def card_image)
+    then show "gates g = card F + 1" using gates_fform[OF cnf_finite[OF cp[OF p(1)]]] p(2) by simp
+  qed
+  have ev: "eval \<sigma> (Or gs) \<longleftrightarrow> t \<le> weight n \<sigma>" for \<sigma>
+  proof -
+    define X where "X = {v. v \<in> {..<n} \<and> \<sigma> v}"
+    have XV: "X \<subseteq> {..<n}" by (auto simp: X_def)
+    have wX: "weight n \<sigma> = card X" by (simp add: weight_def X_def)
+    have e1: "eval \<sigma> (fform (pmap p F)) \<longleftrightarrow> hits (pmap p F) X" if p: "p \<in> set ps" for p
+    proof -
+      have fin: "finite (pmap p F)" "\<forall>C\<in>pmap p F. finite C"
+        using cnf_finite[OF cp[OF p]] cnf_clauses_finite[OF cp[OF p]] by auto
+      show ?thesis using eval_fform[OF fin] hits_below[OF cp[OF p]] by (simp add: X_def)
+    qed
+    have "eval \<sigma> (Or gs) \<longleftrightarrow> (\<exists>p\<in>set ps. hits (pmap p F) X)" using e1 by (auto simp: gs_def)
+    also have "\<dots> \<longleftrightarrow> t \<le> card X"
+    proof
+      assume "\<exists>p\<in>set ps. hits (pmap p F) X"
+      then obtain p where p: "p \<in> set ps" "hits (pmap p F) X" by blast
+      show "t \<le> card X" using tp[OF p(1)] XV p(2) by (simp add: thr_def)
+    next
+      assume tX: "t \<le> card X"
+      obtain Y where Y: "Y \<subseteq> X" "card Y = t" using obtain_subset_with_card_n[OF tX] by blast
+      have "Y \<in> slice {..<n} t" using Y XV by (auto simp: slice_def)
+      then obtain p Z where p: "p \<in> set ps" "Z \<in> S" "Y = p ` Z" using cov by blast
+      have "p ` Z \<in> trans {..<n} (pmap p F) t"
+        using pmap_trans[OF ps(2)[rule_format, OF p(1)]] p(2) by (simp add: S_def)
+      then have "hits (pmap p F) Y" using p(3) by (simp add: trans_def)
+      then have "hits (pmap p F) X" using Y(1) by (rule hits_mono)
+      then show "\<exists>p\<in>set ps. hits (pmap p F) X" using p(1) by blast
+    qed
+    finally show ?thesis using wX by simp
+  qed
+  have "real (length gs) \<le> real (n + 1) * real (n choose t) / real (card (trans {..<n} F t)) + 1"
+    using kb ps(1) Mr by (simp add: gs_def N_def T_def S_def)
+  then show ?thesis using that m ev g by blast
+qed
+
 end
