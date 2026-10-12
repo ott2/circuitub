@@ -33,4 +33,5 @@ session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
   theories
     Majority_3CNF
     Majority_3CNF_Upper
+    Majority_3CNF_Any
     Audit_GKPRST
