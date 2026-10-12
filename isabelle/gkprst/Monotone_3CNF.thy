@@ -4939,5 +4939,452 @@ qed
 
 end
 
+subsection \<open>The induction\<close>
+
+lemma fam_le_3_2o: "fam_le T3 T2o" by (rule fam_leI) simp_all
+lemma fam_le_4_2o: "fam_le T4 T2o" by (rule fam_leI) simp_all
+lemma fam_le_1_0: "fam_le T1 T0" by (rule fam_leI) simp_all
+
+context core
+begin
+
+text \<open>Each family's bound, using the more specific families at the same \<open>n\<close>: 3, 4, 2o, 2d.\<close>
+
+lemma full2o:
+  assumes "infam T2o F"
+  shows "real (card (trans V F t)) \<le> bound T2o s t"
+proof (cases "infam T3 F")
+  case True
+  have "real (card (trans V F t)) \<le> bound T3 s t" by (rule type3[OF True])
+  then show ?thesis using bound_le[OF fam_le_3_2o, of s t] by linarith
+next
+  case n3: False
+  show ?thesis
+  proof (cases "infam T4 F")
+    case True
+    have "real (card (trans V F t)) \<le> bound T4 s t" by (rule type4[OF True])
+    then show ?thesis using bound_le[OF fam_le_4_2o, of s t] by linarith
+  next
+    case False
+    then show ?thesis by (rule type2o[OF assms n3])
+  qed
+qed
+
+lemma full2d:
+  assumes "infam T2d F"
+  shows "real (card (trans V F t)) \<le> bound T2d s t"
+proof (cases "infam T2o F")
+  case True
+  have "real (card (trans V F t)) \<le> bound T2o s t" by (rule full2o[OF True])
+  then show ?thesis using bound_le[OF fam_le_2o_2d, of s t] by linarith
+next
+  case False
+  then show ?thesis by (rule type2d[OF assms])
+qed
+
+end
+
+lemma full_bound:
+  assumes C: "core V F t" and fam: "infam i F"
+  shows "real (card (trans V F t)) \<le> bound i (3 * int t - int (card V)) t"
+proof (cases i)
+  case T0
+  show ?thesis
+  proof (cases "twos F = {}")
+    case True
+    have "core0 V F t"
+    proof (intro core0.intro core0_axioms.intro C)
+      fix D assume D: "D \<in> F"
+      have "card D = 2 \<or> card D = 3" by (rule core.sizes[OF C D])
+      moreover have "card D \<noteq> 2" using True D by (auto simp: twos_def)
+      ultimately show "card D = 3" by simp
+    qed
+    then show ?thesis using core0.type0 T0 by blast
+  next
+    case False
+    then have "infam T1 F" by simp
+    then have "real (card (trans V F t)) \<le> bound T1 (3 * int t - int (card V)) t"
+      by (rule core.type1[OF C])
+    then show ?thesis using bound_le[OF fam_le_1_0, of "3 * int t - int (card V)" t] T0 by simp
+  qed
+next
+  case T1
+  then show ?thesis using core.type1[OF C] fam by simp
+next
+  case T2o
+  then show ?thesis using core.full2o[OF C] fam by simp
+next
+  case T2d
+  then show ?thesis using core.full2d[OF C] fam by simp
+next
+  case T3
+  then show ?thesis using core.type3[OF C] fam by simp
+next
+  case T4
+  then show ?thesis using core.type4[OF C] fam by simp
+qed
+
+text \<open>Forcing the variable of a 1-clause costs at most \<open>14/17\<close> of any bound.\<close>
+
+lemma ratio_T0_1_0: "ratio T0 1 0 i p \<le> 1"
+  by (cases i; cases p) (simp_all add: ratio_simps)
+
+lemma bound_T0_0:
+  assumes "s \<le> 0"
+  shows "1 \<le> bound T0 s 0"
+proof -
+  have d: "s div 2 \<le> 0" using assms by simp
+  have "1 \<le> (2/3::real) powi (s div 2)"
+  proof -
+    have "(2/3::real) powi (s div 2) = (3/2) powi (nat (- (s div 2)))"
+      using d by (simp add: power_int_def inverse_eq_divide power_divide)
+    also have "\<dots> \<ge> 1" by (simp add: power_int_def)
+    finally show ?thesis .
+  qed
+  moreover have "(7/9::real) * (2/3) powi (s div 2) \<ge> 1" if "odd s"
+  proof -
+    have "s \<le> -1" using assms that by presburger
+    then have "s div 2 \<le> -1" by simp
+    then have "(2/3::real) powi (s div 2) = (3/2) ^ nat (- (s div 2))"
+      by (simp add: power_int_def inverse_eq_divide power_divide)
+    moreover have "(3/2::real) ^ nat (- (s div 2)) \<ge> 3/2"
+    proof -
+      have "1 \<le> nat (- (s div 2))" using \<open>s div 2 \<le> -1\<close> by simp
+      then have "(3/2::real) ^ 1 \<le> (3/2) ^ nat (- (s div 2))" by (intro power_increasing) simp_all
+      then show ?thesis by simp
+    qed
+    ultimately show ?thesis by simp
+  qed
+  ultimately show ?thesis unfolding bound_def by (cases "even s") auto
+qed
+
+lemma minimal_clause:
+  assumes "finite F" "D \<in> F"
+  obtains C where "C \<in> F" "C \<subseteq> D" "\<not> (\<exists>C'\<in>F. C' \<subset> C)"
+proof -
+  have fin: "finite {C\<in>F. C \<subseteq> D}" using assms(1) by simp
+  have nem: "{C\<in>F. C \<subseteq> D} \<noteq> {}" using assms(2) by blast
+  obtain m where m: "m \<in> {C\<in>F. C \<subseteq> D}" "\<forall>b\<in>{C\<in>F. C \<subseteq> D}. b \<le> m \<longrightarrow> m = b"
+    using finite_has_minimal[OF fin nem] by blast
+  have "\<not> (\<exists>C'\<in>F. C' \<subset> m)"
+  proof
+    assume "\<exists>C'\<in>F. C' \<subset> m"
+    then obtain C' where "C' \<in> F" "C' \<subset> m" by blast
+    then have "C' \<in> {C\<in>F. C \<subseteq> D}" "C' \<le> m" "m \<noteq> C'" using m(1) by auto
+    then show False using m(2) by blast
+  qed
+  then show ?thesis using that m(1) by blast
+qed
+
+lemma npair_mono:
+  assumes "finite F" "G \<subseteq> F" "npair F"
+  shows "npair G"
+  unfolding npair_def
+proof (intro allI impI)
+  fix x y :: 'a assume xy: "x \<noteq> y"
+  have "card {C\<in>G. x \<in> C \<and> y \<in> C} \<le> card {C\<in>F. x \<in> C \<and> y \<in> C}"
+    using assms(1,2) by (intro card_mono) auto
+  also have "\<dots> \<le> 2" using assms(3) xy unfolding npair_def by blast
+  finally show "card {C\<in>G. x \<in> C \<and> y \<in> C} \<le> 2" .
+qed
+
+lemma infam_mono:
+  assumes "finite F" "G \<subseteq> F" "twos G = twos F" "infam i F"
+  shows "infam i G"
+  using assms npair_mono[OF assms(1,2)] by (cases i) simp_all
+
+text \<open>The induction step: the bound for \<open>n\<close> variables from the bound for fewer.  The reductions
+  are: \<open>t = 0\<close>, an empty clause, a 1-clause, subsumed clauses, unused variables.\<close>
+
+lemma step:
+  fixes V :: "nat set"
+  assumes ih: "IH (card V)" and cnf: "cnf V F" and thr: "thr V F t"
+    and fam: "infam i F \<or> (\<exists>C\<in>F. card C \<le> 1)"
+  shows "real (card (trans V F t)) \<le> bound i (3 * int t - int (card V)) t"
+proof -
+  have finV: "finite V" using cnf by (simp add: cnf_def)
+  have finF: "finite F" using cnf by (rule cnf_finite)
+  have finT: "finite (trans V F t)"
+    by (rule finite_subset[of _ "Pow V"]) (use finV in \<open>auto simp: trans_def\<close>)
+  let ?s = "3 * int t - int (card V)"
+  have zero: "real (card (trans V F t)) \<le> bound i ?s t" if "trans V F t = {}"
+    using that bound_pos[of i ?s t] by simp
+  show ?thesis
+  proof (cases "t = 0")
+    case t0: True
+    show ?thesis
+    proof (cases "F = {}")
+      case True
+      have "infam i F" using fam True by auto
+      then have i0: "i = T0" using True by (cases i) (auto simp: twos_def)
+      have "trans V F t \<subseteq> {{}}"
+      proof
+        fix X assume "X \<in> trans V F t"
+        then have "X \<subseteq> V" "card X = 0" using t0 by (auto simp: trans_def)
+        then have "X = {}" using finite_subset[OF \<open>X \<subseteq> V\<close> finV] by simp
+        then show "X \<in> {{}}" by simp
+      qed
+      then have "card (trans V F t) \<le> card {{}::nat set}" by (rule card_mono[rotated]) simp
+      then have "card (trans V F t) \<le> 1" by simp
+      moreover have "1 \<le> bound T0 ?s t" using t0 bound_T0_0[of ?s] by simp
+      ultimately show ?thesis using i0 by simp
+    next
+      case False
+      then obtain C where C: "C \<in> F" by blast
+      have "trans V F t = {}"
+      proof (rule equals0I)
+        fix X assume "X \<in> trans V F t"
+        then have "X \<subseteq> V" "hits F X" "card X = 0" using t0 by (auto simp: trans_def)
+        then have "X = {}" using finV by (auto dest: finite_subset)
+        then show False using \<open>hits F X\<close> C by (auto simp: hits_def)
+      qed
+      then show ?thesis by (rule zero)
+    qed
+  next
+    case t1: False
+    show ?thesis
+    proof (cases "{} \<in> F")
+      case True
+      have "trans V F t = {}" using True by (auto simp: trans_def hits_def)
+      then show ?thesis by (rule zero)
+    next
+      case ne: False
+      show ?thesis
+      proof (cases "\<exists>C\<in>F. card C = 1")
+        case True
+        then obtain C where C: "C \<in> F" "card C = 1" by blast
+        obtain x where x: "C = {x}" by (rule card_1_singletonE[OF C(2)])
+        have xV: "x \<in> V" using cnf_sub[OF cnf C(1)] x by simp
+        have all: "trans V F t = {X\<in>trans V F t. {x} \<subseteq> X \<and> X \<inter> {} = {}}"
+          using C(1) x by (auto simp: trans_def hits_def)
+        have "card (trans V F t) \<le> card (trans (V - {x} - {}) (restr F {x} {}) (t - card {x}))"
+          using row_card[OF finV, of "{x}" F t "{}"] xV all by simp
+        then have c1: "real (card (trans V F t)) \<le> real (card (trans (V - {x}) (restr F {x} {}) (t - 1)))"
+          by simp
+        have lt: "card (V - {x}) < card V" by (rule card_Diff1_less[OF finV xV])
+        have c': "cnf (V - {x}) (restr F {x} {})" using restr_cnf[OF cnf, of "{x}" "{}"] by simp
+        have t': "thr (V - {x}) (restr F {x} {}) (t - 1)" using restr_thr[OF cnf thr, of "{x}" "{}"] xV by simp
+        have "real (card (trans (V - {x}) (restr F {x} {}) (t - 1)))
+            \<le> bound T0 (3 * int (t - 1) - int (card (V - {x}))) (t - 1)"
+          using ih[unfolded IH_def, rule_format, of "V - {x}" "restr F {x} {}" "t - 1" T0, OF lt c' t']
+          by simp
+        also have "3 * int (t - 1) - int (card (V - {x})) = ?s - 2 * int 1 + int 0"
+        proof -
+          have cV: "0 < card V" using finV xV card_gt_0_iff by blast
+          have "card (V - {x}) = card V - 1" using xV by (rule card_Diff_singleton)
+          then show ?thesis using t1 cV by (simp add: of_nat_diff)
+        qed
+        also have "bound T0 (?s - 2 * int 1 + int 0) (t - 1) = ratio T0 1 0 i (even ?s) * bound i ?s t"
+          using t1 by (intro bound_shift) simp
+        also have "\<dots> \<le> bound i ?s t"
+          using ratio_T0_1_0[of i "even ?s"] bound_pos[of i ?s t] by (simp add: mult_left_le_one_le)
+        finally show ?thesis using c1 by linarith
+      next
+        case no1: False
+        have sz: "card C = 2 \<or> card C = 3" if "C \<in> F" for C
+        proof -
+          have "card C \<le> 3" using cnf that by (simp add: cnf_def)
+          moreover have "card C \<noteq> 0" using ne that cnf_clause_finite[OF cnf that] by auto
+          moreover have "card C \<noteq> 1" using no1 that by blast
+          ultimately show ?thesis by linarith
+        qed
+        have famF: "infam i F" using fam sz by fastforce
+        define G where "G = {D\<in>F. \<not> (\<exists>C\<in>F. C \<subset> D)}"
+        have GF: "G \<subseteq> F" unfolding G_def by blast
+        have below: "\<exists>C\<in>G. C \<subseteq> D" if D: "D \<in> F" for D
+        proof -
+          obtain C where "C \<in> F" "C \<subseteq> D" "\<not> (\<exists>C'\<in>F. C' \<subset> C)" by (rule minimal_clause[OF finF D])
+          then show ?thesis unfolding G_def by blast
+        qed
+        have hitsG: "hits G X \<longleftrightarrow> hits F X" for X
+        proof
+          assume h: "hits G X"
+          show "hits F X" unfolding hits_def
+          proof
+            fix D assume "D \<in> F"
+            then obtain C where "C \<in> G" "C \<subseteq> D" using below by blast
+            then show "D \<inter> X \<noteq> {}" using h unfolding hits_def by blast
+          qed
+        next
+          assume "hits F X" then show "hits G X" using GF unfolding hits_def by blast
+        qed
+        have trG: "trans V G t = trans V F t" using hitsG by (simp add: trans_def)
+        have cnfG: "cnf V G" using cnf GF by (auto simp: cnf_def)
+        have thrG: "thr V G t" using thr hitsG by (simp add: thr_def)
+        have twG: "twos G = twos F"
+        proof
+          show "twos G \<subseteq> twos F" using GF by (auto simp: twos_def)
+          show "twos F \<subseteq> twos G"
+          proof
+            fix D assume D: "D \<in> twos F"
+            have "\<not> (\<exists>C\<in>F. C \<subset> D)"
+            proof
+              assume "\<exists>C\<in>F. C \<subset> D"
+              then obtain C where C: "C \<in> F" "C \<subset> D" by blast
+              have DF: "D \<in> F" using D by (simp add: twos_def)
+              have "card C < card D" by (rule psubset_card_mono[OF cnf_clause_finite[OF cnf DF] C(2)])
+              then show False using sz[OF C(1)] D by (auto simp: twos_def)
+            qed
+            then show "D \<in> twos G" using D by (auto simp: twos_def G_def)
+          qed
+        qed
+        have famG: "infam i G" by (rule infam_mono[OF finF GF twG famF])
+        have antiG: "C = D" if "C \<in> G" "D \<in> G" "C \<subseteq> D" for C D
+          using that unfolding G_def by blast
+        have szG: "card C = 2 \<or> card C = 3" if "C \<in> G" for C using sz that GF by blast
+        show ?thesis
+        proof (cases "\<Union>G = V")
+          case True
+          have "core V G t"
+            by (unfold_locales) (use cnfG thrG ih szG antiG True t1 in auto)
+          then have "real (card (trans V G t)) \<le> bound i ?s t" by (rule full_bound[OF _ famG])
+          then show ?thesis using trG by simp
+        next
+          case False
+          let ?W = "\<Union>G"
+          have WV: "?W \<subseteq> V" using cnfG by (auto simp: cnf_def)
+          then have WV': "?W \<subset> V" using False by blast
+          have finW: "finite ?W" using finite_subset[OF WV finV] .
+          have ltW: "card ?W < card V" using psubset_card_mono[OF finV WV'] .
+          have cnfW: "cnf ?W G" using cnfG finW by (auto simp: cnf_def)
+          have thrW: "thr ?W G t" unfolding thr_def
+          proof (intro allI impI)
+            fix X assume X: "X \<subseteq> ?W" "hits G X"
+            have "X \<subseteq> V" using X(1) WV by (rule subset_trans)
+            then show "t \<le> card X" by (rule thrD[OF thrG _ X(2)])
+          qed
+          have trW: "trans V G t = trans ?W G t"
+          proof
+            show "trans ?W G t \<subseteq> trans V G t" using WV by (auto simp: trans_def)
+            show "trans V G t \<subseteq> trans ?W G t"
+            proof
+              fix X assume X: "X \<in> trans V G t"
+              then have XV: "X \<subseteq> V" "hits G X" "card X = t" by (auto simp: trans_def)
+              have "X \<subseteq> ?W"
+              proof
+                fix u assume u: "u \<in> X"
+                show "u \<in> ?W"
+                proof (rule ccontr)
+                  assume uW: "u \<notin> ?W"
+                  have "hits G (X - {u})" using XV(2) uW unfolding hits_def by blast
+                  then have "t \<le> card (X - {u})" using thrD[OF thrG] XV(1) by blast
+                  moreover have "finite X" using finite_subset[OF XV(1) finV] .
+                  ultimately show False using XV(3) u t1 by simp
+                qed
+              qed
+              then show "X \<in> trans ?W G t" using XV by (simp add: trans_def)
+            qed
+          qed
+          have "real (card (trans ?W G t)) \<le> bound i (3 * int t - int (card ?W)) t"
+            using ih ltW cnfW thrW famG unfolding IH_def by blast
+          also have "\<dots> \<le> bound i ?s t" using ltW by (intro bound_mono) simp
+          finally show ?thesis using trG trW by simp
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma IH_all: "IH m"
+proof (induction m)
+  case 0
+  show ?case unfolding IH_def by simp
+next
+  case (Suc m)
+  show ?case unfolding IH_def
+  proof (intro allI impI)
+    fix V :: "nat set" and F t i
+    assume V: "card V < Suc m" and c: "cnf V F" and th: "thr V F t" and f: "infam i F \<or> (\<exists>C\<in>F. card C \<le> 1)"
+    show "real (card (trans V F t)) \<le> bound i (3 * int t - int (card V)) t"
+    proof (cases "card V < m")
+      case True
+      then show ?thesis using Suc.IH c th f unfolding IH_def by blast
+    next
+      case False
+      then have "card V = m" using V by simp
+      then have "IH (card V)" using Suc.IH by simp
+      then show ?thesis by (rule step[OF _ c th f])
+    qed
+  qed
+qed
+
+text \<open>\<^bold>\<open>The theorem of Gurumukhani et al.\<close>: a monotone 3-CNF on \<open>n\<close> variables with no transversal
+  of size below \<open>t\<close> has at most \<open>c (2/3)\<^bsup>s/2\<^esup> 3\<^sup>t\<close> transversals of size \<open>t\<close>, where
+  \<open>s = 3t - n\<close>, \<open>c = 1\<close> for even \<open>s\<close> and \<open>c = (7/9) (2/3)\<^bsup>-1/2\<^esup>\<close> for odd \<open>s\<close>.\<close>
+
+theorem gkprst_bound:
+  fixes V :: "nat set"
+  assumes "cnf V F" "thr V F t"
+  shows "real (card (trans V F t)) \<le> bound T0 (3 * int t - int (card V)) t"
+proof -
+  have h: "\<forall>(W::nat set) G u j. card W < Suc (card V) \<longrightarrow> cnf W G \<longrightarrow> thr W G u \<longrightarrow>
+      (infam j G \<or> (\<exists>C\<in>G. card C \<le> 1)) \<longrightarrow>
+      real (card (trans W G u)) \<le> bound j (3 * int u - int (card W)) u"
+    using IH_all[of "Suc (card V)"] unfolding IH_def .
+  show ?thesis using h[rule_format, of V F t T0] assms by simp
+qed
+
+text \<open>For \<open>n = 2t\<close>: at most \<open>6\<^bsup>n/4\<^esup>\<close> transversals of size \<open>n/2\<close>.\<close>
+
+corollary gkprst_half:
+  fixes V :: "nat set"
+  assumes F: "cnf V F" "thr V F t" and n: "card V = 2 * t"
+  shows "real (card (trans V F t)) \<le> 6 powr (real (card V) / 4)"
+proof -
+  have b: "real (card (trans V F t)) \<le> bound T0 (int t) t"
+    using gkprst_bound[OF F] n by simp
+  have "bound T0 (int t) t \<le> 6 powr (real (card V) / 4)"
+  proof (cases "even t")
+    case True
+    then obtain k where k: "t = 2 * k" by blast
+    have "bound T0 (int t) t = (2/3) ^ k * 3 ^ (2 * k)"
+      using k by (simp add: bound_def)
+    also have "\<dots> = 6 ^ k"
+    proof -
+      have "(3::real) ^ (2 * k) = 9 ^ k" by (simp add: power_mult)
+      moreover have "(2/3::real) ^ k * 9 ^ k = (2/3 * 9) ^ k" by (simp only: power_mult_distrib)
+      moreover have "(2/3 * 9::real) = 6" by simp
+      ultimately show ?thesis by simp
+    qed
+    also have "\<dots> = 6 powr (real (card V) / 4)"
+      using n k by (simp add: powr_realpow)
+    finally show ?thesis by simp
+  next
+    case False
+    then obtain k where k: "t = 2 * k + 1" using oddE by blast
+    have "bound T0 (int t) t = 7/9 * (2/3) ^ k * 3 ^ (2 * k + 1)"
+    proof -
+      have "int t div 2 = int k" using k by simp
+      moreover have "\<not> even (int t)" using False by simp
+      ultimately show ?thesis unfolding bound_def using k by simp
+    qed
+    also have "\<dots> = 7/3 * 6 ^ k"
+    proof -
+      have "(3::real) ^ (2 * k + 1) = 3 * 9 ^ k" by (simp add: power_mult)
+      moreover have "(2/3::real) ^ k * 9 ^ k = 6 ^ k"
+      proof -
+        have "(2/3::real) ^ k * 9 ^ k = (2/3 * 9) ^ k" by (simp only: power_mult_distrib)
+        moreover have "(2/3 * 9::real) = 6" by simp
+        ultimately show ?thesis by simp
+      qed
+      ultimately show ?thesis by (simp add: algebra_simps)
+    qed
+    also have "\<dots> \<le> sqrt 6 * 6 ^ k"
+    proof -
+      have "(7/3::real) \<le> sqrt 6" by (rule real_le_rsqrt) (simp add: power2_eq_square)
+      then show ?thesis by (intro mult_right_mono) simp_all
+    qed
+    also have "\<dots> = 6 powr (real (card V) / 4)"
+    proof -
+      have e: "real (card V) / 4 = real k + 1/2" using n k by simp
+      have "6 powr (real (card V) / 4) = 6 powr (real k + 1/2)" by (simp only: e)
+      also have "\<dots> = 6 powr (real k) * 6 powr (1/2)" by (rule powr_add)
+      also have "\<dots> = 6 ^ k * sqrt 6" by (simp add: powr_realpow powr_half_sqrt)
+      finally show ?thesis by simp
+    qed
+    finally show ?thesis .
+  qed
+  then show ?thesis using b by linarith
+qed
 
 end
