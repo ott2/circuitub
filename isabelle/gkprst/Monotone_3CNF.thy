@@ -2387,6 +2387,763 @@ qed
 
 end
 
+lemma two_form:
+  assumes "card C = 2" "x \<in> C"
+  obtains y where "C = {x,y}" "y \<noteq> x"
+proof -
+  have fC: "finite C" using assms(1) card.infinite by fastforce
+  have "card (C - {x}) = 1" using assms fC by simp
+  then obtain y where y: "C - {x} = {y}" by (rule card_1_singletonE)
+  have e: "C = {x,y}" using y assms(2) by blast
+  have "y \<noteq> x" using y by blast
+  then show ?thesis by (rule that[OF e])
+qed
+
+lemma two_meet:
+  assumes "card K = 2" "card L = 2" "K \<noteq> L" "K \<inter> L \<noteq> {}"
+  obtains x y z where "K = {y,x}" "L = {x,z}" "distinct [x,y,z]"
+proof -
+  obtain x where x: "x \<in> K" "x \<in> L" using assms(4) by blast
+  obtain y where y: "K = {x,y}" "y \<noteq> x" using two_form[OF assms(1) x(1)] by blast
+  obtain z where z: "L = {x,z}" "z \<noteq> x" using two_form[OF assms(2) x(2)] by blast
+  have "y \<noteq> z" using y z assms(3) by blast
+  then show ?thesis using that[of y x z] y z by (auto simp: insert_commute)
+qed
+
+context core
+begin
+
+lemma deg_three:
+  assumes deg: "card {C\<in>twos F. x \<in> C} \<le> 2" and K: "K1 \<in> twos F" "K2 \<in> twos F" "K1 \<noteq> K2" "x \<in> K1" "x \<in> K2"
+    and D: "D \<in> F" "x \<in> D" "D \<noteq> K1" "D \<noteq> K2"
+  shows "card D = 3"
+proof (rule ccontr)
+  assume "card D \<noteq> 3"
+  then have tD: "D \<in> twos F" using sizes[OF D(1)] D(1) by (auto simp: twos_def)
+  have ne: "K1 \<noteq> D" "K2 \<noteq> D" using D(3,4) by blast+
+  have "card {K1,K2,D} = 3" using K(3) ne by simp
+  moreover have "card {K1,K2,D} \<le> card {C\<in>twos F. x \<in> C}"
+    using finF tD K D(2) by (intro card_mono) (auto simp: twos_def)
+  ultimately show False using deg by simp
+qed
+
+subsubsection \<open>Type 3: choosing the configuration\<close>
+
+text \<open>A triangle vertex with at most one further clause, the others having at least one.\<close>
+
+lemma p3_tri_center:
+  assumes T: "{a,b} \<in> F" "{b,c} \<in> F" "{a,c} \<in> F" and dist: "distinct [a,b,c]"
+    and deg: "\<And>x. card {C\<in>twos F. x \<in> C} \<le> 2"
+    and one: "\<not> (\<exists>D1 D2. D1 \<in> F \<and> D2 \<in> F \<and> a \<in> D1 \<and> a \<in> D2 \<and> D1 \<noteq> D2
+      \<and> D1 \<noteq> {a,b} \<and> D1 \<noteq> {a,c} \<and> D2 \<noteq> {a,b} \<and> D2 \<noteq> {a,c})"
+    and Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> {a,b}" "Db \<noteq> {b,c}"
+    and Dc: "Dc \<in> F" "c \<in> Dc" "Dc \<noteq> {a,c}" "Dc \<noteq> {b,c}"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof (cases "\<exists>Da\<in>F. a \<in> Da \<and> Da \<noteq> {a,b} \<and> Da \<noteq> {a,c}")
+  case False
+  have oa: "D = {a,b} \<or> D = {a,c}" if "D \<in> F" "a \<in> D" for D using False that by blast
+  show ?thesis by (rule p3t1[OF T dist oa])
+next
+  case True
+  then obtain Da where Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> {a,b}" "Da \<noteq> {a,c}" by blast
+  have oa: "D = {a,b} \<or> D = {a,c} \<or> D = Da" if "D \<in> F" "a \<in> D" for D using one Da that by blast
+  have tw: "{a,b} \<in> twos F" "{a,c} \<in> twos F" using T dist by (auto simp: twos_def)
+  have abac: "{a,b} \<noteq> {a,c}" using dist by auto
+  have c3: "card Da = 3" by (rule deg_three[OF deg tw abac _ _ Da]) simp_all
+  obtain d e where de: "Da = {a,d,e}" "distinct [a,d,e]" by (rule elems3[OF Da(1) c3 Da(2)])
+  have bDa: "b \<notin> Da" using anti_pair[OF T(1) Da(1) Da(2)] Da(3) by blast
+  have cDa: "c \<notin> Da" using anti_pair[OF T(3) Da(1) Da(2)] Da(4) by blast
+  have d5: "distinct [a,b,c,d,e]" using dist de bDa cDa by auto
+  have Da': "{a,d,e} \<in> F" using Da(1) de(1) by simp
+  have oa': "D = {a,b} \<or> D = {a,c} \<or> D = {a,d,e}" if "D \<in> F" "a \<in> D" for D using oa[OF that] de(1) by simp
+  show ?thesis by (rule p3t2[OF T Da' d5 oa' Db Dc])
+qed
+
+lemma p3_tri:
+  assumes T: "{a,b} \<in> F" "{b,c} \<in> F" "{a,c} \<in> F" and dist: "distinct [a,b,c]" and np: "npair F"
+    and deg: "\<And>x. card {C\<in>twos F. x \<in> C} \<le> 2"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof -
+  have Tb: "{b,c} \<in> F" "{c,a} \<in> F" "{b,a} \<in> F" using T by (simp_all add: insert_commute)
+  have Tc: "{c,a} \<in> F" "{a,b} \<in> F" "{c,b} \<in> F" using T by (simp_all add: insert_commute)
+  have db: "distinct [b,c,a]" and dc: "distinct [c,a,b]" using dist by auto
+  have ab: "{a,b} = {b,a}" "{b,c} = {c,b}" "{a,c} = {c,a}" by (simp_all add: insert_commute)
+  show ?thesis
+  proof (cases "\<forall>D\<in>F. a \<in> D \<longrightarrow> D = {a,b} \<or> D = {a,c}")
+    case True
+    then show ?thesis using p3t1[OF T dist] by blast
+  next
+    case na: False
+    show ?thesis
+    proof (cases "\<forall>D\<in>F. b \<in> D \<longrightarrow> D = {b,c} \<or> D = {b,a}")
+      case True
+      then show ?thesis using p3t1[OF Tb db] by blast
+    next
+      case nb: False
+      show ?thesis
+      proof (cases "\<forall>D\<in>F. c \<in> D \<longrightarrow> D = {c,a} \<or> D = {c,b}")
+        case True
+        then show ?thesis using p3t1[OF Tc dc] by blast
+      next
+        case nc: False
+        obtain Da where Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> {a,b}" "Da \<noteq> {a,c}" using na by blast
+        obtain Db where Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> {b,c}" "Db \<noteq> {b,a}" using nb by blast
+        obtain Dc where Dc: "Dc \<in> F" "c \<in> Dc" "Dc \<noteq> {c,a}" "Dc \<noteq> {c,b}" using nc by blast
+        have fl: "Da \<noteq> {b,a}" "Da \<noteq> {c,a}" "Db \<noteq> {a,b}" "Db \<noteq> {c,b}" "Dc \<noteq> {a,c}" "Dc \<noteq> {b,c}"
+          using Da(3,4) Db(3,4) Dc(3,4) by (simp_all add: insert_commute)
+        show ?thesis
+        proof (cases "\<exists>D1 D2. D1 \<in> F \<and> D2 \<in> F \<and> a \<in> D1 \<and> a \<in> D2 \<and> D1 \<noteq> D2
+            \<and> D1 \<noteq> {a,b} \<and> D1 \<noteq> {a,c} \<and> D2 \<noteq> {a,b} \<and> D2 \<noteq> {a,c}")
+          case False
+          show ?thesis by (rule p3_tri_center[OF T dist deg False Db(1,2) fl(3) Db(3) Dc(1,2) fl(5) fl(6)])
+        next
+          case ma: True
+          show ?thesis
+          proof (cases "\<exists>D1 D2. D1 \<in> F \<and> D2 \<in> F \<and> b \<in> D1 \<and> b \<in> D2 \<and> D1 \<noteq> D2
+              \<and> D1 \<noteq> {b,c} \<and> D1 \<noteq> {b,a} \<and> D2 \<noteq> {b,c} \<and> D2 \<noteq> {b,a}")
+            case False
+            show ?thesis by (rule p3_tri_center[OF Tb db deg False Dc(1,2) fl(6) Dc(3) Da(1,2) fl(1) fl(2)])
+          next
+            case mb: True
+            show ?thesis
+            proof (cases "\<exists>D1 D2. D1 \<in> F \<and> D2 \<in> F \<and> c \<in> D1 \<and> c \<in> D2 \<and> D1 \<noteq> D2
+                \<and> D1 \<noteq> {c,a} \<and> D1 \<noteq> {c,b} \<and> D2 \<noteq> {c,a} \<and> D2 \<noteq> {c,b}")
+              case False
+              show ?thesis by (rule p3_tri_center[OF Tc dc deg False Da(1,2) fl(2) Da(3) Db(1,2) fl(4) fl(3)])
+            next
+              case mc: True
+              obtain A1 A2 where A: "A1 \<in> F" "A2 \<in> F" "a \<in> A1" "a \<in> A2" "A1 \<noteq> A2"
+                  "A1 \<noteq> {a,b}" "A1 \<noteq> {a,c}" "A2 \<noteq> {a,b}" "A2 \<noteq> {a,c}"
+                using ma by blast
+              obtain B1 B2 where B: "B1 \<in> F" "B2 \<in> F" "b \<in> B1" "b \<in> B2" "B1 \<noteq> B2"
+                  "B1 \<noteq> {b,c}" "B1 \<noteq> {b,a}" "B2 \<noteq> {b,c}" "B2 \<noteq> {b,a}"
+                using mb by blast
+              obtain C1 C2 where C: "C1 \<in> F" "C2 \<in> F" "c \<in> C1" "c \<in> C2" "C1 \<noteq> C2"
+                  "C1 \<noteq> {c,a}" "C1 \<noteq> {c,b}" "C2 \<noteq> {c,a}" "C2 \<noteq> {c,b}"
+                using mc by blast
+              have nA: "b \<notin> A1" "b \<notin> A2" "c \<notin> A1" "c \<notin> A2"
+                using anti_pair[OF T(1) A(1) A(3)] anti_pair[OF T(1) A(2) A(4)]
+                  anti_pair[OF T(3) A(1) A(3)] anti_pair[OF T(3) A(2) A(4)] A(6-9) by blast+
+              have nB: "a \<notin> B1" "a \<notin> B2" "c \<notin> B1" "c \<notin> B2"
+                using anti_pair[OF Tb(3) B(1) B(3)] anti_pair[OF Tb(3) B(2) B(4)]
+                  anti_pair[OF Tb(1) B(1) B(3)] anti_pair[OF Tb(1) B(2) B(4)] B(6-9) by blast+
+              have nC: "a \<notin> C1" "a \<notin> C2" "b \<notin> C1" "b \<notin> C2"
+                using anti_pair[OF Tc(1) C(1) C(3)] anti_pair[OF Tc(1) C(2) C(4)]
+                  anti_pair[OF Tc(3) C(1) C(3)] anti_pair[OF Tc(3) C(2) C(4)] C(6-9) by blast+
+              show ?thesis by (rule p3t3[OF T dist np A(1-5) nA B(1-5) nB C(1-5) nC])
+            qed
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma p3_path:
+  assumes T: "{a,b} \<in> F" "{b,c} \<in> F" "{c,d} \<in> F" and dist: "distinct [a,b,c,d]"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof (cases "\<exists>Db\<in>F. b \<in> Db \<and> Db \<noteq> {a,b} \<and> Db \<noteq> {b,c}")
+  case True
+  then obtain Db where Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> {a,b}" "Db \<noteq> {b,c}" by blast
+  show ?thesis by (rule p3p2[OF T dist Db])
+next
+  case False
+  have ob: "D = {b,a} \<or> D = {b,c}" if "D \<in> F" "b \<in> D" for D
+    using False that by (auto simp: insert_commute)
+  show ?thesis by (rule p3p1[OF T dist ob])
+qed
+
+text \<open>Isolated edge, even \<open>s\<close>, the other two disjoint, \<open>a\<close>'s only further clause contains \<open>c\<close>.\<close>
+
+lemma p3i_meet:
+  assumes T: "{a,b} \<in> F" and K: "{c,d} \<in> F" "{e,f} \<in> F" and dist: "distinct [a,b,c,d,e,f]"
+    and np: "npair F" and ev: "even s"
+    and Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> {a,b}" "c \<in> Da"
+    and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = {a,b} \<or> D = Da"
+    and Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> {a,b}"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof -
+  have bDa: "b \<notin> Da" using anti_pair[OF T Da(1) Da(2)] Da(3) by blast
+  have dDa: "d \<notin> Da"
+  proof
+    assume "d \<in> Da"
+    then have "Da = {c,d}" using anti_pair[OF K(1) Da(1) Da(4)] by blast
+    then show False using Da(2) dist by auto
+  qed
+  have ac: "a \<noteq> c" using dist by simp
+  show ?thesis
+  proof (cases "card Da = 2")
+    case True
+    obtain y where y: "Da = {a,y}" "y \<noteq> a" using two_form[OF True Da(2)] by blast
+    then have "Da = {a,c}" using Da(4) ac by auto
+    then have "{a,c} \<in> F" using Da(1) by simp
+    then show ?thesis by (rule p3i_e4[OF T K _ dist np ev])
+  next
+    case False
+    then have c3: "card Da = 3" using sizes[OF Da(1)] by simp
+    obtain v where v: "Da = {a,c,v}" "v \<noteq> a" "v \<noteq> c" using form3[OF Da(1) c3 Da(2) Da(4) ac] by blast
+    have vo: "v \<noteq> b" "v \<noteq> d" using v(1) bDa dDa by auto
+    show ?thesis
+    proof (cases "v = e")
+      case True
+      have D': "{a,c,e} \<in> F" using Da(1) v(1) True by simp
+      have oa': "D = {a,b} \<or> D = {a,c,e}" if "D \<in> F" "a \<in> D" for D using oa[OF that] v(1) True by simp
+      show ?thesis by (rule p3i_eG[OF T K D' dist np ev oa' Db])
+    next
+      case ne: False
+      show ?thesis
+      proof (cases "v = f")
+        case True
+        have D': "{a,c,f} \<in> F" using Da(1) v(1) True by simp
+        have K': "{f,e} \<in> F" using K(2) by (simp add: insert_commute)
+        have d': "distinct [a,b,c,d,f,e]" using dist by auto
+        have oa': "D = {a,b} \<or> D = {a,c,f}" if "D \<in> F" "a \<in> D" for D using oa[OF that] v(1) True by simp
+        show ?thesis by (rule p3i_eG[OF T K(1) K' D' d' np ev oa' Db])
+      next
+        case False
+        have d7: "distinct [a,b,c,d,e,f,v]" using dist v vo ne False by auto
+        have D': "{a,c,v} \<in> F" using Da(1) v(1) by simp
+        show ?thesis by (rule p3i_e5[OF T K D' d7 np ev])
+      qed
+    qed
+  qed
+qed
+
+lemma p3i_meet_any:
+  assumes T: "{a,b} \<in> F" and K: "{c,d} \<in> F" "{e,f} \<in> F" and dist: "distinct [a,b,c,d,e,f]"
+    and np: "npair F" and ev: "even s"
+    and Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> {a,b}" "x \<in> Da" "x \<in> {c,d,e,f}"
+    and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = {a,b} \<or> D = Da"
+    and Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> {a,b}"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof -
+  have K': "{d,c} \<in> F" "{f,e} \<in> F" using K by (simp_all add: insert_commute)
+  from Da(5) consider "x = c" | "x = d" | "x = e" | "x = f" by blast
+  then show ?thesis
+  proof cases
+    case 1
+    then show ?thesis using p3i_meet[OF T K dist np ev Da(1-3) _ oa Db] Da(4) by blast
+  next
+    case 2
+    have d': "distinct [a,b,d,c,e,f]" using dist by auto
+    show ?thesis using p3i_meet[OF T K'(1) K(2) d' np ev Da(1-3) _ oa Db] Da(4) 2 by blast
+  next
+    case 3
+    have d': "distinct [a,b,e,f,c,d]" using dist by auto
+    show ?thesis using p3i_meet[OF T K(2) K(1) d' np ev Da(1-3) _ oa Db] Da(4) 3 by blast
+  next
+    case 4
+    have d': "distinct [a,b,f,e,c,d]" using dist by auto
+    show ?thesis using p3i_meet[OF T K'(2) K(1) d' np ev Da(1-3) _ oa Db] Da(4) 4 by blast
+  qed
+qed
+
+lemma p3i_e6_any:
+  assumes T: "{a,b} \<in> F" and K: "{c,d} \<in> F" "{e,f} \<in> F" and dist: "distinct [a,b,c,d,e,f]"
+    and np: "npair F" and ev: "even s"
+    and Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> {a,b}" "Da \<inter> {c,d,e,f} = {}"
+    and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = {a,b} \<or> D = Da"
+    and ob: "\<And>D. D \<in> F \<Longrightarrow> b \<in> D \<Longrightarrow> D = {a,b} \<or> D = Db"
+    and Db: "Db \<inter> {c,d,e,f} = {}"
+    and v: "v \<in> {c,d,e,f}" "Dv \<in> F" "v \<in> Dv" "Dv \<noteq> {c,d}" "Dv \<noteq> {e,f}" "Dv - {v} \<noteq> Da - {a}"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof -
+  have bDa: "b \<notin> Da" using anti_pair[OF T Da(1) Da(2)] Da(3) by blast
+  have Dab: "Da \<inter> {b,c,d,e,f} = {}" using Da(4) bDa by blast
+  have aDv: "a \<notin> Dv"
+  proof
+    assume "a \<in> Dv"
+    then have "Dv = {a,b} \<or> Dv = Da" by (rule oa[OF v(2)])
+    then show False using v(1,3) Da(4) dist by auto
+  qed
+  have bDv: "b \<notin> Dv"
+  proof
+    assume "b \<in> Dv"
+    then have "Dv = {a,b} \<or> Dv = Db" by (rule ob[OF v(2)])
+    then show False using v(1,3) Db dist by auto
+  qed
+  have K': "{d,c} \<in> F" "{f,e} \<in> F" using K by (simp_all add: insert_commute)
+  have DvK: "Dv \<noteq> {d,c}" "Dv \<noteq> {f,e}" using v(4,5) by (simp_all add: insert_commute)
+  from v(1) consider "v = c" | "v = d" | "v = e" | "v = f" by blast
+  then show ?thesis
+  proof cases
+    case 1
+    then show ?thesis using p3i_e6[OF T K dist np ev Da(1-3) Dab v(2) _ v(4) _ aDv bDv] v(3,6) by blast
+  next
+    case 2
+    have d': "distinct [a,b,d,c,e,f]" using dist by auto
+    have D': "Da \<inter> {b,d,c,e,f} = {}" using Dab by blast
+    show ?thesis using p3i_e6[OF T K'(1) K(2) d' np ev Da(1-3) D' v(2) _ DvK(1) _ aDv bDv] v(3,6) 2 by blast
+  next
+    case 3
+    have d': "distinct [a,b,e,f,c,d]" using dist by auto
+    have D': "Da \<inter> {b,e,f,c,d} = {}" using Dab by blast
+    show ?thesis using p3i_e6[OF T K(2) K(1) d' np ev Da(1-3) D' v(2) _ v(5) _ aDv bDv] v(3,6) 3 by blast
+  next
+    case 4
+    have d': "distinct [a,b,f,e,c,d]" using dist by auto
+    have D': "Da \<inter> {b,f,e,c,d} = {}" using Dab by blast
+    show ?thesis using p3i_e6[OF T K'(2) K(1) d' np ev Da(1-3) D' v(2) _ DvK(2) _ aDv bDv] v(3,6) 4 by blast
+  qed
+qed
+
+lemma p3_iso:
+  assumes T: "{a,b} \<in> F" and K: "{c,d} \<in> F" "{e,f} \<in> F" and np: "npair F"
+    and deg: "\<And>x. card {C\<in>twos F. x \<in> C} \<le> 2"
+    and dist: "distinct [a,b,c,d]" "distinct [a,b,e,f]" "{c,d} \<noteq> {e,f}"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof -
+  have T': "{b,a} \<in> F" using T by (simp add: insert_commute)
+  have dist': "distinct [b,a,c,d]" "distinct [b,a,e,f]" "{c,d} \<noteq> {e,f}" using dist by auto
+  have ab: "{a,b} = {b,a}" by (simp add: insert_commute)
+  have c2: "card {c,d} = 2" "card {e,f} = 2" using dist by auto
+  show ?thesis
+  proof (cases "\<forall>D\<in>F. a \<in> D \<longrightarrow> D = {a,b}")
+    case True
+    then show ?thesis using p3i_uniq[OF T K np dist] by blast
+  next
+    case na: False
+    show ?thesis
+    proof (cases "\<forall>D\<in>F. b \<in> D \<longrightarrow> D = {a,b}")
+      case True
+      have ob: "D = {b,a}" if "D \<in> F" "b \<in> D" for D using True that ab by blast
+      show ?thesis by (rule p3i_uniq[OF T' K np dist' ob])
+    next
+      case nb: False
+      obtain Da where Da: "Da \<in> F" "a \<in> Da" "Da \<noteq> {a,b}" using na by blast
+      obtain Db where Db: "Db \<in> F" "b \<in> Db" "Db \<noteq> {a,b}" using nb by blast
+      have Db': "Db \<in> F" "b \<in> Db" "Db \<noteq> {b,a}" using Db ab by auto
+      show ?thesis
+      proof (cases "even s")
+        case False
+        show ?thesis
+        proof (cases "{c,d} \<inter> {e,f} = {}")
+          case True
+          have d6: "distinct [a,b,c,d,e,f]" using dist True by auto
+          show ?thesis by (rule p3i_o3[OF T K d6 np False Da])
+        next
+          case ov: False
+          obtain x y z where xyz: "{c,d} = {y,x}" "{e,f} = {x,z}" "distinct [x,y,z]"
+            by (rule two_meet[OF c2 dist(3) ov])
+          have K': "{y,x} \<in> F" "{x,z} \<in> F" using K xyz by simp_all
+          have d5: "distinct [a,b,y,x,z]" using dist xyz by auto
+          show ?thesis by (rule p3i_o1[OF T K' d5 np False])
+        qed
+      next
+        case ev: True
+        show ?thesis
+        proof (cases "\<exists>A1 A2. A1 \<in> F \<and> A2 \<in> F \<and> a \<in> A1 \<and> a \<in> A2 \<and> A1 \<noteq> A2 \<and> A1 \<noteq> {a,b} \<and> A2 \<noteq> {a,b}")
+          case True
+          then obtain A1 A2 where "A1 \<in> F" "A2 \<in> F" "a \<in> A1" "a \<in> A2" "A1 \<noteq> A2" "A1 \<noteq> {a,b}" "A2 \<noteq> {a,b}"
+            by blast
+          then show ?thesis by (rule p3i_e2[OF T K np ev dist])
+        next
+          case ma: False
+          have oa: "D = {a,b} \<or> D = Da" if "D \<in> F" "a \<in> D" for D using ma Da that by blast
+          show ?thesis
+          proof (cases "\<exists>B1 B2. B1 \<in> F \<and> B2 \<in> F \<and> b \<in> B1 \<and> b \<in> B2 \<and> B1 \<noteq> B2 \<and> B1 \<noteq> {a,b} \<and> B2 \<noteq> {a,b}")
+            case True
+            then obtain B1 B2 where B: "B1 \<in> F" "B2 \<in> F" "b \<in> B1" "b \<in> B2" "B1 \<noteq> B2" "B1 \<noteq> {b,a}" "B2 \<noteq> {b,a}"
+              using ab by auto
+            show ?thesis by (rule p3i_e2[OF T' K np ev dist' B])
+          next
+            case mb: False
+            have ob: "D = {a,b} \<or> D = Db" if "D \<in> F" "b \<in> D" for D using mb Db that by blast
+            have ob': "D = {b,a} \<or> D = Db" if "D \<in> F" "b \<in> D" for D using ob[OF that] ab by simp
+            have oa': "D = {b,a} \<or> D = Da" if "D \<in> F" "a \<in> D" for D using oa[OF that] ab by simp
+            show ?thesis
+            proof (cases "{c,d} \<inter> {e,f} = {}")
+              case ov: False
+              obtain x y z where xyz: "{c,d} = {y,x}" "{e,f} = {x,z}" "distinct [x,y,z]"
+                by (rule two_meet[OF c2 dist(3) ov])
+              have K': "{y,x} \<in> F" "{x,z} \<in> F" using K xyz by simp_all
+              have d5: "distinct [a,b,y,x,z]" using dist xyz by auto
+              show ?thesis
+              proof (cases "x \<in> Da")
+                case False
+                show ?thesis by (rule p3i_e3a[OF T K' d5 np ev Da False])
+              next
+                case True
+                have tw: "{y,x} \<in> twos F" "{x,z} \<in> twos F" using K' xyz(3) by (auto simp: twos_def)
+                have yxz: "{y,x} \<noteq> {x,z}" using xyz(3) by auto
+                have ax: "a \<noteq> x" using d5 by simp
+                have nK: "Da \<noteq> {y,x}" "Da \<noteq> {x,z}" using Da(2) d5 by auto
+                have c3: "card Da = 3" by (rule deg_three[OF deg tw yxz _ _ Da(1) True nK]) simp_all
+                obtain w where w: "Da = {a,x,w}" "w \<noteq> a" "w \<noteq> x" using form3[OF Da(1) c3 Da(2) True ax] by blast
+                have bDa: "b \<notin> Da" using anti_pair[OF T Da(1) Da(2)] Da(3) by blast
+                have wy: "w \<noteq> y"
+                proof
+                  assume "w = y"
+                  then have "Da = {y,x}" using anti_pair[OF K'(1) Da(1)] w(1) by auto
+                  then show False using nK(1) by blast
+                qed
+                have wz: "w \<noteq> z"
+                proof
+                  assume "w = z"
+                  then have "Da = {x,z}" using anti_pair[OF K'(2) Da(1)] w(1) by auto
+                  then show False using nK(2) by blast
+                qed
+                have d6: "distinct [a,b,y,x,z,w]" using d5 w bDa wy wz by auto
+                have Dx: "{a,x,w} \<in> F" using Da(1) w(1) by simp
+                show ?thesis by (rule p3i_e3b[OF T K' Dx d6 np ev])
+              qed
+            next
+              case dj: True
+              have d6: "distinct [a,b,c,d,e,f]" using dist dj by auto
+              have d6': "distinct [b,a,c,d,e,f]" using d6 by auto
+              show ?thesis
+              proof (cases "Da \<inter> {c,d,e,f} = {}")
+                case False
+                then obtain x where "x \<in> Da" "x \<in> {c,d,e,f}" by blast
+                then show ?thesis using p3i_meet_any[OF T K d6 np ev Da(1-3) _ _ oa Db] by blast
+              next
+                case aD: True
+                show ?thesis
+                proof (cases "Db \<inter> {c,d,e,f} = {}")
+                  case False
+                  then obtain x where "x \<in> Db" "x \<in> {c,d,e,f}" by blast
+                  then show ?thesis using p3i_meet_any[OF T' K d6' np ev Db' _ _ ob' Da(1,2) _] Da(3) ab by auto
+                next
+                  case bD: True
+                  show ?thesis
+                  proof (cases "\<exists>v Dv. v \<in> {c,d,e,f} \<and> Dv \<in> F \<and> v \<in> Dv \<and> Dv \<noteq> {c,d} \<and> Dv \<noteq> {e,f}
+                      \<and> Dv - {v} \<noteq> Da - {a}")
+                    case True
+                    then obtain v Dv where vD: "v \<in> {c,d,e,f}" "Dv \<in> F" "v \<in> Dv" "Dv \<noteq> {c,d}" "Dv \<noteq> {e,f}"
+                        "Dv - {v} \<noteq> Da - {a}" by blast
+                    show ?thesis by (rule p3i_e6_any[OF T K d6 np ev Da aD oa ob bD vD])
+                  next
+                    case nv: False
+                    have same: "Dv - {v} = Da - {a}"
+                      if "v \<in> {c,d,e,f}" "Dv \<in> F" "v \<in> Dv" "Dv \<noteq> {c,d}" "Dv \<noteq> {e,f}" for v Dv
+                      using nv that by blast
+                    show ?thesis
+                    proof (cases "(\<forall>D\<in>F. c \<in> D \<longrightarrow> D = {c,d}) \<or> (\<forall>D\<in>F. d \<in> D \<longrightarrow> D = {c,d})")
+                      case True
+                      have K1: "{d,c} \<in> F" using K(1) by (simp add: insert_commute)
+                      have T1: "{a,b} \<in> F" "{e,f} \<in> F" using T K(2) by simp_all
+                      have e1: "distinct [c,d,a,b]" "distinct [c,d,e,f]" "{a,b} \<noteq> {e,f}" using d6 by auto
+                      have e2: "distinct [d,c,a,b]" "distinct [d,c,e,f]" using d6 by auto
+                      from True show ?thesis
+                      proof
+                        assume o: "\<forall>D\<in>F. c \<in> D \<longrightarrow> D = {c,d}"
+                        show ?thesis by (rule p3i_uniq[OF K(1) T1 np e1]) (use o in blast)
+                      next
+                        assume o: "\<forall>D\<in>F. d \<in> D \<longrightarrow> D = {c,d}"
+                        show ?thesis by (rule p3i_uniq[OF K1 T1 np e2 e1(3)]) (use o in \<open>auto simp: insert_commute\<close>)
+                      qed
+                    next
+                      case False
+                      then obtain Dc Dd where Dc: "Dc \<in> F" "c \<in> Dc" "Dc \<noteq> {c,d}"
+                          and Dd: "Dd \<in> F" "d \<in> Dd" "Dd \<noteq> {c,d}" by blast
+                      have Dce: "Dc \<noteq> {e,f}" "Dd \<noteq> {e,f}" using Dc(2) Dd(2) d6 by auto
+                      have sc: "Dc - {c} = Da - {a}" by (rule same[OF _ Dc Dce(1)]) simp
+                      have sd: "Dd - {d} = Da - {a}" by (rule same[OF _ Dd Dce(2)]) simp
+                      have dDc: "d \<notin> Dc" using anti_pair[OF K(1) Dc(1) Dc(2)] Dc(3) by blast
+                      have cDd: "c \<notin> Dd" using anti_pair[OF K(1) Dd(1) _ Dd(2)] Dd(3) by blast
+                      have cDa: "c \<notin> Da" "d \<notin> Da" using aD by blast+
+                      have fin: "finite Da" using cnf_clause_finite[OF cnf Da(1)] .
+                      have cP: "card (Da - {a}) = 1 \<or> card (Da - {a}) = 2"
+                        using sizes[OF Da(1)] Da(2) fin by auto
+                      have eDc: "Dc = insert c (Da - {a})" using sc Dc(2) by blast
+                      have eDd: "Dd = insert d (Da - {a})" using sd Dd(2) by blast
+                      have eDa: "Da = insert a (Da - {a})" using Da(2) by blast
+                      from cP show ?thesis
+                      proof
+                        assume c1: "card (Da - {a}) = 1"
+                        then obtain z where z: "Da - {a} = {z}" by (rule card_1_singletonE)
+                        have Z: "Da = {a,z}" "Dc = {c,z}" "Dd = {d,z}" using eDa eDc eDd z by simp_all
+                        have zo: "z \<noteq> a" "z \<noteq> c" "z \<noteq> d" using z cDa dDc Dc(2) Z by auto
+                        have tw: "Da \<in> twos F" "Dc \<in> twos F" "Dd \<in> twos F"
+                          using Z zo Da(1) Dc(1) Dd(1) by (auto simp: twos_def)
+                        have ne: "Da \<noteq> Dc" "Da \<noteq> Dd" "Dc \<noteq> Dd" using cDa Dc(2) Dd(2) dDc by auto
+                        have "card {Da,Dc,Dd} = 3" using ne by simp
+                        moreover have "card {Da,Dc,Dd} \<le> card {C\<in>twos F. z \<in> C}"
+                          using finF tw Z by (intro card_mono) (auto simp: twos_def)
+                        ultimately show ?thesis using deg[of z] by simp
+                      next
+                        assume c2: "card (Da - {a}) = 2"
+                        then obtain p q where pq: "Da - {a} = {p,q}" "p \<noteq> q" unfolding card_2_iff by blast
+                        have ne: "Da \<noteq> Dc" "Da \<noteq> Dd" "Dc \<noteq> Dd" using cDa Dc(2) Dd(2) dDc by auto
+                        have m: "p \<in> Da" "q \<in> Da" "p \<in> Dc" "q \<in> Dc" "p \<in> Dd" "q \<in> Dd"
+                          using pq eDc eDd by auto
+                        have "distinct [Da,Dc,Dd]" using ne by simp
+                        then show ?thesis using np3[OF np pq(2) Da(1) Dc(1) Dd(1)] m by blast
+                      qed
+                    qed
+                  qed
+                qed
+              qed
+            qed
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+theorem type3:
+  assumes fam: "infam T3 F"
+  shows "real (card (trans V F t)) \<le> bound T3 s t"
+proof -
+  have c3: "3 \<le> card (twos F)" and degs: "\<forall>x. card {C\<in>twos F. x \<in> C} \<le> 2" and np: "npair F"
+    using fam by auto
+  have deg: "card {C\<in>twos F. x \<in> C} \<le> 2" for x using degs by blast
+  obtain K1 K2 K3 where K: "K1 \<in> twos F" "K2 \<in> twos F" "K3 \<in> twos F" "K1 \<noteq> K2" "K1 \<noteq> K3" "K2 \<noteq> K3"
+    by (rule card3_obtain[OF c3])
+  have c2: "card K1 = 2" "card K2 = 2" "card K3 = 2" using K by (simp_all add: twos_def)
+  have KF: "K1 \<in> F" "K2 \<in> F" "K3 \<in> F" using K by (simp_all add: twos_def)
+  have nc3: "x \<notin> K3" if "x \<in> K1" "x \<in> K2" for x
+  proof
+    assume "x \<in> K3"
+    have "card {K1,K2,K3} = 3" using K(4-6) by simp
+    moreover have "card {K1,K2,K3} \<le> card {C\<in>twos F. x \<in> C}"
+      using finF K that \<open>x \<in> K3\<close> by (intro card_mono) (auto simp: twos_def)
+    ultimately show False using deg[of x] by simp
+  qed
+  text \<open>A path \<open>{a,b}\<close>, \<open>{b,c}\<close>, \<open>{c,d}\<close> from 2-clauses \<open>L\<close>, \<open>M\<close>, \<open>N\<close> with \<open>L, M\<close> and \<open>M, N\<close> meeting and
+    \<open>L, N\<close> disjoint.\<close>
+  have path: "real (card (trans V F t)) \<le> bound T3 s t"
+    if L: "L \<in> twos F" "M \<in> twos F" "N \<in> twos F" "L \<noteq> M" "M \<noteq> N"
+      and m: "L \<inter> M \<noteq> {}" "M \<inter> N \<noteq> {}" "L \<inter> N = {}" for L M N
+  proof -
+    have cL: "card L = 2" "card M = 2" "card N = 2" using L by (simp_all add: twos_def)
+    obtain b a c where abc: "L = {a,b}" "M = {b,c}" "distinct [b,a,c]"
+      by (rule two_meet[OF cL(1) cL(2) L(4) m(1)])
+    have "c \<in> N"
+    proof -
+      obtain x where x: "x \<in> M" "x \<in> N" using m(2) by blast
+      have "x \<noteq> b" using x(2) m(3) abc(1) by blast
+      then show ?thesis using x abc(2) by auto
+    qed
+    then obtain d where d: "N = {c,d}" "d \<noteq> c" using two_form[OF cL(3)] by blast
+    have "d \<noteq> a" "d \<noteq> b" "c \<noteq> a"
+      using m(3) abc d L(5) by auto
+    then have dist: "distinct [a,b,c,d]" using abc(3) d(2) by auto
+    have T: "{a,b} \<in> F" "{b,c} \<in> F" "{c,d} \<in> F" using L abc(1,2) d(1) by (simp_all add: twos_def)
+    show ?thesis by (rule p3_path[OF T dist])
+  qed
+  text \<open>An isolated 2-clause \<open>L\<close>, disjoint from \<open>M\<close> and \<open>N\<close>.\<close>
+  have iso: "real (card (trans V F t)) \<le> bound T3 s t"
+    if L: "L \<in> twos F" "M \<in> twos F" "N \<in> twos F" "M \<noteq> N" and m: "L \<inter> M = {}" "L \<inter> N = {}" for L M N
+  proof -
+    have cL: "card L = 2" "card M = 2" "card N = 2" using L by (simp_all add: twos_def)
+    obtain a b where ab: "L = {a,b}" "a \<noteq> b" using cL(1) unfolding card_2_iff by blast
+    obtain c d where cd: "M = {c,d}" "c \<noteq> d" using cL(2) unfolding card_2_iff by blast
+    obtain e f where ef: "N = {e,f}" "e \<noteq> f" using cL(3) unfolding card_2_iff by blast
+    have dist: "distinct [a,b,c,d]" "distinct [a,b,e,f]" "{c,d} \<noteq> {e,f}"
+      using ab cd ef m L(4) by auto
+    have T: "{a,b} \<in> F" "{c,d} \<in> F" "{e,f} \<in> F" using L ab(1) cd(1) ef(1) by (simp_all add: twos_def)
+    show ?thesis by (rule p3_iso[OF T np deg dist])
+  qed
+  show ?thesis
+  proof (cases "K1 \<inter> K2 \<noteq> {} \<and> K2 \<inter> K3 \<noteq> {} \<and> K1 \<inter> K3 \<noteq> {}")
+    case True
+    obtain b a c where abc: "K1 = {a,b}" "K2 = {b,c}" "distinct [b,a,c]"
+      by (rule two_meet[OF c2(1) c2(2) K(4)]) (use True in blast)
+    have bK3: "b \<notin> K3" using nc3 abc by simp
+    have "a \<in> K3" using True abc(1) bK3 by blast
+    moreover have "c \<in> K3" using True abc(2) bK3 by blast
+    moreover have "a \<noteq> c" using abc(3) by simp
+    ultimately have "K3 = {a,c}"
+    proof -
+      assume a3: "a \<in> K3" and c3: "c \<in> K3" and ac: "a \<noteq> c"
+      obtain y where y: "K3 = {a,y}" "y \<noteq> a" using two_form[OF c2(3) a3] by blast
+      then show ?thesis using c3 ac by auto
+    qed
+    then have T: "{a,b} \<in> F" "{b,c} \<in> F" "{a,c} \<in> F" using KF abc by simp_all
+    have dist: "distinct [a,b,c]" using abc(3) by auto
+    show ?thesis by (rule p3_tri[OF T dist np deg])
+  next
+    case nt: False
+    show ?thesis
+    proof (cases "K1 \<inter> K2 = {} \<and> K1 \<inter> K3 = {}")
+      case True
+      then show ?thesis using iso[OF K(1) K(2) K(3) K(6)] by blast
+    next
+      case n1: False
+      show ?thesis
+      proof (cases "K1 \<inter> K2 = {} \<and> K2 \<inter> K3 = {}")
+        case True
+        have "K1 \<noteq> K3" using K(5) .
+        then show ?thesis using iso[OF K(2) K(1) K(3)] True K(5) by (auto simp: Int_commute)
+      next
+        case n2: False
+        show ?thesis
+        proof (cases "K1 \<inter> K3 = {} \<and> K2 \<inter> K3 = {}")
+          case True
+          then show ?thesis using iso[OF K(3) K(1) K(2) K(4)] by (auto simp: Int_commute)
+        next
+          case n3: False
+          text \<open>Exactly two of the three pairs meet.\<close>
+          show ?thesis
+          proof (cases "K1 \<inter> K2 = {}")
+            case True
+            then have "K1 \<inter> K3 \<noteq> {}" "K2 \<inter> K3 \<noteq> {}" using n1 n2 by auto
+            then show ?thesis using path[OF K(1) K(3) K(2) K(5) K(6)[symmetric]] True by (auto simp: Int_commute)
+          next
+            case F12: False
+            show ?thesis
+            proof (cases "K2 \<inter> K3 = {}")
+              case True
+              then have "K1 \<inter> K3 \<noteq> {}" using n3 by auto
+              then show ?thesis using path[OF K(2) K(1) K(3) K(4)[symmetric] K(5)] F12 True
+                by (auto simp: Int_commute)
+            next
+              case F23: False
+              then have "K1 \<inter> K3 = {}" using nt F12 by auto
+              then show ?thesis using path[OF K(1) K(2) K(3) K(4) K(6)] F12 F23 by blast
+            qed
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+theorem type4:
+  assumes fam: "infam T4 F"
+  shows "real (card (trans V F t)) \<le> bound T4 s t"
+proof -
+  have c4: "4 \<le> card (twos F)" and np: "npair F" using fam by auto
+  have finT: "finite (twos F)" using finF by (simp add: twos_def)
+  have deg_obtain: "\<exists>y. C = {x,y} \<and> y \<noteq> x" if C: "C \<in> twos F" and x: "x \<in> C" for C x
+  proof -
+    have c2: "card C = 2" using C by (simp add: twos_def)
+    obtain y where "C = {x,y}" "y \<noteq> x" by (rule two_form[OF c2 x])
+    then show ?thesis by blast
+  qed
+  show ?thesis
+  proof (cases "even s")
+    case ev: True
+    show ?thesis
+    proof (cases "\<exists>x. 3 \<le> card {C\<in>twos F. x \<in> C}")
+      case True
+      then obtain x where x: "3 \<le> card {C\<in>twos F. x \<in> C}" by blast
+      obtain C1 C2 C3 where C: "C1 \<in> {C\<in>twos F. x \<in> C}" "C2 \<in> {C\<in>twos F. x \<in> C}"
+          "C3 \<in> {C\<in>twos F. x \<in> C}" "C1 \<noteq> C2" "C1 \<noteq> C3" "C2 \<noteq> C3"
+        by (rule card3_obtain[OF x])
+      obtain b where b: "C1 = {x,b}" "b \<noteq> x" using deg_obtain C(1) by blast
+      obtain c where c: "C2 = {x,c}" "c \<noteq> x" using deg_obtain C(2) by blast
+      obtain d where d: "C3 = {x,d}" "d \<noteq> x" using deg_obtain C(3) by blast
+      have T: "{x,b} \<in> F" "{x,c} \<in> F" "{x,d} \<in> F" using C b c d by (auto simp: twos_def)
+      have dist: "distinct [x,b,c,d]" using b c d C(4-6) by auto
+      show ?thesis
+      proof (cases "4 \<le> card {C\<in>twos F. x \<in> C}")
+        case True
+        have "1 \<le> card ({C\<in>twos F. x \<in> C} - {C1,C2,C3})"
+        proof -
+          have "card ({C\<in>twos F. x \<in> C} - {C1,C2,C3}) = card {C\<in>twos F. x \<in> C} - card {C1,C2,C3}"
+            using C finT by (intro card_Diff_subset) auto
+          moreover have "card {C1,C2,C3} = 3" using C(4-6) by simp
+          ultimately show ?thesis using True by simp
+        qed
+        then have "{C\<in>twos F. x \<in> C} - {C1,C2,C3} \<noteq> {}" by (intro notI) simp
+        then obtain C4 where C4: "C4 \<in> {C\<in>twos F. x \<in> C}" "C4 \<notin> {C1,C2,C3}" by blast
+        obtain e where e: "C4 = {x,e}" "e \<noteq> x" using deg_obtain C4(1) by blast
+        have T4: "{x,e} \<in> F" using C4(1) e(1) by (auto simp: twos_def)
+        have dist5: "distinct [x,b,c,d,e]" using dist e C4(2) b c d by auto
+        show ?thesis by (rule p4_e4[OF T T4 dist5 ev])
+      next
+        case False
+        then have three: "card {C\<in>twos F. x \<in> C} = 3" using x by simp
+        have "\<exists>K\<in>twos F. x \<notin> K"
+        proof (rule ccontr)
+          assume "\<not> (\<exists>K\<in>twos F. x \<notin> K)"
+          then have e: "{C\<in>twos F. x \<in> C} = twos F" by blast
+          have "card (twos F) = 3" using three unfolding e .
+          then show False using c4 by simp
+        qed
+        then obtain K where K: "K \<in> twos F" "x \<notin> K" by blast
+        show ?thesis by (rule p4_e3[OF T dist ev K])
+      qed
+    next
+      case False
+      have "\<forall>x. card {C\<in>twos F. x \<in> C} \<le> 2"
+      proof
+        fix x
+        have "\<not> 3 \<le> card {C\<in>twos F. x \<in> C}" using False by blast
+        then show "card {C\<in>twos F. x \<in> C} \<le> 2" by simp
+      qed
+      then have "infam T3 F" using c4 np by simp
+      then have "real (card (trans V F t)) \<le> bound T3 s t" by (rule type3)
+      then show ?thesis using bound_T3_T4[OF ev] by simp
+    qed
+  next
+    case odd: False
+    show ?thesis
+    proof (cases "\<exists>K\<in>twos F. \<exists>L\<in>twos F. K \<noteq> L \<and> K \<inter> L \<noteq> {}")
+      case False
+      have c3: "3 \<le> card (twos F)" using c4 by simp
+      obtain K0 where K0: "K0 \<in> twos F" using c3 by fastforce
+      obtain a b where ab: "K0 = {a,b}" "a \<noteq> b" using K0 by (auto simp: twos_def card_2_iff)
+      have "3 \<le> card (twos F - {K0})" using c4 K0 finT by (simp add: card_Diff_singleton)
+      then obtain K1 K2 K3 where K: "K1 \<in> twos F - {K0}" "K2 \<in> twos F - {K0}" "K3 \<in> twos F - {K0}"
+          "K1 \<noteq> K2" "K1 \<noteq> K3" "K2 \<noteq> K3"
+        by (rule card3_obtain)
+      have disj: "P \<inter> Q = {}" if "P \<in> twos F" "Q \<in> twos F" "P \<noteq> Q" for P Q
+        using False that by blast
+      have Kt: "K1 \<in> twos F" "K2 \<in> twos F" "K3 \<in> twos F" "K1 \<noteq> K0" "K2 \<noteq> K0" "K3 \<noteq> K0"
+        using K by auto
+      have dj0: "K1 \<inter> K0 = {}" "K2 \<inter> K0 = {}" "K3 \<inter> K0 = {}"
+        using disj[OF Kt(1) K0 Kt(4)] disj[OF Kt(2) K0 Kt(5)] disj[OF Kt(3) K0 Kt(6)] .
+      have dj: "K1 \<inter> K2 = {}" "K1 \<inter> K3 = {}" "K2 \<inter> K3 = {}"
+          "K1 \<inter> {a,b} = {}" "K2 \<inter> {a,b} = {}" "K3 \<inter> {a,b} = {}"
+        using disj[OF Kt(1) Kt(2) K(4)] disj[OF Kt(1) Kt(3) K(5)] disj[OF Kt(2) Kt(3) K(6)]
+          dj0 unfolding ab(1) .
+      have T: "{a,b} \<in> F" using K0 ab(1) by (simp add: twos_def)
+      show ?thesis by (rule p4_1[OF T ab(2) odd np _ _ _ K(4-6) dj]) (use K in auto)
+    next
+      case True
+      then obtain K L where KL: "K \<in> twos F" "L \<in> twos F" "K \<noteq> L" "K \<inter> L \<noteq> {}" by blast
+      have cK: "card K = 2" "card L = 2" using KL by (simp_all add: twos_def)
+      obtain x b c where xbc: "K = {b,x}" "L = {x,c}" "distinct [x,b,c]"
+        by (rule two_meet[OF cK KL(3,4)])
+      have T: "{x,b} \<in> F" "{x,c} \<in> F" using KL xbc by (auto simp: twos_def insert_commute)
+      show ?thesis
+      proof (cases "3 \<le> card {C\<in>twos F. x \<in> C}")
+        case True
+        have "{K,L} \<subseteq> {C\<in>twos F. x \<in> C}" using KL xbc by auto
+        have "1 \<le> card ({C\<in>twos F. x \<in> C} - {K,L})"
+        proof -
+          have "card ({C\<in>twos F. x \<in> C} - {K,L}) = card {C\<in>twos F. x \<in> C} - card {K,L}"
+            using \<open>{K,L} \<subseteq> _\<close> finT by (intro card_Diff_subset) auto
+          moreover have "card {K,L} = 2" using KL(3) by simp
+          ultimately show ?thesis using True by simp
+        qed
+        then have "{C\<in>twos F. x \<in> C} - {K,L} \<noteq> {}" by (intro notI) simp
+        then obtain M where M: "M \<in> {C\<in>twos F. x \<in> C}" "M \<notin> {K,L}" by blast
+        obtain d where d: "M = {x,d}" "d \<noteq> x" using deg_obtain M(1) by blast
+        have Td: "{x,d} \<in> F" using M(1) d(1) by (auto simp: twos_def)
+        have dist: "distinct [x,b,c,d]" using xbc d M(2) by (auto simp: insert_commute)
+        show ?thesis by (rule p4_3[OF T Td dist odd])
+      next
+        case False
+        have Kx: "K \<in> {C\<in>twos F. x \<in> C}" "L \<in> {C\<in>twos F. x \<in> C}" using KL xbc by auto
+        have two: "{C\<in>twos F. x \<in> C} = {K,L}"
+        proof (rule card_seteq[symmetric])
+          show "finite {C\<in>twos F. x \<in> C}" using finT by simp
+          show "{K,L} \<subseteq> {C\<in>twos F. x \<in> C}" using Kx by blast
+          show "card {C\<in>twos F. x \<in> C} \<le> card {K,L}" using False KL(3) by simp
+        qed
+        have "2 \<le> card (twos F - {K,L})"
+        proof -
+          have "card (twos F - {K,L}) = card (twos F) - card {K,L}"
+            using KL finT by (intro card_Diff_subset) auto
+          moreover have "card {K,L} = 2" using KL(3) by simp
+          ultimately show ?thesis using c4 by simp
+        qed
+        then obtain K1 K2 where K12: "K1 \<in> twos F - {K,L}" "K2 \<in> twos F - {K,L}" "K1 \<noteq> K2"
+          by (rule card2_obtain)
+        have xK: "x \<notin> K1" "x \<notin> K2" using K12 two by blast+
+        show ?thesis by (rule p4_2[OF T xbc(3) odd np _ _ K12(3) xK]) (use K12 in auto)
+      qed
+    qed
+  qed
+qed
+
+end
+
 subsection \<open>Type 2o: two 2-clauses \<open>{a,b}\<close>, \<open>{a,c}\<close>\<close>
 
 text \<open>The 2o proof assumes that the CNF is not of type 3 or 4 (proved first); then every
