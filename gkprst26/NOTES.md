@@ -252,6 +252,29 @@ So the order is 3, 4, 2o, 2d, 1, 0. All restricted CNFs have fewer variables.
   the Majority theorems depend on an oracle.
 - Nothing in the paper's Majority corollary needed repair.
 
+## Odd $n$ (formal)
+
+- `gkprst_half_odd`: for $n = 2t-1$, at most $6^{(n+1)/4}$ transversals of size $t$. Here
+  $s = t + 1$; `bound_mono` reduces to $s = t$, and `bound_T0_half` (factored out of
+  `gkprst_half`) finishes.
+- `majority_mcnfs_odd`, `majority_mcnfs_any`, `majority_mcnfs_exp_any`: at least
+  $\binom{n}{\lfloor n/2\rfloor}/6^{(n+1)/4}$ CNFs for every $n$. All go through the generic
+  `majority_mcnfs_slice`.
+
+## The matching upper bound (formal; the paper cites it)
+
+`isabelle/gkprst/majority/Majority_3CNF_Upper.thy`. For $4 \mid n$, `majority_mcnfs_upper`
+gives $L \le (n+1)\binom{n}{n/2}/6^{n/4} + 1$ CNFs, each with $n+1$ gates.
+`majority_mcnfs_tight` states both directions.
+- **Extremal CNF:** $n/4$ disjoint $K_4^{(3)}$ blocks (`K4_thr`, `K4_trans`, `Q4_card`).
+- **Covering:** `threshold_cover` works for any threshold-$t$ CNF $F$ with $T$ transversals.
+  - Permutations equidistribute a $t$-set over the slice (`fiber_card`: the fibres are cosets).
+  - So some copy covers a $T/N$ share of the uncovered points (`good_perm`).
+  - Greedily, $(n+1)N/T + 1$ copies cover everything (`greedy_cover`, via
+    $N e^{-(n+1)} < 1$).
+- The paper attributes this direction to GKP24 ("exploiting the symmetries"). Nothing in it
+  needed repair; it is just not proved in the paper.
+
 ## Still to do
 
-- Optional: the odd-$n$ Majority bound, from `gkprst_bound` with $t = (n+1)/2$.
+- The upper bound for $n \not\equiv 0 \pmod 4$, from the paper's other building blocks.

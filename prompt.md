@@ -107,8 +107,14 @@ sessions sharing one. Build it with `--session GKPRST_Majority`, in about 20 s o
 
 ### Next steps
 
-1. **Optional: odd $n$.** The Majority bound for odd $n$ follows from `gkprst_bound` with
-   $t = (n+1)/2$.
+1. **Done: odd $n$ and the matching upper bound.**
+   - `gkprst_half_odd` and `majority_mcnfs_odd`/`_any`/`_exp_any` handle odd $n$.
+   - `Majority_3CNF_Upper.thy` gives $L \le (n+1)\binom{n}{n/2}/6^{n/4}+1$ for $4 \mid n$
+     (`majority_mcnfs_upper`), with the two-sided `majority_mcnfs_tight`. Its main lemma,
+     `threshold_cover`, works for any threshold CNF.
+   - Open there: the other residues of $n$ mod 4, which need the paper's other extremal blocks.
+   - The audit is one long `ML` command, and under heavy machine load it trips the watchdog's
+     loop heuristic. Use `LOOP_PROGRESS_THRESHOLD=20` then; it is not a loop.
 2. **The writeup is drafted:** `gkprst26/gaps-for-authors.md`. Every counterexample and every
    repaired table was re-checked by hand against the paper's LaTeX. Ask the user before
    sending anything externally.

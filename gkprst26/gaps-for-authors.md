@@ -1,6 +1,6 @@
 # Six gaps in the upper-bound proof of arXiv:2601.04072, with repairs
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, gkprst26/gaps-for-authors.md, on top of commit 72643475558fc0d89ec6a869439561a5e837dceb (2026-10-12)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, gkprst26/gaps-for-authors.md, on top of commit 04b9df55e511d45a5593cc0f418229da454217b8 (2026-10-12)}$
 
 *Draft note for the authors of* Optimal Monotone Depth-Three Circuit Lower Bounds for Majority
 *(Gurumukhani, Kleber, Paturi, Rosin, Saks, Talebanfard; arXiv:2601.04072v2). Not yet sent.*
