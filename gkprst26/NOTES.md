@@ -238,10 +238,20 @@ So the order is 3, 4, 2o, 2d, 1, 0. All restricted CNFs have fewer variables.
 - **Conclusion.** The paper's theorem is true. Every gap found has a repair within the same
   induction; no bound or constant changes.
 
+## The Majority bound (formal)
+
+- **Where:** session `GKPRST_Majority`, `isabelle/gkprst/majority/Majority_3CNF.thy`.
+- **`majority_mcnfs`:** a list of monotone 3-CNFs (`MCNF 3`) whose OR is Majority on $n$
+  (even) variables has length $\ge \binom{n}{n/2}/6^{n/4}$.
+- **`majority_mcnfs_exp`:** $(2/6^{1/4})^n \le (n+1) L$.
+- **`majority_mcnf_formula`:** the same two bounds for the gate count of the OR formula.
+- **The bridge `eval_pcnf`:** on inputs inside $\lbrace 0,\dots,n-1\rbrace$, a monotone CNF
+  accepts $X$ exactly when $X$ hits its clause sets restricted below $n$. Each CNF then has
+  threshold $n/2$, so `gkprst_half` applies.
+- **Audit:** `Audit_GKPRST.thy` fails the build if `gkprst_bound`, `gkprst_half`, `IH_all` or
+  the Majority theorems depend on an oracle.
+- Nothing in the paper's Majority corollary needed repair.
+
 ## Still to do
 
-- The Majority size bound: $\binom{n}{n/2}/6^{n/4}$ CNFs, via `slice_lower` in `Majority_AC0`, in
-  a theory that imports both sessions.
-- Add the headline theorems to an audit, as `Audit.thy` does.
-- The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
-- The main induction and the Majority corollary.
+- Optional: the odd-$n$ Majority bound, from `gkprst_bound` with $t = (n+1)/2$.

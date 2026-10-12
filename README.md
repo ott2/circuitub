@@ -165,6 +165,7 @@ Only solving this for $Z$ remains on paper.
 | `isabelle/Depth3_Lower.thy` | The matching depth-3 lower bound: $\Sigma_3$ and $\Pi_3$ formulas for Majority need $2^{\Omega(\sqrt n)}$ gates (PPZ with critical clauses) |
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `isabelle/gkprst/Monotone_3CNF.thy` | Session `Monotone_Sigma3`: the theorem of Gurumukhani et al. (arXiv:2601.04072), at most $6^{n/4}$ transversals of size $n/2$ in a monotone 3-CNF with no smaller transversal |
+| `isabelle/gkprst/majority/` | Session `GKPRST_Majority`: hence a monotone OR of 3-CNFs for Majority needs $\binom{n}{n/2}/6^{n/4}$ CNFs, with an oracle audit |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized), the monotone case (analysis), and the formal check of Gurumukhani et al. (`monotone-3cnf.md`) |
 | `VERDICT.md` | The verdict, the trusted definitions, and a step-by-step correspondence with the paper |
@@ -178,6 +179,7 @@ HOL-Library.
 ```sh
 isabelle build -d isabelle Majority_AC0
 isabelle build -d isabelle Monotone_Sigma3   # Gurumukhani et al., about 20 s
+isabelle build -d isabelle GKPRST_Majority   # its Majority consequence and audit
 isabelle build -d control Oracle_Control   # positive control for the oracle audit
 ```
 

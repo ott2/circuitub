@@ -14,6 +14,8 @@ with the Lecomte–Ramakrishnan verification described below.
   `bound T0 s t` transversals of size $t$: $(2/3)^{s/2}3^t$ for even $s$, and
   $\tfrac79(2/3)^{(s-1)/2}3^t$ for odd $s$.
 - **`corollary gkprst_half`.** For $n = 2t$ the bound is at most $6^{n/4}$.
+- **`theorem majority_mcnfs`** (session `GKPRST_Majority`). A monotone OR of 3-CNFs for
+  Majority on even $n$ needs $\binom{n}{n/2}/6^{n/4}$ CNFs. All are oracle-audited.
 
 **The paper's proof has six genuine gaps.** Each is repaired within the same induction,
 and no constant changes. The details, with counterexamples, are in `gkprst26/NOTES.md`
@@ -86,28 +88,31 @@ around 15), raise the limits instead of hunting for a slow step.
   - unused variables.
 - **`IH_all`, then `gkprst_bound` and `gkprst_half`.**
 
+### The Majority bound and the audit (done)
+
+Session **`GKPRST_Majority`** (`isabelle/gkprst/majority/`, parent `Majority_AC0`, with
+`sessions Monotone_Sigma3`). It needs its own directory, because Isabelle rejects two
+sessions sharing one. Build it with `--session GKPRST_Majority`, in about 20 s once the
+`Majority_AC0` heap exists.
+- **`Majority_3CNF.thy`:**
+  - `MCNF w f`: an AND of ORs of at most $w$ positive literals.
+  - `pclause`, `pcnf`: the clause sets restricted below $n$.
+  - `eval_pcnf`, the bridge to `hits`, and `pcnf_cnf`.
+  - `majority_mcnfs`: $\binom{n}{n/2} \le L \cdot 6^{n/4}$ for even $n$.
+  - `majority_mcnfs_exp`: $(2/6^{1/4})^n \le (n+1)L$.
+  - `majority_mcnf_formula`: both bounds with the gates of `Or gs`.
+- **`Audit_GKPRST.thy`:** the oracle check for `gkprst_bound`, `gkprst_half`, `IH_all` and
+  the three Majority theorems. The `type*` theorems are local to the locales, so they have
+  no global names; they are covered through `gkprst_bound`.
+
 ### Next steps
 
-1. **The Majority size bound.** A monotone OR of 3-CNFs computing Majority on $n$ (even)
-   variables needs at least $\binom{n}{n/2}/6^{n/4}$ CNFs.
-   - Each CNF accepts only inputs of weight $\ge n/2$, which is `thr V F (n/2)`. So it
-     accepts at most $6^{n/4}$ inputs of weight $n/2$ (`gkprst_half`).
-   - The CNFs together must accept all $\binom{n}{n/2}$ such inputs.
-   - **Where to put it.** `slice_lower` ($2^n \le (n+1)\binom{n}{n/2}$) and the formula
-     definitions (`Formula.thy`, `Depth3_Lower.thy`, whose `majority_depth3_sqrt` is a
-     template) live in session `Majority_AC0`.
-   - So add a new session, for example `session GKPRST_Majority in "gkprst" = Majority_AC0 +
-     sessions Monotone_Sigma3 theories Majority_3CNF`, or a new theory that imports both.
-   - Connect monotone Σ₃ formulas with bottom fan-in 3 to the `cnf`/`trans` view: a
-     satisfying assignment of a monotone CNF is a transversal of its clause sets.
-   - State the result both as a count and as $\approx 1.278^{n}$.
-2. **An audit.** Add the headline theorems (`gkprst_bound`, `gkprst_half`, and the Majority
-   bound) to an audit, as `isabelle/Audit.thy` does.
-3. **Optional: the writeup.** Write up the gaps for the authors, from NOTES.md. Ask the user
+1. **Optional: odd $n$.** The Majority bound for odd $n$ follows from `gkprst_bound` with
+   $t = (n+1)/2$.
+2. **Optional: the writeup.** Write up the gaps for the authors, from NOTES.md. Ask the user
    before sending anything externally.
-4. **Optional: the extension document.** Record in `extensions/locality-and-monotonicity.md`,
-   §2.1, that the $k=3$ monotone case is now formally checked; the table row for
-   Gurumukhani et al. is there. That document also notes Chukhin (ECCC TR26-248).
+3. Then return to the open directions below. For example, monotone $\Sigma_3^k$ for $k \ge 4$
+   (§2.10, item 5).
 
 Prove by hand, then formalize. No brute-force or exhaustive search.
 

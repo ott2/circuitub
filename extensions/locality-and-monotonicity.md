@@ -76,7 +76,7 @@ bottom fan-in to grow with n".
 | Monotone upper bound $2^{O(\sqrt{n \log n})}$ (still the best known) | KPPY, STOC 1984 |
 | Lower bound $2^{\Omega(\sqrt n)}$, monotone | Boppana, JCSS 1986 |
 | Lower bound $2^{(d-o(1))\sqrt n}$ with $d = 1/\sqrt{\ln 4} \approx 0.849$, general circuits | Håstad–Jukna–Pudlák, Comput. Complexity 1995 |
-| Bottom fan-in 3, monotone: exactly $(2/6^{1/4})^{n \pm o(n)} \approx 1.27785^n$ | Gurumukhani et al., arXiv:2601.04072 (2026); the upper bound on transversals is formally checked, with six gaps in the proof repaired ([`monotone-3cnf.md`](monotone-3cnf.md)) |
+| Bottom fan-in 3, monotone: exactly $(2/6^{1/4})^{n \pm o(n)} \approx 1.27785^n$ | Gurumukhani et al., arXiv:2601.04072 (2026); the upper bound on transversals and the resulting lower bound for Majority are formally checked, with six gaps in the proof repaired ([`monotone-3cnf.md`](monotone-3cnf.md)) |
 
 **Amano (ISAAC 2023).** This paper compares $\Sigma_3$ circuits whose bottom clauses have at
 most $k$ positive and $\ell$ negative literals with monotone ones.

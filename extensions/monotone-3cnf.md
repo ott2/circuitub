@@ -16,8 +16,8 @@ Status:
 | Part | Formalized in | Contents |
 |---|---|---|
 | The main theorem and the $6^{n/4}$ corollary | `isabelle/gkprst/Monotone_3CNF.thy` (session `Monotone_Sigma3`) | Formal end to end |
-| The Majority size bound $\binom{n}{n/2}/6^{n/4}$ | — | Pen and paper; one counting step from the corollary |
-| Audit of the headline theorems | — | To do |
+| The Majority size bound $\binom{n}{n/2}/6^{n/4}$ | `isabelle/gkprst/majority/Majority_3CNF.thy` (session `GKPRST_Majority`) | Formal |
+| Audit of the headline theorems | `isabelle/gkprst/majority/Audit_GKPRST.thy` | Formal: no oracles |
 
 The working notes, case by case, are in `gkprst26/NOTES.md`.
 
@@ -38,12 +38,23 @@ $n/2$.
 - For $4 \mid n$ the bound is exactly $6^{n/4}$.
 - For $n \equiv 2 \pmod 4$ it is $\tfrac73\, 6^{(n-2)/4} \le \sqrt6\, 6^{(n-2)/4}$.
 
-**Consequence for circuits** (not yet formal). A monotone OR of 3-CNFs computing Majority on
-$n$ (even) variables needs $\binom{n}{n/2}/6^{n/4} = (2/6^{1/4})^{n-o(n)} \approx 1.278^{n}$
-CNFs.
+**Consequence for circuits** (`majority_mcnfs`, `majority_mcnfs_exp`,
+`majority_mcnf_formula`). A monotone OR of 3-CNFs computing Majority on $n$ (even) variables
+needs at least $\binom{n}{n/2}/6^{n/4}$ CNFs. Equivalently, with $L$ CNFs,
+
+$$\left(\frac{2}{6^{1/4}}\right)^{n} \le (n+1)\, L, \qquad \frac{2}{6^{1/4}} > 1.2779.$$
+
+The same bounds hold with $L$ replaced by the number of gates of the formula.
 - Each CNF accepts only inputs of weight $\ge n/2$, so it has threshold $n/2$, and it accepts
   at most $6^{n/4}$ inputs of weight $n/2$.
 - The CNFs together must accept all $\binom{n}{n/2}$ such inputs.
+- The exponential form uses $2^n \le (n+1)\binom{n}{n/2}$ (`slice_lower`).
+
+The formulas are those of `Formula.thy` in `Majority_AC0`. `MCNF 3 f` says that $f$ is an
+AND of ORs of at most 3 positive literals, and `majority n σ` says that $n \le 2\,\mathrm{weight}$.
+Variables $\ge n$ are false. The bridge `eval_pcnf` shows that a monotone CNF accepts an
+input $X \subseteq \lbrace 0,\dots,n-1\rbrace$ exactly when $X$ is a transversal of its clause
+sets restricted to $\lbrace 0,\dots,n-1\rbrace$.
 
 **Trusted definitions.** The statement uses only these, in `Monotone_3CNF.thy`:
 
@@ -185,19 +196,23 @@ cases than they need.
 
 ```sh
 isabelle build -d isabelle Monotone_Sigma3
+isabelle build -d isabelle GKPRST_Majority
 ```
 
-The session depends only on HOL-Library and builds in about 20 seconds. The theory has about
-5,400 lines.
+`Monotone_Sigma3` depends only on HOL-Library and builds in about 20 seconds; the theory has
+about 5,400 lines. `GKPRST_Majority` builds on `Majority_AC0` and `Monotone_Sigma3`. It adds
+the Majority bound (about 200 lines) and the oracle audit `Audit_GKPRST`, which fails the
+build if any headline theorem depends on an oracle such as `sorry`.
 
 The theorem names:
 - `gkprst_bound` and `gkprst_half`, the headline results;
 - `type0`, `type1`, `type2o`, `type2d`, `type3`, `type4`, the coverage for each family;
-- `step` and `IH_all`, the induction.
+- `step` and `IH_all`, the induction;
+- `majority_mcnfs`, `majority_mcnfs_exp` and `majority_mcnf_formula`, the Majority bound.
 
 ## 6. Next steps
 
-1. Formalize the Majority size bound. It needs a theory that imports both `Monotone_Sigma3`
-   and `Majority_AC0`, for the formula definitions and `slice_lower`.
-2. Add `gkprst_bound`, `gkprst_half` and the Majority bound to an oracle audit, as in
-   `isabelle/Audit.thy`.
+1. Odd $n$: the Majority bound for odd $n$ follows from `gkprst_bound` with
+   $t = (n+1)/2$, but it is not yet stated.
+2. A write-up of the six gaps for the authors.
+3. Monotone $\Sigma_3^k$ for $k \ge 4$ is open. See §2.10 of `locality-and-monotonicity.md`.
