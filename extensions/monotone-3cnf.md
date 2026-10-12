@@ -1,7 +1,6 @@
 # Monotone 3-CNFs with no small transversal: a formal check of Gurumukhani et al.
 
-<!-- Source: github.com/ott2/circuitub, extensions/monotone-3cnf.md.
-     Written on top of commit 4bf1bfdc4eef6315c7bff475b8de61570b3ab2a5 (2026-10-12). -->
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-3cnf.md, on top of commit 72643475558fc0d89ec6a869439561a5e837dceb (2026-10-12)}$
 
 This document reports a formal verification, in Isabelle2025-2, of the main theorem of
 Gurumukhani, Kleber, Paturi, Rosin, Saks and Talebanfard, *Optimal Monotone Depth-Three

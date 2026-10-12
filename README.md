@@ -166,6 +166,7 @@ Only solving this for $Z$ remains on paper.
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `isabelle/gkprst/Monotone_3CNF.thy` | Session `Monotone_Sigma3`: the theorem of Gurumukhani et al. (arXiv:2601.04072), at most $6^{n/4}$ transversals of size $n/2$ in a monotone 3-CNF with no smaller transversal |
 | `isabelle/gkprst/majority/` | Session `GKPRST_Majority`: hence a monotone OR of 3-CNFs for Majority needs $\binom{n}{n/2}/6^{n/4}$ CNFs, with an oracle audit |
+| `tools/watermark.py` | Stamps Markdown files with an invisible TeX provenance line (repository, path, current commit); re-run to update |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized), the monotone case (analysis), and the formal check of Gurumukhani et al. (`monotone-3cnf.md`) |
 | `VERDICT.md` | The verdict, the trusted definitions, and a step-by-step correspondence with the paper |

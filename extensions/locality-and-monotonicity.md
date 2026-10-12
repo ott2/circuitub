@@ -1,5 +1,7 @@
 # Locality and monotonicity in the Lecomte–Ramakrishnan construction
 
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit 72643475558fc0d89ec6a869439561a5e837dceb (2026-10-12)}$
+
 This document is separate from the verification of Lecomte and Ramakrishnan,
 *Optimal Shallow Circuits for Majority* (arXiv:2609.34029). It asks how much of the
 construction's structure is needed, and whether a more restricted class of circuits could
