@@ -105,8 +105,58 @@ Theory: `isabelle/gkprst/Monotone_3CNF.thy` (session `Monotone_Sigma3`).
 - **Coverage** (`type2d`, assuming $\neg$2o): P2d.1 → P2d.2 → P2d.3 → P2d.4 → P2d.5, with the
   symmetries $a \leftrightarrow b$, $c \leftrightarrow d$, $\lbrace a,b\rbrace \leftrightarrow \lbrace c,d\rbrace$.
 
+## Type 2o
+
+The 2-clauses are $\lbrace a,b\rbrace$ and $\lbrace a,c\rbrace$. `type2o` assumes $\neg$T3 and $\neg$T4,
+which are proved first at each $n$. Then every further clause through $b$ or $c$ is a 3-clause
+(`no34_three`, `side3`).
+
+- **Odd $s$** (`p2o_odd`): correct (sum $1$).
+- **P2o.1** (`p2o1`): correct (sum $1$). $a$'s further clause may be a third 2-clause
+  $\lbrace a,x\rbrace$, which leaves a 1-clause.
+- **P2o.2** (`p2o2`): correct (sum $1$). Case 2 cannot occur: a variable common to $b$'s three
+  further clauses would put a pair in three clauses, contradicting "no pair in three clauses".
+- **P2o.3** (`p2o3`): correct (sum $7/8$).
+- **P2o.4** (`p2o4`): correct (sum $1$).
+- **P2o.5** (`p2o5_sep`, `p2o5_shared`): correct (sums $1$ and $23/24$; the paper's Case 2 total
+  is $11/12$).
+  - The split is "$d \in \lbrace e,f\rbrace$ or not", where $\lbrace b,e,f\rbrace$ is $b$'s further
+    clause. The paper splits on $d \in \lbrace e,f,g,h\rbrace$.
+  - In Case 2, the row $b=1$, $c=0$ may use type 0, which makes the table also cover the next
+    point.
+- **Coverage gap: P2o.1–P2o.10 miss the following CNFs.** $b$ and $c$ share exactly one clause
+  $\lbrace b,c,d\rbrace$, $b$ has a further clause $\lbrace b,e,f\rbrace$, and $c$ has none, so
+  $c$ lies only in $\lbrace a,c\rbrace$ and $\lbrace b,c,d\rbrace$ (or the same with $b$ and $c$
+  swapped).
+  - The paper's remark "if at least one of $b$ or $c$ appears at least three times, then one of
+    P2o.1–P2o.8 holds" is false here. P2o.5 needs further clauses for both $b$ and $c$, and
+    P2o.6–P2o.8 need no common clause.
+  - Repair, if $d \notin \lbrace e,f\rbrace$ (`p2o5_gap`): $c=1$, $b=0$ forces $d=0$. Rows
+    $(b,c) = (1,0)$: type 0, $7/24$; $(0,1)$: $d=0$, type 1, $5/24$; $(0,0)$: $d=1$, type 1,
+    $5/24$; $(1,1)$: $7/24$. The sum is exactly $1$.
+  - Repair, if $d \in \lbrace e,f\rbrace$: the P2o.5 Case 2 table with type 0 in the first row
+    (`p2o5_shared`), sum $23/24$.
+- **P2o.6** (`p2o6`): correct (sum $23/24$). The paper's type "2" row is 2o or 2d.
+- **P2o.7** (`p2o7`): correct, and simpler than in the paper (sum $1$).
+  - The row $a=1$, $b=c=0$ leaves four distinct 2-clauses, so it is of type 4 however they
+    overlap.
+  - So Case 1's table covers all cases, and Cases 2 and 3 are not needed.
+  - The paper's "$t-3$" in the rows with $j=2$ is a typo for $t-2$.
+- **P2o.8** (`p2o8_sep`, `p2o8_com`): correct (sums $35/36$, $47/48$). In Case 1 the row
+  $a=1$, $b=0$, $c=0$ may be of type 4 rather than type 3.
+- **P2o.9** (`p2o9_uniq`, `p2o9_other`): correct (sums $1$, $23/24$).
+- **P2o.10** (`p2o10`): correct (sum $23/24$). Here $b$'s and $c$'s further pairs may meet or
+  coincide; the row $a=b=1$ then leaves a clause of size $\le 1$.
+- **Coverage** (`p2o_even`, `p2o_E5`, `p2o_E6`, `type2o`). The case split:
+  1. $a$ in a third clause (P2o.1).
+  2. $b$ or $c$ in $\ge 3$ further clauses (P2o.2).
+  3. $b$ or $c$ in none (P2o.3).
+  4. Two common clauses (P2o.4).
+  5. One common clause: P2o.5, the missed case, or P2o.9.
+  6. No common clause: P2o.6, P2o.7, P2o.8, or P2o.10.
+
 ## Still to do
 
-- Types 2o, 3, 4. (2o must not use the 2d bound at the same $n$.)
+- Types 3, 4. (3 may assume $\neg$4; 2o assumes $\neg$3, $\neg$4; 2d assumes $\neg$2o.)
 - The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
 - The main induction and the Majority corollary.
