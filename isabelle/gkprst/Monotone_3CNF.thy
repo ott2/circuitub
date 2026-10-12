@@ -200,6 +200,14 @@ definition ratio :: "fam \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> fam \
   "ratio k j e i p = coef k (p = even e) / coef i p
      * (2/3) powi ((int e - 2 * int j + (if p then 0 else 1)) div 2) / 3 ^ j"
 
+lemmas ratio_simps = ratio_def power_int_minus inverse_eq_divide power_divide
+
+lemma single_out: "C \<inter> X = {x} \<Longrightarrow> y \<in> C \<Longrightarrow> y \<noteq> x \<Longrightarrow> y \<notin> X"
+  by blast
+
+lemma excl3: "{x,y,z} \<inter> X = {x} \<Longrightarrow> y \<noteq> x \<Longrightarrow> z \<noteq> x \<Longrightarrow> y \<notin> X \<and> z \<notin> X"
+  by blast
+
 lemma ratio_nonneg: "0 \<le> ratio k j e i p"
   unfolding ratio_def using coef_pos[of k "p = even e"] coef_pos[of i p]
   by (intro divide_nonneg_pos mult_nonneg_nonneg) auto
@@ -471,6 +479,95 @@ lemma only_clause:
   shows "C \<inter> X = {a}"
   using critical[OF X a] only by blast
 
+subsection \<open>Type 1: a 2-clause \<open>{a,b}\<close>\<close>
+
+text \<open>\<open>\<P>(1,1)\<close>: \<open>a\<close> lies only in \<open>{a,b}\<close>, so \<open>a = 1\<close> forces \<open>b = 0\<close> and \<open>a = 0\<close> forces \<open>b = 1\<close>.\<close>
+
+lemma p11:
+  assumes T: "{a,b} \<in> F" and ab: "a \<noteq> b" and oa: "\<And>D. D \<in> F \<Longrightarrow> a \<in> D \<Longrightarrow> D = {a,b}"
+  shows "real (card (trans V F t)) \<le> bound T1 s t"
+proof (rule table[where rs = "[({a},{b},T0), ({b},{a},T0)]"], goal_cases)
+  case 1
+  then show ?case using sub[OF T] ab unfolding rows_ok_def by auto
+next
+  case 2
+  have "a \<in> X \<and> b \<notin> X \<or> b \<in> X \<and> a \<notin> X" if X: "X \<in> trans V F t" for X
+  proof (cases "a \<in> X")
+    case True
+    have "{a,b} \<inter> X = {a}" using only_clause[OF X True oa] .
+    then have "b \<notin> X" using single_out[of "{a,b}" X a b] ab by simp
+    then show ?thesis using True by simp
+  next
+    case False
+    then show ?thesis using hit[OF X T] by blast
+  qed
+  then show ?case by auto
+next
+  case 3
+  then show ?case using ab by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+text \<open>\<open>\<P>(1,2)\<close>: \<open>a\<close> lies in a further clause \<open>D\<close>, and \<open>b \<notin> D\<close> since no clause contains another.
+  The paper writes \<open>D = {a,c,d}\<close>; \<open>D\<close> may also be a 2-clause \<open>{a,c}\<close>, and then \<open>a = 0\<close>, \<open>b = 1\<close>
+  leaves the 1-clause \<open>{c}\<close>.  The table is tight: both sums are \<open>1\<close>.\<close>
+
+lemma p12:
+  assumes T: "{a,b} \<in> F" and ab: "a \<noteq> b" and D: "D \<in> F" "a \<in> D" "D \<noteq> {a,b}"
+  shows "real (card (trans V F t)) \<le> bound T1 s t"
+proof (rule table[where rs = "[({a},{},T0), ({b},{a},T1)]"], goal_cases)
+  case 1
+  have bD: "b \<notin> D"
+  proof
+    assume "b \<in> D"
+    then have "{a,b} \<subseteq> D" using D(2) by blast
+    then show False using anti[OF T D(1)] D(3) by blast
+  qed
+  have m: "D - {a} \<in> restr F {b} {a}" using restr_mem[OF D(1)] bD by blast
+  have "card (D - {a}) = card D - 1" using cnf_clause_finite[OF cnf D(1)] D(2) by simp
+  then have "card (D - {a}) = 2 \<or> card (D - {a}) \<le> 1" using sizes[OF D(1)] by auto
+  then have "infam T1 (restr F {b} {a}) \<or> (\<exists>C\<in>restr F {b} {a}. card C \<le> 1)"
+    using m by (auto simp: twos_def)
+  then show ?case using sub[OF T] ab unfolding rows_ok_def by auto
+next
+  case 2
+  have "a \<in> X \<or> b \<in> X \<and> a \<notin> X" if X: "X \<in> trans V F t" for X
+    using hit[OF X T] by blast
+  then show ?case by auto
+next
+  case 3
+  then show ?case by (cases "even s") (simp_all add: ratio_simps)
+qed
+
+theorem type1:
+  assumes "infam T1 F"
+  shows "real (card (trans V F t)) \<le> bound T1 s t"
+proof -
+  obtain C where C: "C \<in> F" "card C = 2" using assms by (auto simp: twos_def)
+  then obtain a b where ab: "C = {a,b}" "a \<noteq> b" unfolding card_2_iff by blast
+  have T: "{a,b} \<in> F" using C(1) ab(1) by simp
+  show ?thesis
+  proof (cases "\<forall>D\<in>F. a \<in> D \<longrightarrow> D = {a,b}")
+    case True
+    then show ?thesis using p11[OF T ab(2)] by blast
+  next
+    case na: False
+    show ?thesis
+    proof (cases "\<forall>D\<in>F. b \<in> D \<longrightarrow> D = {a,b}")
+      case True
+      have e: "{b,a} = {a,b}" by auto
+      have T': "{b,a} \<in> F" using T unfolding e .
+      have ob: "D = {b,a}" if "D \<in> F" "b \<in> D" for D using True that unfolding e by blast
+      show ?thesis by (rule p11[OF T' ab(2)[symmetric] ob])
+    next
+      case False
+      then obtain D where "D \<in> F" "b \<in> D" "D \<noteq> {a,b}" by blast
+      then have "D \<in> F" "b \<in> D" "D \<noteq> {b,a}" by (auto simp: insert_commute)
+      moreover have "{b,a} \<in> F" using T by (simp add: insert_commute)
+      ultimately show ?thesis using p12[of b a D] ab(2) by blast
+    qed
+  qed
+qed
+
 end
 
 lemma card3_obtain:
@@ -495,13 +592,6 @@ qed
 lemma infam_2d: "C \<in> twos G \<Longrightarrow> D \<in> twos G \<Longrightarrow> npair G \<Longrightarrow> C \<inter> D = {} \<Longrightarrow> infam T2d G"
   by auto
 
-lemma single_out: "C \<inter> X = {x} \<Longrightarrow> y \<in> C \<Longrightarrow> y \<noteq> x \<Longrightarrow> y \<notin> X"
-  by blast
-
-lemma excl3: "{x,y,z} \<inter> X = {x} \<Longrightarrow> y \<noteq> x \<Longrightarrow> z \<noteq> x \<Longrightarrow> y \<notin> X \<and> z \<notin> X"
-  by blast
-
-lemmas ratio_simps =ratio_def power_int_minus inverse_eq_divide power_divide
 
 subsection \<open>Monotone 3-CNFs with no 2-clause\<close>
 

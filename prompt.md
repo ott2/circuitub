@@ -102,7 +102,8 @@ It currently takes about 6 s. There is no `sorry`.
    - Else every variable is in exactly 2 clauses ($F \ne \emptyset$ since $t \ge 1$). Take any
      clause; its three other clauses are pairwise disjoint by `meet_tri`, giving an E
      configuration → `p05`.
-2. **Type 1** (`phi1.tex`, 2 tables) in `core`, with the hypothesis `twos F ≠ {}`.
+2. **Done:** type 1 (`phi1.tex`, 2 tables): `p11`, `p12`, and `theorem type1` (in `core`,
+   with the hypothesis `infam T1 F`).
    - In P1.2, $a$'s second clause may be a 2-clause $\lbrace a,c\rbrace$. Then the restriction
      has the 1-clause $\lbrace c\rbrace$, which is covered by the size-$\le 1$ disjunct.
 3. **Types 2o, 2d, 3, 4** (48 tables). Read each table's prose coverage claim critically. The

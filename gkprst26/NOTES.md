@@ -53,8 +53,20 @@ Theory: `isabelle/gkprst/Monotone_3CNF.thy` (session `Monotone_Sigma3`).
     which is not needed.
   - The E configuration needs a clause to exist, which follows from $t \ge 1$.
 
+## Type 1
+
+- **P1.1** (`p11`): correct (sums $14/15$, $1$).
+- **P1.2** (`p12`): correct and tight (sums $1$, $1$), with two small omissions.
+  - The paper takes $a$'s further clause to be a 3-clause $\lbrace a,c,d\rbrace$. It may be a
+    2-clause $\lbrace a,c\rbrace$; then the row $a=0$, $b=1$ leaves the 1-clause
+    $\lbrace c\rbrace$, which the size-$\le 1$ disjunct of the induction covers.
+  - $b \notin D$ needs the antichain assumption, which the paper leaves implicit.
+  - Typo: the paper's P1.2 begins "Assume … satisfies P1.1".
+- **Coverage** (`type1`): immediate. Either $a$ or $b$ lies only in $\lbrace a,b\rbrace$ (P1.1,
+  swapping if needed), or $b$ lies in a further clause (P1.2 with $a$ and $b$ swapped).
+
 ## Still to do
 
-- Types 1, 2o, 2d, 3, 4.
+- Types 2o, 2d, 3, 4.
 - The reductions (1-clauses, subsumed clauses, unused variables, $t = 0$).
 - The main induction and the Majority corollary.
