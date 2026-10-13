@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit c92742fd1ebcf92333d73b8245dd6644c76dc33a (2026-10-13)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 275734a53d5e64711011874338f4aa6d68665958 (2026-10-13)}$
 
-Status: **open problem; pen-and-paper exploration only. Nothing here is formal yet.**
+Status: **open problem. One rung is formal: `cluster_count` (session `Monotone_K`, §6). The rest is pen and paper.**
 
 ## 1. The question, and what is known
 
@@ -84,9 +84,9 @@ $\Sigma_3^k$ Majority circuits need $2^{n/k - O(\log n)}$ CNFs.
 
 - This doubles the PPZ exponent $n/(2k)$. It is exact for $k = 2$. For $k = 3$ it is weaker than
   GKPRST26 (exponent $0.333n$ against $0.354n$). For $k \ge 4$ it would be new.
-- It does not give the $\log k$, and no forcing argument can: the blocks have only $n/k$ forced
-  vertices, while their count is $2^{n - \Theta(n\log k/k)}$. The gap is Jensen's: forcing
-  ignores how biased the unforced bits are.
+- It does not give the $\log k$, and no argument through $\mathbb E F$ can: the blocks have
+  only $n/k$ forced vertices, while their count is $2^{n - \Theta(n\log k/k)}$. The gap is
+  Jensen's, and §6 shows that forcing *without* Jensen recovers it.
 - Ones contribute $\ge t/k = n/(2k)$ (PPZ). The missing half must come from zeros. In the
   blocks a zero is forced once all $k-1$ ones of its block are revealed, a "dual critical
   set" of size $k-1$.
@@ -115,14 +115,77 @@ of zeros over $k$. At $\tau = n/2$ this is Conjecture A.
 - **No single potential $a n + c\tau$ supports a one-step induction.** Cliques have no vertex
   that is constant across the minimum transversals, so all their forcing happens late.
 
-## 6. Next steps
+## 6. The $\log k$ is PPZ's Jensen loss [F]
 
-1. Prove Conjecture A (or B) for $k = 2$ by forcing. The count is known; the forcing statement
-   is the test of the method. Then try $k = 3$, where GKPRST26's case analysis supplies the
-   structure.
-2. Look for a global charging argument from forced ones to zeros. For each one $v$ with
-   critical zeros $Z_v$, the swaps $X - v + u$ with $u \in Z_v$ are the only possible
-   neighbours of $X$ in the slice.
-3. Separately, the $\log k$ needs entropy rather than forcing: bound
-   $H(x_v \mid \text{prefix})$ by the binary entropy of the conditional bias, as in Theorem B's
-   block decoding.
+Average `forced_kraft` over colourings $c$ *without* Jensen. For any family $\mathcal A$ of
+transversals and any sound forcing rule,
+
+$$\sum_{X \in \mathcal A} \mathbb E_c\, 2^{F_c(X)} \le 2^n, \qquad\text{so}\qquad
+\lvert\mathcal A\rvert \le 2^n \big/ \min_{X \in \mathcal A} \mathbb E_c\, 2^{F_c(X)}.$$
+
+PPZ replaces $\mathbb E\, 2^F$ by $2^{\mathbb E F}$. For a fixed $X$, the ones are forced
+independently once the zeros' colours are known. A one $v$ is forced with probability
+$1 - \mu_v$, where $\mu_v$ is the least, over its critical zero sets, of the largest colour
+in the set. So $\mathbb E\, 2^F = \mathbb E \prod_{v\in X}(2 - \mu_v)$. When several ones
+share one critical zero set, they share the same $\mu$, and the product is heavy-tailed.
+
+**Clusters.** A *$z$-cluster* of $X$ is a set $G \subseteq X$ of $z$ ones and a set
+$Z \subseteq V \setminus X$ of $z$ zeros such that every $v \in G$ lies in an edge inside
+$Z \cup \lbrace v\rbrace$. Let $N$ be the number of $v \in G$ coloured above all of $Z$. With
+$r = 4z$ colours,
+
+$$\mathbb E\, 2^N = r^{-z} \sum_{a \in [r]^Z} \bigl(1 + \mathrm{cnt}(a)/r\bigr)^z \ge 1 + \lfloor\sqrt z\rfloor/8,$$
+
+where $\mathrm{cnt}(a)$ is the number of colours above $\max a$. Lower $\mathrm{cnt}$ by
+$\min(\mathrm{cnt}, q)$ with $q = \lfloor\sqrt z\rfloor$, and telescope. In each term,
+$(r+i)^{z-1}(r-i-1)^z$, the first-order terms cancel: $(r+i)(r-i-1) \ge r^2(1 - 5/(16z))$.
+Bernoulli then gives each of the $q$ terms $\ge z r^{2z-1}/2$. By contrast $2^{\mathbb E N}$
+stays below $2$.
+
+**Theorem (`cluster_count`, formal, session `Monotone_K`).** Let $\mathcal A$ be any family of
+transversals of any hypergraph on $n$ vertices. If every $X \in \mathcal A$ has $m$
+$z$-clusters on pairwise disjoint vertex sets, then
+$\lvert\mathcal A\rvert\,(1 + \lfloor\sqrt z\rfloor/8)^m \le 2^n$.
+
+- Neither the edge size nor $\tau$ appears. The edges inside a cluster have size $\le z+1$
+  automatically.
+- Clusters on disjoint vertices are independent under a random colouring
+  (`sum_PiE_prod_ge`). This is why the colourings of `Depth3_Lower` are used rather than
+  permutations.
+- **Sanity check.** In disjoint blocks $K_{2k-2}^{(k)}$, every minimum transversal has
+  $n/(2k-2)$ clusters with $z = k-1$. The theorem then gives $2^n k^{-\Omega(n/k)}$, the
+  conjectured order. It is weaker than PPZ for small $k$ (the constant $1/8$), and stronger
+  once $\lfloor\sqrt z\rfloor/8$ is large.
+
+## 7. The structural question
+
+The conjecture now follows from a purely structural statement:
+
+> **Question C.** If $\tau(H) = n/2$, the edges have size $\le k$, and $H$ has many minimum
+> transversals, do most of them have $\Omega(n/k)$ disjoint $O(k)$-clusters?
+
+The relevant definition of "most" comes from `cluster_count`. A minority with few clusters
+must be bounded some other way.
+
+- **Clusters can be absent.** Take ones $X$ with private critical zero sets $Z_v$ forming a
+  linear design, and all pairs inside $X$ as edges. Then $\tau = t$, but $X$ has no clusters. Its
+  forcing events are only weakly correlated, so heuristically
+  $\mathbb E\, 2^F \approx (1 + 1/k)^t$ (not proved). This $H$ has just
+  $1 + \sum_v \lvert Z_v\rvert$ minimum transversals, however. Every other one,
+  $X - v + u$, has all $t-1$ remaining ones sharing the critical set $\lbrace v\rbrace$: one huge
+  cluster. So the cluster-free transversal is rare.
+- **Swaps create clusters.** If $v \in X$ has a unique critical edge, then each $X - v + u$
+  with $u \in Z_v$ is again a minimum transversal. In $X - v + u$, every one $w$ whose only
+  critical edge contains $u$ loses it. Since $\tau = t$, $w$ needs a new one, which must
+  contain $v$. So $v$ becomes a shared critical zero.
+- **Single swaps are not enough.** $\Omega(n/k)$ clusters need $\Omega(n/k)$ independent
+  swaps. Whether far-apart swaps commute, so that a cluster-free $X$ sits at the corner of a
+  large product of cluster-rich ones, is the next thing to test by hand.
+
+## 8. Next steps
+
+1. Test Question C on small structures by hand. In particular, find out when swaps at
+   disjoint places commute.
+2. If a cluster-free $X$ always has many cluster-rich neighbours, formalize the charging
+   $\lvert\text{bad}\rvert \le C\,\lvert\text{good}\rvert$ on top of `cluster_count`.
+3. Conjecture A (the factor 2 over PPZ) stays open as a fallback target.
