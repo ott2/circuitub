@@ -41,6 +41,15 @@ per block.
   then $\lvert A\rvert\,(1+q/8)^m \le 2^n$. A $z$-cluster is $z$ ones $G$ and $z$ zeros $Z$
   such that each $v \in G$ lies in an edge $\subseteq Z \cup \lbrace v\rbrace$. There is no
   condition on edge size or $\tau$.
+- **`Harris_PPZ.thy`** (about 700 lines; log §6a):
+  - `harris`, `harris_prod`: the Harris inequality on $\lbrace 0..r-1\rbrace^I$, with the
+    order reversed on a set $P$.
+  - `harris_count`: groups of ones with disjoint ones and arbitrary, overlapping zero sets.
+  - `cluster_count_overlap`: `cluster_count` without disjoint zero sets.
+  - `harris_ppz`: at most $2^n/(1+1/k)^t$ transversals. This is Scheder–Tan 2013's FKG form of
+    PPZ, not new. The corollary $S_k(n) \le 2^n(1+1/k)^{-n/2}$ was not found stated anywhere.
+  - Hand sketch (log §6a): one-forcing per $X$ is capped near $(1+1/k)^t$, using the design
+    example, so the zeros or a cross-$X$ argument must supply the $\log k$.
 - **Build:**
   `WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=20 isabelle-build --session Monotone_K -m "…"`. It takes
   a few seconds.
@@ -52,8 +61,13 @@ per block.
      there it was unique, and all its swap neighbours are cluster-rich.
    - A swap $X - v + u$ makes $v$ a shared critical zero.
    - Test whether swaps at far-apart places commute.
-2. **If so, formalize** the charging $\lvert\text{bad}\rvert \le C\lvert\text{good}\rvert$ on
-   top of `cluster_count`.
+   - Zero sets may now overlap (`cluster_count_overlap`).
+   - A naive swap charging loses by a constant: locating a swap costs about $\log_2 k$ bits,
+     and a cluster gains about $\frac12\log_2 k$. So the swaps must be located canonically
+     (log §7).
+2. **If so, formalize** the charging
+   $\lvert\text{bad}\rvert \le \gamma^{1-\varepsilon}\lvert\text{good}\rvert$ on top of
+   `cluster_count_overlap`. Here $\gamma$ is the gain per good transversal.
 3. **Fallback:** Conjecture A, $S_k(n) \le 2^{(1-1/k)n}$, which doubles PPZ's exponent.
 
 **Rules here:**
