@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 275734a53d5e64711011874338f4aa6d68665958 (2026-10-13)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 151d2d46b2bdad4b988e2f301ea6040231d79eed (2026-10-13)}$
 
-Status: **open problem. One rung is formal: `cluster_count` (session `Monotone_K`, §6). The rest is pen and paper.**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a). The rest is pen and paper.**
 
 ## 1. The question, and what is known
 
@@ -157,15 +157,69 @@ $\lvert\mathcal A\rvert\,(1 + \lfloor\sqrt z\rfloor/8)^m \le 2^n$.
   conjectured order. It is weaker than PPZ for small $k$ (the constant $1/8$), and stronger
   once $\lfloor\sqrt z\rfloor/8$ is large.
 
+## 6a. Harris instead of Jensen, and overlapping clusters [F]
+
+**The inequality is not new.** Scheder and Tan (*On the average sensitivity and density of
+$k$-CNF formulas*, APPROX/RANDOM 2013, Lemma 4, DOI 10.1007/978-3-642-40328-6_47) observed
+that for monotone CNFs, PPZ's Jensen step can be replaced by the FKG inequality. Here it is
+formal, in the discrete form we need.
+
+**Why it applies.** Fix $X$ and colour every vertex independently. The event "$v \in X$ is
+coloured above every zero of a critical set $C$" is increasing in the colours of the ones and
+decreasing in the colours of the zeros. Reverse the order on the coordinates in $X$. Then all
+such events, and all products of $2^{N}$ over groups of ones, decrease in the same product
+order, so they are positively correlated however their zero sets overlap.
+
+**Formal statements** (`isabelle/monotone_k/Harris_PPZ.thy`):
+
+- **`harris`.** On $\lbrace 0..r-1\rbrace^I$ with the order reversed on a set $P$, two
+  decreasing functions satisfy $\sum f \cdot \sum g \le r^{\lvert I\rvert} \sum fg$. The proof
+  is by induction on $I$, using Chebyshev's sum inequality for one coordinate.
+- **`harris_prod`.** The same for any finite product of nonnegative decreasing functions.
+- **`harris_count`.** Let each $X \in \mathcal A$ have groups $(G_i, Z_i)$ with the $G_i$
+  pairwise disjoint, and every $v \in G_i$ in an edge inside $Z_i \cup \lbrace v\rbrace$. Then
+  $\lvert\mathcal A\rvert \cdot \min_X \prod_i \mathrm{gav}(G_i,Z_i) \le 2^n$, where
+  $\mathrm{gav}$ is the average of $2^N$ for the group alone.
+- **`cluster_count_overlap`.** `cluster_count` with only the ones of the clusters disjoint.
+  The zero sets $Z_i$ may overlap arbitrarily.
+- **`gav_single`, `harris_ppz`.** A single one with a critical set of size $s$ has
+  $\mathrm{gav} \ge 1 + 1/(s+1)$ in the limit $r \to \infty$. Hence: transversals of size
+  $\ge t$ whose ones all have critical edges of size $\le k$ number at most
+  $2^n/(1+1/k)^t$.
+
+**The consequence for $S_k(n)$, a corollary we did not find stated anywhere** (literature check of 2026-10-13):
+
+$$S_k(n) \le 2^n\,(1+1/k)^{-n/2} = 2^{\,n - \frac n2\log_2(1+1/k)}.$$
+
+- The PPZ exponent $n/(2k)$ improves by the factor $k\log_2(1+1/k)$: $1.29$ at $k = 4$,
+  tending to $1/\ln 2 \approx 1.44$.
+- So monotone $\Sigma_3^k$ Majority needs $\binom{n}{n/2}(1+1/k)^{n/2}/2^n$ CNFs, for example
+  $1.118^n$ at $k = 4$ instead of PPZ's $1.0905^n$. The bridge from formulas is only formal
+  for width 3 (`majority_mcnfs_slice`), so this last step is on paper.
+- This is still $\Theta(n/k)$, not the conjectured $\Theta(n\log k/k)$. It is weaker than
+  Conjecture A ($\log_2(1+1/k) < 2/k$).
+
+**One-forcing alone cannot do much better (heuristic, a hand sketch).** In the linear-design example of
+§7, every one has a single critical set of size $k-1$, and these sets pairwise share at most
+one zero. A large deviation of $\sum_v (1 - \max_{C_v} c)$ requires whole sets $C_v$ to be
+coloured low, which costs about $k$ low zeros per set gained. So
+$\mathbb E\, 2^N = (1+1/k + o(1/k))^t$ for that $X$. Any argument that bounds each $X$
+separately using only critical edges of ones is therefore capped at about
+$(1+1/k)^{t}$. Beating it needs zeros, or an argument across many $X$ (Question C).
+
 ## 7. The structural question
 
 The conjecture now follows from a purely structural statement:
 
 > **Question C.** If $\tau(H) = n/2$, the edges have size $\le k$, and $H$ has many minimum
-> transversals, do most of them have $\Omega(n/k)$ disjoint $O(k)$-clusters?
+> transversals, do most of them have $\Omega(n/k)$ $O(k)$-clusters with disjoint sets of ones?
+
+Since §6a, the zero sets of the clusters may overlap.
 
 The relevant definition of "most" comes from `cluster_count`. A minority with few clusters
-must be bounded some other way.
+must be bounded some other way. Note how weak "most" can be: if the good transversals gain a
+factor $\gamma$ each, then $\lvert\text{bad}\rvert \le \gamma^{1-\varepsilon}\lvert\text{good}\rvert$
+already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
 
 - **Clusters can be absent.** Take ones $X$ with private critical zero sets $Z_v$ forming a
   linear design, and all pairs inside $X$ as edges. Then $\tau = t$, but $X$ has no clusters. Its
@@ -181,11 +235,28 @@ must be bounded some other way.
 - **Single swaps are not enough.** $\Omega(n/k)$ clusters need $\Omega(n/k)$ independent
   swaps. Whether far-apart swaps commute, so that a cluster-free $X$ sits at the corner of a
   large product of cluster-rich ones, is the next thing to test by hand.
+- **A naive swap charging fails by a constant (hand count).** Map a bad $X$ to a good $X'$ by
+  $s = \delta n/k$ swaps. Then a good $X'$ receives up to $\binom{O(nk)}{s} = k^{O(\delta n/k)}$
+  charges, because the swap locations are not canonical. Each cluster gains only about
+  $\frac12\log_2 k$ bits, and locating its swap costs about $\log_2 k$ bits. So the charging
+  needs canonical swap locations, or clusters of quality better than one per swap.
+- **A shared single zero is not a cluster.** If ones $w_1,\dots,w_g$ have critical sets
+  $\lbrace u\rbrace \cup A_i$ with the $A_i$ disjoint of size $k-2$, then
+  $\mathbb E\, 2^N \approx (1+1/k)^g$. The private parts $A_i$ already cap each forcing
+  probability at about $1/k$. A swap $X - v + u$ makes $v$ a shared zero, but the new critical
+  sets must also overlap in most of their other zeros to give a gain.
 
 ## 8. Next steps
 
-1. Test Question C on small structures by hand. In particular, find out when swaps at
-   disjoint places commute.
+1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
+   particular, find out when swaps at disjoint places commute. Note also when the swaps can
+   be located canonically, which the charging needs (§7).
 2. If a cluster-free $X$ always has many cluster-rich neighbours, formalize the charging
-   $\lvert\text{bad}\rvert \le C\,\lvert\text{good}\rvert$ on top of `cluster_count`.
-3. Conjecture A (the factor 2 over PPZ) stays open as a fallback target.
+   $\lvert\text{bad}\rvert \le \gamma^{1-\varepsilon}\lvert\text{good}\rvert$ on top of
+   `cluster_count_overlap`.
+3. Zeros. One-forcing per $X$ is capped near $(1+1/k)^t$ (§6a), so the zeros must
+   contribute. Conjecture A (the factor 2 over PPZ) stays the fallback target. Zero-forcing
+   events are monotone in the opposite direction, so Harris does not combine them with the
+   ones for free.
+4. Optional: generalize `majority_mcnfs_slice` from width 3 to width $k$, which would make
+   the Majority form of §6a formal.

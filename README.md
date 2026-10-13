@@ -1,5 +1,7 @@
 # Optimal shallow circuits for symmetric functions, in Isabelle/HOL
 
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, README.md, on top of commit 151d2d46b2bdad4b988e2f301ea6040231d79eed (2026-10-13)}$
+
 A machine-checked proof of the main theorem of
 
 > Victor Lecomte and Prasanna Ramakrishnan, *Optimal Shallow Circuits for Majority*,
@@ -166,7 +168,7 @@ Only solving this for $Z$ remains on paper.
 | `isabelle/Audit.thy` | Oracle audit of the headline theorems (fails the build if any oracle is used) |
 | `isabelle/gkprst/Monotone_3CNF.thy` | Session `Monotone_Sigma3`: the theorem of Gurumukhani et al. (arXiv:2601.04072), at most $6^{n/4}$ transversals of size $n/2$ in a monotone 3-CNF with no smaller transversal |
 | `isabelle/gkprst/majority/` | Session `GKPRST_Majority`: hence a monotone OR of 3-CNFs for Majority needs $\binom{n}{\lfloor n/2\rfloor}/6^{(n+1)/4}$ CNFs ($\binom{n}{n/2}/6^{n/4}$ for even $n$), and $\sqrt6\,(n+1)$ times the former (plus one) suffice, $n+1$ times the latter for $4 \mid n$; with an oracle audit |
-| `isabelle/monotone_k/` | Session `Monotone_K`: PPZ without Jensen. A family of transversals each having $m$ disjoint $z$-clusters has at most $2^n/(1+\lfloor\sqrt z\rfloor/8)^m$ members (`cluster_count`), the first rung towards monotone $\Sigma_3^k$ for $k \ge 4$ ([`extensions/monotone-k.md`](extensions/monotone-k.md)); with an oracle audit |
+| `isabelle/monotone_k/` | Session `Monotone_K`: PPZ without Jensen. A family of transversals each having $m$ $z$-clusters with disjoint ones has at most $2^n/(1+\lfloor\sqrt z\rfloor/8)^m$ members (`cluster_count`; `cluster_count_overlap` lets the clusters' zeros overlap, via the Harris inequality `harris`). `harris_ppz` is Scheder–Tan's FKG form of PPZ for monotone CNFs: at most $2^n/(1+1/k)^t$ transversals of size $\ge t$ whose ones have critical edges of size $\le k$. Rungs towards monotone $\Sigma_3^k$ for $k \ge 4$ ([`extensions/monotone-k.md`](extensions/monotone-k.md)); with an oracle audit |
 | `tools/watermark.py` | Stamps Markdown files with an invisible TeX provenance line (repository, path, current commit); re-run to update |
 | `control/` | Positive control: the same audit detects a `sorry` |
 | `extensions/` | Beyond the paper: block locality (formalized), the monotone case (analysis), and the formal check of Gurumukhani et al. (`monotone-3cnf.md`) |
@@ -182,7 +184,7 @@ HOL-Library.
 isabelle build -d isabelle Majority_AC0
 isabelle build -d isabelle Monotone_Sigma3   # Gurumukhani et al., about 20 s
 isabelle build -d isabelle GKPRST_Majority   # its Majority consequence and audit
-isabelle build -d isabelle Monotone_K        # the cluster count for monotone k-CNFs
+isabelle build -d isabelle Monotone_K        # cluster counts and Harris-PPZ for monotone k-CNFs
 isabelle build -d control Oracle_Control   # positive control for the oracle audit
 ```
 

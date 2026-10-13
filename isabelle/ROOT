@@ -31,6 +31,7 @@ session Monotone_K in "monotone_k" = Majority_AC0 +
   options [timeout = 600]
   theories
     Cluster_PPZ
+    Harris_PPZ
     Audit_K
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
