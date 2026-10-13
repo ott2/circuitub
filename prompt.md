@@ -1,6 +1,68 @@
-# Handoff: formalizing Gurumukhani et al., monotone Σ₃³ for Majority (arXiv:2601.04072)
+# Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-## The task, and where it stands
+## Current focus: the $\log k$ question (session `Monotone_K`)
+
+The GKPRST26 formalization below is finished. We are now doing research on monotone
+$\Sigma_3^k$ for $k \ge 4$. The user chose the $\log k$ question over the factor-2
+"Conjecture A", and is open to narrowing the gap in either direction. The user asked to
+**co-develop formal proofs with the informal reasoning**, so that each established rung is
+formal before we build on it.
+
+**Read first:** `extensions/monotone-k.md`, the research log. §1 has the literature status,
+§6 the formal rung, §7 Question C, §8 the next steps.
+
+**The problem.** Let $S_k(n)$ be the largest number of minimum transversals of a hypergraph
+on $n$ vertices with edges of size $\le k$ and $\tau = n/2$. Monotone $\Sigma_3^k$ Majority
+size is $\binom{n}{n/2}/S_k(n)$ up to a factor $n+1$.
+- **Known upper bound:** PPZ, $2^{n - n/(2k)}$.
+- **Best construction:** disjoint blocks $K_{2k-2}^{(k)}$, $2^{n - \Theta(n\log k/k)}$.
+- **Conjecture:** $2^n k^{-\Omega(n/k)}$. It is open for $k \ge 4$; the literature was checked
+  on 2026-10-11 and again on 2026-10-13.
+- **What it would give:** a monotone/non-monotone separation at depth 3. Lecomte–Ramakrishnan
+  refute the non-monotone version, so monotonicity must enter essentially.
+
+**The key insight so far.** The $\log k$ is exactly PPZ's Jensen loss. Summing
+`forced_kraft` over colourings gives
+$\sum_{X} \mathbb E_c\, 2^{F_c(X)} \le 2^n$; PPZ then replaces $\mathbb E\, 2^F$ by
+$2^{\mathbb E F}$. When ones share a critical zero set, they share the same maximum colour,
+and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
+per block.
+
+**Formal so far** (`isabelle/monotone_k/Cluster_PPZ.thy`, about 530 lines, plus
+`Audit_K.thy`; parent `Majority_AC0`, which imports `Depth3_Lower`):
+- `mcnf`, `csat_mcnf`, `forced_mcnf`: monotone hypergraphs as literal CNFs for
+  `forced_kraft`.
+- `sum_PiE_split`, `sum_PiE_mult`: sums over colourings split over disjoint coordinates.
+- `sum_PiE_prod_ge`: independence. Factors on disjoint coordinate sets multiply.
+- `inner_sum`, `step_pow`, `pow_telescope`, `pt_bound`, `count_bound`, `term_bound`, and
+  `cluster_sum`: one $z$-cluster gives $\mathbb E\, 2^N \ge 1 + q/8$ with $q^2 \le z$ and
+  $r = 4z$ colours.
+- **`cluster_count`.** If every transversal in a family $A$ has $m$ disjoint $z$-clusters,
+  then $\lvert A\rvert\,(1+q/8)^m \le 2^n$. A $z$-cluster is $z$ ones $G$ and $z$ zeros $Z$
+  such that each $v \in G$ lies in an edge $\subseteq Z \cup \lbrace v\rbrace$. There is no
+  condition on edge size or $\tau$.
+- **Build:**
+  `WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=20 isabelle-build --session Monotone_K -m "…"`. It takes
+  a few seconds.
+
+**Next (from §8 of the log):**
+1. **Question C, by hand.** If $\tau = n/2$ and there are many minimum transversals, do most
+   of them have $\Omega(n/k)$ disjoint $O(k)$-clusters? Known so far:
+   - A cluster-free minimum transversal can exist (the linear-design example in §7), but
+     there it was unique, and all its swap neighbours are cluster-rich.
+   - A swap $X - v + u$ makes $v$ a shared critical zero.
+   - Test whether swaps at far-apart places commute.
+2. **If so, formalize** the charging $\lvert\text{bad}\rvert \le C\lvert\text{good}\rvert$ on
+   top of `cluster_count`.
+3. **Fallback:** Conjecture A, $S_k(n) \le 2^{(1-1/k)n}$, which doubles PPZ's exponent.
+
+**Rules here:**
+- Prove by hand first, and no brute-force or exhaustive search.
+- Keep the log honest: label every claim proved [F], proved by hand, or heuristic.
+- Constructions that would beat the blocks are the other direction. Note from §4 that disjoint
+  cliques can't beat $K_{2k-2}^{(k)}$.
+
+## The GKPRST26 formalization (finished)
 
 The task is to formalize in Isabelle the main theorem of Gurumukhani, Kleber, Paturi, Rosin,
 Saks and Talebanfard, *Optimal Monotone Depth-Three Circuit Lower Bounds for Majority*
@@ -157,16 +219,7 @@ The theories:
 3. **Watermarks.** Run `tools/watermark.py FILE.md …` to restamp documents with the current
    commit, and use `--check` to see what would change. Run it before committing document
    edits. Never run it on `VERDICT.md`.
-4. **Then the open directions below.** The most interesting is monotone $\Sigma_3^k$ for
-   $k \ge 4$ (§2.10, item 5).
-   - Start on paper with $k = 4$: can Theorem B's block decoding, which gains
-     $\tfrac12\log b$, be transplanted to arbitrary $k$-CNFs?
-   - PPZ provably loses the $\log k$.
-   - This is research with no guarantee of success. Discuss it with the user before
-     formalizing.
-
-My recommendation for the next session: item 4, starting with a short pen-and-paper
-exploration to discuss with the user.
+4. **In progress: monotone $\Sigma_3^k$ for $k \ge 4$.** See "Current focus" at the top.
 
 Prove by hand, then formalize. No brute-force or exhaustive search.
 
@@ -204,10 +257,27 @@ The full list is in memory (`ndtht-isabelle-tips.md`) and in
 - `simp` won't evaluate `4 choose 2`. Use `simp add: numeral_eq_Suc`.
 - After `intro exI` the witness is schematic, and a later `show` fails to match it. Give the
   witness: `rule exI[of _ "…"]`.
-- Annotate `fix i j :: nat` when nothing else forces the type.
+- Annotate `fix i j :: nat` when nothing else forces the type. Also annotate
+  `fix c :: "nat ⇒ nat"` in sums over colourings: otherwise `c :: nat ⇒ 'a`, and you get a
+  type clash.
+- **Dependency equations loop.** With a premise like `∀c. f c = f (restrict c S)`, `simp`,
+  `auto` and `blast` rewrite it forever. Use exact instances: `spec[OF bspec[OF prem insertI1]]`,
+  and `ball_insertD` (in `Cluster_PPZ`) to pass from `insert x K` to `K`.
+- When `of` instantiates the wrong variable, or `OF` reports "multiple unifiers" with
+  higher-order `f`, use `where f = "…" and g = …`.
+- **Alternating loops escape the watchdog.** The loop check needs three warnings on one line,
+  so two looping commands interleaving are only caught by the wall clock. Keep
+  `WALL_TIMEOUT` short (120).
+- Finish real-arithmetic chains with `define` atoms (`P = R^(2z-1)`, `T = Σ…`) and named
+  equations, then `unfolding … by simp` or `linarith`. `simp add: algebra_simps` on
+  mixed powers and casts fails.
+- `sum.inter_filter`: apply it as `rule sum.inter_filter[symmetric]`, because `simp` reshapes
+  `{i∈{..<q}. P i}` first.
 
 ### Documents
 
+- **The monotone-$k$ research log is `extensions/monotone-k.md`.** It is linked from the README
+  row for `isabelle/monotone_k/`. Add the new theorem names to `Audit_K.thy`.
 - **The results document is `extensions/monotone-3cnf.md`.** It is linked from `README.md` and
   from §2.1 of `extensions/locality-and-monotonicity.md`. Update its status table, §1 and
   §5–6 as work lands. `gkprst26/NOTES.md` keeps the case-by-case record.
