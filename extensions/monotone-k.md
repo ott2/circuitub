@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 151d2d46b2bdad4b988e2f301ea6040231d79eed (2026-10-13)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 83d4a7508317be2c5a63260aaf03d8cb4272fbdf (2026-10-14)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a). The rest is pen and paper.**
 
@@ -207,6 +207,85 @@ $\mathbb E\, 2^N = (1+1/k + o(1/k))^t$ for that $X$. Any argument that bounds ea
 separately using only critical edges of ones is therefore capped at about
 $(1+1/k)^{t}$. Beating it needs zeros, or an argument across many $X$ (Question C).
 
+## 6b. Shadows and branching [F], and where the blocks' $\log k$ lives
+
+**Theorem (`shadow_branch`, formal).** Let $H$ have edges of size $\le k$ on $n$ vertices,
+with no transversal of size $< t$, and let $\mathcal X$ be its transversals of size $t$. Then
+for every $0 \le j \le t$,
+
+$$\lvert\mathcal X\rvert \binom{t}{j} \le \binom{n}{t-j}\, k^j.$$
+
+*Proof.* Count the pairs $(X, Y)$ with $X \in \mathcal X$, $Y \subseteq X$ and
+$\lvert Y\rvert = t-j$. For a fixed $Y$, each extension is $X = Y \cup J$, where $J$ is a
+transversal of size $j$ of the edges that $Y$ misses. $J$ is *minimal*, because a smaller $J$
+would give a transversal of $H$ of size $< t$. A rank-$k$ hypergraph has at most $k^j$
+minimal transversals of size $j$ containing a given set, by branching on an unhit edge
+(`minimal_branch`). $\square$
+
+**Consequences (on paper).**
+- At $n = 2t$, the best $j$ is about $t/(k-1)$, where the $j$ residual edges would exactly
+  form a perfect $k$-matching on the $t + j$ remaining vertices. It gives
+  $$S_k(n) \le \binom{n}{n/2}\Bigl(1 - \frac1k\Bigr)^{n/2} O(\sqrt{n/k}) \approx 2^{\,n - \frac n2\log_2\frac{k}{k-1}}.$$
+- This beats Scheder–Tan's $2^n(1+1/k)^{-n/2}$ (§6a), since $\frac{k}{k-1} > \frac{k+1}{k}$.
+  The leading constant $\frac{1}{2\ln 2}\cdot\frac nk$ is the same.
+- For $k=2$ it is tight: $j = t$ gives $2^{n/2}$, the GKP24 bound.
+- For $k=3$ it gives $(8/3)^{n/2} \approx 2^{0.7075n}$, against the true $6^{n/4} \approx 2^{0.646n}$.
+- For $k=4$ it gives $1.732^n$. So monotone $\Sigma_3^4$ Majority needs about $1.155^n$ CNFs,
+  against $1.118^n$ (§6a) and PPZ's $1.0905^n$.
+- For a single block $K_{2k-2}^{(k)}$ the inequality is an equality at $j = 1$.
+
+**The exact identity behind it.** The proof's first step is an equality:
+$$\lvert\mathcal X\rvert\binom tj = \sum_{Y \in \partial_{t-j}\mathcal X} \mathrm{ext}(Y).$$
+Here $\partial_{t-j}\mathcal X$ is the lower shadow (the $(t-j)$-sets contained in some
+$X \in \mathcal X$), and $\mathrm{ext}(Y)$ is the number of $X \supseteq Y$. The theorem
+bounds the two factors separately: $\mathrm{ext}(Y) \le k^j$ and
+$\lvert\partial_{t-j}\mathcal X\rvert \le \binom{n}{t-j}$.
+
+**Where the blocks' $\log k$ lives (hand computation).** Take disjoint $K_{2k-2}^{(k)}$ blocks
+and $j = t/(k-1)$, so each block has one free one on average.
+- *The extension count is tight up to $O(1)$ per block.* A $Y$ in the shadow has
+  $\lvert Y\cap B\rvert = k-1-j_B$ with $j_B \ge 0$ and $\sum_B j_B = j$. Then
+  $\mathrm{ext}(Y) = \prod_B \binom{k-1+j_B}{j_B} \approx k^j / \prod_B j_B!$.
+- *The shadow carries the whole $\frac12\log_2 k$ per block.* A $(t-j)$-set $Y$ is in the shadow
+  exactly when $\lvert Y \cap B\rvert \le k-1$ for every block. The mean is $k-2$ and the
+  standard deviation about $\sqrt k$. Because the total is fixed, the deviations are at most 1
+  and sum to zero, so almost all of them are pinned to an $O(1)$ window. That costs about
+  $1/\sqrt k$ per block: $\lvert\partial\rvert/\binom{n}{t-j} \approx (c/\sqrt k)^{n/(2k-2)}$.
+
+So for the extremal examples, the missing $\log k$ is entirely a *shadow* phenomenon. A
+random set of $(1 - \frac1{k-1})t$ vertices is very unlikely to lie inside any minimum
+transversal.
+
+**Shadow target.** Show that for $\tau = n/2$ and $j = \lceil t/(k-1)\rceil$,
+$$\Pr_{\lvert Y\rvert = t-j}\bigl[\,Y \subseteq X \text{ for some } X \in \mathcal X\,\bigr] \le k^{-ct/k}.$$
+With `shadow_branch` this gives the conjecture.
+- It is sufficient, not necessary. It could fail for hypergraphs with few minimum transversals
+  whose shadow is still large. A version weighted by $\mathrm{ext}$ is both necessary and
+  sufficient.
+- **Sequential form (exact).** Being extendable is closed under subsets, so if $Y$ is built
+  from a random order of the vertices,
+  $$\Pr[Y \text{ extendable}] = \mathbb E \prod_{s < t-j} \Bigl(1 - \frac{\lvert F(Y_s)\rvert}{n-s}\Bigr).$$
+  Here $F(Y)$ is the set of *forbidden* vertices: zeros of every minimum transversal
+  containing $Y$. The shadow target asks for forbidden mass of order $\frac{\log k}{k}\, n$
+  on average along the way.
+- In the blocks, the forbidden vertices are the rest of each saturated block.
+
+**Two barriers, recorded so they are not rediscovered.**
+- *Both one-level methods meet the same local extremal structure.* `harris_ppz` (§6a) and
+  `shadow_branch` share the leading constant $\frac{1}{2\ln 2}$. Both are tight when each
+  residual is a perfect $k$-matching, that is, each one has a private critical edge. An
+  improvement must show that this local picture cannot be typical when $\tau = n/2$.
+- *The exchange recursion is too weak by itself.* Fix $X \in \mathcal X$. Every minimum
+  transversal is $(X \setminus D) \cup W$ with $\lvert W\rvert = \lvert D\rvert$, where $W$
+  covers $L_D = \lbrace e \setminus X : \emptyset \ne e \cap X \subseteq D\rbrace$. Minimality
+  of $\tau$ gives the Hall-type condition $\tau(L_D) \ge \lvert D\rvert$ for every $D$. The
+  resulting recursion
+  $M_k(N,s) \le \sum_d \binom sd M_{k-1}(N-s,d)$
+  is exact for $k=2$. But bounding each $L_D$ by the worst rank-$(k-1)$ hypergraph separately
+  halves the $\log k$ loss at every level, and with only trivial inputs it gives $k^{s}$. The
+  family $D \mapsto L_D$ is monotone and satisfies Hall's condition for all $D$ at once; any
+  use of the recursion has to exploit that joint structure.
+
 ## 7. The structural question
 
 The conjecture now follows from a purely structural statement:
@@ -248,6 +327,15 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
 
 ## 8. Next steps
 
+0. **The shadow target (§6b), by hand.** Lower-bound the forbidden mass $\lvert F(Y)\rvert$ for
+   extendable $Y$, or prove the shadow bound for a natural class first. One candidate is
+   hypergraphs whose residuals are disjoint unions of cliques; that class contains the blocks
+   and is closed under restriction.
+   A plausible lemma to check by hand: *the union of all minimum transversals of a rank-$k$
+   hypergraph has at most $k\tau$ vertices.* For graphs it should follow from the bound
+   $\lvert\mathrm{core}\rvert \ge \alpha - \nu$ on the intersection of all maximum independent
+   sets (Boros–Golumbic–Levit, as recalled from memory; not yet checked). Note it only constrains
+   $F(Y)$ once fewer than $t/(k-1)$ ones are free.
 1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
    particular, find out when swaps at disjoint places commute. Note also when the swaps can
    be located canonically, which the charging needs (§7).
