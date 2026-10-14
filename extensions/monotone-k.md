@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 83d4a7508317be2c5a63260aaf03d8cb4272fbdf (2026-10-14)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 4421f6a7b5e2c88dfe32e823880290eb34d34b0c (2026-10-14)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a). The rest is pen and paper.**
 
@@ -285,6 +285,62 @@ With `shadow_branch` this gives the conjecture.
   halves the $\log k$ loss at every level, and with only trivial inputs it gives $k^{s}$. The
   family $D \mapsto L_D$ is monotone and satisfies Hall's condition for all $D$ at once; any
   use of the recursion has to exploit that joint structure.
+
+## 6c. Local certificates: a sufficient condition (proved by hand)
+
+**Local lower bound for $\tau$.** Let $\lbrace w_B\rbrace$ be a fractional partition of $V$
+($w_B \ge 0$ and $\sum_{B \ni v} w_B = 1$ for every $v$). Write $\tau_B = \tau(H[B])$, where
+$H[B]$ has the edges inside $B$. Each $X \cap B$ is a transversal of $H[B]$, so
+
+$$\lvert X\rvert = \sum_B w_B \lvert X \cap B\rvert \ge \sum_B w_B\,\tau_B, \qquad\text{hence}\qquad \tau(H) \ge \sum_B w_B\,\tau_B.$$
+
+Call $\Delta = \tau(H) - \sum_B w_B \tau_B \ge 0$ the *deficit* of the certificate, and
+$W = \sum_B w_B$ its *weight*.
+
+**Theorem (local certificates, by hand; any rank).** Suppose $\Delta = \varepsilon W$ and every
+$\lvert B\rvert \le b$. Then the number of minimum transversals is at most
+
+$$2^{\,n - W\left(\frac12\log_2\frac{\pi b}{2} \,-\, \varepsilon\log_2\frac{e}{\varepsilon} \,-\, O(\varepsilon)\right)}$$
+
+when the blocks have size about $b$. In general, each block saves
+$\frac12\log_2\frac{\pi\lvert B\rvert}{2}$.
+
+*Proof sketch.* Let $X$ be a uniform minimum transversal and $e_B = \lvert X\cap B\rvert - \tau_B \ge 0$.
+1. Since $\lvert X\rvert = \tau(H)$, $\sum_B w_B e_B = \Delta$.
+2. By Shearer's lemma for the fractional cover, $H(X) \le \sum_B w_B H(X_B)$.
+3. Each term splits as $H(X_B) \le H(e_B) + \mathbb E\log_2\binom{\lvert B\rvert}{\tau_B + e_B}$, and
+   $\log_2\binom{m}{i} \le m - \frac12\log_2\frac{\pi m}{2}$.
+4. The entropy of a nonnegative integer with mean $\mu$ is at most $\mu\log_2(e/\mu) + O(\mu)$
+   for small $\mu$. By concavity, $\sum_B w_B H(e_B) \le W \varepsilon \log_2(e/\varepsilon) + O(\varepsilon W)$.
+   $\square$
+
+**Checks.**
+- For disjoint blocks $K_{2k-2}^{(k)}$, the blocks themselves are a certificate with
+  $\Delta = 0$, $W = n/(2k-2)$ and $b = 2k-2$. The bound is then exactly the blocks' count,
+  because Shearer's lemma for a partition is the product formula.
+- Regular overlapping covers by cliques $K_{2k-2}^{(k)}$ have $w_B = 1/r$ and $\Delta = 0$.
+  So among them the disjoint blocks are optimal, as in §4.
+- The rank does not appear. It enters only through the existence of a certificate with
+  $b = O(k)$: blocks of size $k^{C}$ would save only $W\log k \approx (n/k^C)\log k$.
+
+**So the conjecture reduces to a structural dichotomy.**
+
+> **Certificate conjecture.** If $\tau(H) = n/2$, the rank is $k$, and $H$ has at least
+> $2^{\,n - \delta n\log k/k}$ minimum transversals, then $H$ has a fractional partition into
+> sets of size $O(k)$ with deficit at most $\varepsilon n/k$.
+
+By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
+
+- **It is the right shape.** Blocks satisfy it with $\Delta = 0$. Local count rigidity, which is
+  the $\frac12\log k$ per block of §6b, is exactly the equality case of the local bound.
+- **The boundary case.** The graph $K_{t+1}$ plus $t-1$ isolated vertices ($k=2$, §5) has
+  $\tau = n/2$ for a *global* reason. Its best local certificates have deficit about
+  $t/b = n/(2b)$, just outside the theorem's range. Its count is only $t+1$, so the remaining
+  case is "globally rigid hypergraphs have few minimum transversals". That half is where a
+  proof has to do real work, and it is a cleaner question than Question C.
+- **Formalization.** It would need entropy and Shearer's lemma, or the combinatorial
+  Shearer lemma (Chung–Graham–Frankl–Shearer) with integer multiplicities. Neither is in
+  this repository yet.
 
 ## 7. The structural question
 
