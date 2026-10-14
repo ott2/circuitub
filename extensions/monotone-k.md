@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 4421f6a7b5e2c88dfe32e823880290eb34d34b0c (2026-10-14)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 83e7446401b2c0c0592432980078585a06bf5455 (2026-10-14)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a). The rest is pen and paper.**
 
@@ -221,6 +221,20 @@ transversal of size $j$ of the edges that $Y$ misses. $J$ is *minimal*, because 
 would give a transversal of $H$ of size $< t$. A rank-$k$ hypergraph has at most $k^j$
 minimal transversals of size $j$ containing a given set, by branching on an unhit edge
 (`minimal_branch`). $\square$
+
+**Provenance** (literature check of 2026-10-14). The technique is not new.
+- It composes two lemmas of Håstad–Jukna–Pudlák 1995: the $k^s$ branching bound (Lemma 3.4)
+  and the averaging step of Lemma 3.1. For Majority they used only the pure branching step.
+- GKP24 (arXiv 2412.20493, Theorem 21) proves the case $j = 1$, and their Lemma 9 is the
+  single-block equality case.
+- We found the general-$j$ inequality and its $t = n/2$ corollary stated nowhere (about 70%
+  confidence).
+- At $k = 3$ it is weaker than GPPST24 ($1.598^n$) and GKPRST26 ($6^{n/4}$). For $k \ge 4$ it
+  only shifts $k$ to $k-1$ in the Scheder–Tan constant.
+- **The proof never uses monotonicity.** It holds for the satisfying assignments of weight $t$
+  of any $k$-CNF with none of smaller weight. By Lecomte–Ramakrishnan, no argument of this
+  kind can give the $\log k$. That is a third reason, besides the two barriers below, that the
+  monotone content must enter through the shadow.
 
 **Consequences (on paper).**
 - At $n = 2t$, the best $j$ is about $t/(k-1)$, where the $j$ residual edges would exactly
