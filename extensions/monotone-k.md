@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 83e7446401b2c0c0592432980078585a06bf5455 (2026-10-14)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit cd99a17be617e3380cce73f2eac38c9df6c857ef (2026-10-15)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a). The rest is pen and paper.**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper; the current main line is the deficit conjecture of §6d.**
 
 ## 1. The question, and what is known
 
@@ -347,7 +347,8 @@ By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
 
 - **It is the right shape.** Blocks satisfy it with $\Delta = 0$. Local count rigidity, which is
   the $\frac12\log k$ per block of §6b, is exactly the equality case of the local bound.
-- **The boundary case.** The graph $K_{t+1}$ plus $t-1$ isolated vertices ($k=2$, §5) has
+- **The boundary case** (superseded by §6d: this graph is inside the sharpened range, and the
+  real rigid model is $K_m^{(k)}$ plus isolated vertices). The graph $K_{t+1}$ plus $t-1$ isolated vertices ($k=2$, §5) has
   $\tau = n/2$ for a *global* reason. Its best local certificates have deficit about
   $t/b = n/(2b)$, just outside the theorem's range. Its count is only $t+1$, so the remaining
   case is "globally rigid hypergraphs have few minimum transversals". That half is where a
@@ -355,6 +356,104 @@ By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
 - **Formalization.** It would need entropy and Shearer's lemma, or the combinatorial
   Shearer lemma (Chung–Graham–Frankl–Shearer) with integer multiplicities. Neither is in
   this repository yet.
+
+## 6d. The certificate theorem sharpened, and the rigid model cases (by hand, 2026-10-15)
+
+**Concentration form.** Let $X$ be a uniform minimum transversal and $\lbrace w_B\rbrace$ a
+fractional partition of $V$. Shearer's lemma, the chain rule
+$H(X_B) \le H(\lvert X\cap B\rvert) + \mathbb E\log_2\binom{\lvert B\rvert}{\lvert X\cap B\rvert}$
+and $\log_2\binom mi \le m - \frac12\log_2\frac{\pi m}{2}$ (valid for all $m \ge 1$) give
+$$\log_2\lvert\mathcal X\rvert \le n - \sum_B w_B\Bigl(\tfrac12\log_2\tfrac{\pi\lvert B\rvert}{2} - H(\lvert X\cap B\rvert)\Bigr).$$
+No $\tau_B$ appears. The count is small as soon as the block sizes $\lvert X\cap B\rvert$ are
+concentrated, to entropy below $\frac12\log_2\lvert B\rvert$, on a fractional partition into
+$O(k)$-sets. Local transversal numbers are one reason for concentration; global minimality can
+be another.
+
+**Certificate form, sharpened.** Write $e_B = \lvert X\cap B\rvert - \tau_B \ge 0$, so that
+$H(\lvert X\cap B\rvert) = H(e_B)$ and $\sum_B w_B\,\mathbb E e_B = \Delta$. A nonnegative
+integer with mean $\mu$ has entropy at most
+$h(\mu) = (\mu+1)\log_2(\mu+1) - \mu\log_2\mu \le \log_2(e(\mu+1))$. By concavity,
+$$\log_2\lvert\mathcal X\rvert \le n - \sum_B w_B\,\tfrac12\log_2\tfrac{\pi\lvert B\rvert}{2} + W\,h(\Delta/W).$$
+- For $\Delta = \varepsilon W$ with $\varepsilon$ small this is the §6c theorem. But
+  $\varepsilon$ need not be small. With blocks of size $b$ the saving stays positive while
+  $1 + \Delta/W < \sqrt{\pi b/2}/e$.
+- With $b = \Theta(k)$ and $W = \Theta(n/k)$, any deficit $\Delta \le n\,k^{-1/2-\eta}$ still
+  gives a saving of $\Omega(\eta\, n\log k/k)$. The §6c requirement $\Delta \le \varepsilon n/k$
+  was much stronger than needed.
+- **At $\tau = n/2$ the deficit is a local shortfall.** Since $\sum_B w_B\lvert B\rvert = n = 2\tau$,
+  $$\Delta = \sum_B w_B\, s_B, \qquad s_B = \tfrac12\lvert B\rvert - \tau_B.$$
+  So the certificate conjecture asks for a fractional partition into $O(k)$-sets $B$ whose local
+  transversal numbers are, on weighted average, within $k^{1/2-\eta}$ of $\lvert B\rvert/2$.
+
+**Boundary cases, revisited.**
+- *$K_{t+1}$ plus $t-1$ isolated vertices* ($k = 2$) is **not** a boundary case. Blocks with half
+  of their vertices in the clique have $s_B = 1$, so $\Delta/W \approx 1$, inside the sharpened range.
+  §6c called it "just outside the range" only because it stated the small-$\varepsilon$ form.
+- *$K_m^{(k)}$ plus $m-2k+2$ isolated vertices* ($k \ge 3$, $m \to \infty$) has $\tau = m-k+1 = n/2$
+  and only $\binom{m}{k-1}$ minimum transversals. It **is** the rigid model case. A block with $a$
+  clique vertices has $\tau_B = \max(0, a-k+1)$, so $s_B \ge \frac{p_B - a_B}2 + \min(a_B, k-1)$,
+  where $p_B$ is its number of isolated vertices. Summing, and using $\min(a, k-1) \ge a(k-1)/b$,
+  every certificate into $b$-sets has $\Delta \ge (k-1)(m/b - 1)$. That is a shortfall of about
+  $(k-1)/2$ per block, against the $\sqrt b$ the theorem tolerates; only $b \gtrsim k^2$ would
+  certify it, with a negligible saving. The concentration form does see it: $V \setminus X$ is
+  the padding plus a random $(k-1)$-subset of the clique, so $\lvert X\cap B\rvert$ is nearly
+  deterministic for most blocks. Here concentration comes from global minimality.
+- *A test case where $\tau = n/2$ is reached non-locally* (cycle of payments). Take blocks
+  $B_1,\dots,B_N$ of size $2k-2$. Let $H[B_i] = K_{2k-2}^{(k)} - e_i$, so $\tau_{B_i} = k-2$,
+  attained only by $B_i \setminus e_i$. Fix $A_i \subset e_i$ with $\lvert A_i\rvert = k-1$, a
+  cyclic permutation $\pi$, and a $k$-set $G_i \subseteq B_{\pi(i)}$. Add the edges
+  $A_i \cup \lbrace g\rbrace$ for $g \in G_i$.
+  - *$\tau = N(k-1) = n/2$.* A block with $\lvert X\cap B_i\rvert = k-2$ misses $A_i$, so
+    $X \supseteq G_i$ and $B_{\pi(i)}$ carries an excess. Since $\pi$ is injective, the excesses
+    pay for the deficiencies.
+  - *The count is that of the blocks, up to a factor $(1 - 1/\binom{2k-2}{k-1})^N$.* Every choice
+    of $(k-1)$-sets $S_i$ with $S_i \cap A_i \ne \emptyset$ is a minimum transversal.
+  - *What certifies it.* Each block alone has $s_B = 1$, so $\Delta/W = 1$. The sharpened theorem
+    certifies it (for $k$ large enough that $\frac12\log_2(\pi(k-1)) > h(1) = 2$), but the
+    small-$\varepsilon$ form of §6c does not.
+
+**The certificate conjecture must be read with $\delta$ below the true constant.** Mix disjoint
+blocks $K_{2k-2}^{(k)}$ with copies of the rigid model case on a fraction $\alpha$ of the vertices.
+The count is $2^{\,n - \frac{n}{4k}\log_2 k\,(1+o(1)) - \alpha n}$, and every $b$-certificate has
+$\Delta \gtrsim \alpha n (k-1)/(2b)$.
+- With $\alpha = \Theta(1/k)$ this is a hypergraph with near-extremal count and deficit
+  $\Theta(n/k)$. So the conjecture's hypothesis "$\ge 2^{\,n-\delta n\log k/k}$" is only
+  meaningful for $\delta$ below the constant of the blocks.
+- At the *sharpened* threshold $\Delta \approx n k^{-1/2-\eta}$, however, the rigid part needs
+  $\alpha \gtrsim C k^{-1/2-\eta}$ and costs $\alpha n \gg n\log k/k$ bits. In every example so far,
+  deficit costs at least a constant number of bits per unit. ($\Delta \approx m/C$ costs about
+  $2m$ bits in the rigid model with $b = Ck$.)
+
+> **Deficit conjecture.** For rank $k$, $\tau = n/2$ and $b = Ck$, let $\Delta_b$ be the least
+> deficit of a fractional partition into $b$-sets. Then
+> $\log_2\lvert\mathcal X\rvert \le n - \lambda_k\,\Delta_b$ with $\lambda_k \ge k^{-1/2+2\eta}$.
+
+With the sharpened theorem this gives $S_k(n) \le 2^n k^{-\Omega(n/k)}$: either
+$\Delta_b \le n k^{-1/2-\eta}$, and Shearer saves $\Omega(\eta\, n\log k/k)$, or the deficit term
+saves $n k^{\eta}/k$. The examples suggest $\lambda_k = \Theta(1)$, far more than needed. Unlike
+the certificate conjecture, it is additive: rigid regions pay for themselves wherever they are.
+
+**The union lemma of §8 is false for $k \ge 3$.**
+- *Reduction.* Deleting an edge that does not lower $\tau$ keeps every minimum transversal a
+  minimum transversal. So the union $U(H)$ of the minimum transversals lies inside the vertex set
+  of a $\tau$-critical subhypergraph with the same $\tau$.
+- *Counterexample.* Add $k-2$ private new vertices to each edge of $K_{t+1}$. The result $H$ has
+  rank $k$ and $\tau(H) = t$: replacing private vertices by clique vertices turns a smaller
+  transversal into a vertex cover of $K_{t+1}$ of size $< t$. It is $\tau$-critical. Every
+  private vertex of $uv$ lies in a minimum transversal: take it together with the $t-1$ clique
+  vertices other than $u, v$. So $\lvert U(H)\rvert = t+1 + (k-2)\binom{t+1}{2}$, which exceeds
+  $k\tau$ already at $k = 3$, $t = 3$.
+- *For graphs it holds* ($\lvert U\rvert \le 2\tau$). Fix a minimum cover $C$ and $I = V\setminus C$.
+  Any other minimum cover is $(C\setminus D)\cup W$ with $D$ independent, $W \subseteq I$,
+  $W \supseteq N_I(D)$ and $\lvert W\rvert = \lvert D\rvert$. Minimality gives
+  $\lvert N_I(D)\rvert \ge \lvert D\rvert$ for independent $D$, so $W = N_I(D)$ with $D$ *tight*.
+  Submodularity of $N_I$, with Hall applied to the independent set $D_1\cap D_2$, shows that a union
+  $S$ of tight sets has $\lvert N_I(S)\rvert \le \lvert S\rvert \le \tau$. Hence
+  $\lvert U\rvert \le 2\tau$, that is $\lvert\mathrm{core}\rvert \ge \alpha - \tau$. Boros–Golumbic–Levit's
+  $\alpha - \mu$ is stronger; the literature check is pending.
+- In the sequential form of §6b, the non-forbidden vertices are $U(H_Y)$ for the residual $H_Y$.
+  The counterexample shows $\lvert U(H_Y)\rvert$ can grow like $\tau(H_Y)^2$, so this route
+  bounds $F(Y)$ only when very few ones remain free.
 
 ## 7. The structural question
 
@@ -401,11 +500,11 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    extendable $Y$, or prove the shadow bound for a natural class first. One candidate is
    hypergraphs whose residuals are disjoint unions of cliques; that class contains the blocks
    and is closed under restriction.
-   A plausible lemma to check by hand: *the union of all minimum transversals of a rank-$k$
-   hypergraph has at most $k\tau$ vertices.* For graphs it should follow from the bound
-   $\lvert\mathrm{core}\rvert \ge \alpha - \nu$ on the intersection of all maximum independent
-   sets (Boros–Golumbic–Levit, as recalled from memory; not yet checked). Note it only constrains
-   $F(Y)$ once fewer than $t/(k-1)$ ones are free.
+   The lemma once suggested here, that the minimum transversals cover at most $k\tau$ vertices,
+   is false for $k \ge 3$ and true for graphs (§6d).
+   **Main line now (§6d):** the deficit conjecture. Prove it first for the rigid model
+   $K_m^{(k)}$ plus isolated vertices and its relatives (cliques glued along small sets), via the
+   concentration form: show that global minimality makes $\lvert X\cap B\rvert$ concentrated.
 1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
    particular, find out when swaps at disjoint places commute. Note also when the swaps can
    be located canonically, which the charging needs (§7).
