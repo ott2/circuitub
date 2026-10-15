@@ -1,5 +1,7 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 079c6d1b83c98546c9c03b726d9deb6b06d75d6d (2026-10-15)}$
+
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
 The GKPRST26 formalization below is finished. We are now doing research on monotone
@@ -12,7 +14,9 @@ formal before we build on it.
 - §1: the literature status.
 - §6, §6a: the cluster and Harris rungs.
 - **§6b:** `shadow_branch`, the exact shadow identity, and the barriers.
-- **§6c:** local certificates and the certificate conjecture, which is the current main line.
+- **§6c:** local certificates and the certificate conjecture.
+- **§6d:** the sharpened (concentration) form, the rigid model case, and the deficit
+  conjecture, which is the current main line.
 - §7: Question C.
 - §8: the next steps.
 
@@ -49,9 +53,18 @@ per block.
     deficit $\varepsilon n/k$, gives $2^n k^{-\Omega(n/k)}$.
   - For disjoint blocks it is exact.
   - Open half: **globally rigid hypergraphs have few minimum transversals.** These are the
-    hypergraphs with no near-tight local certificate. The model case is $K_{t+1}$ plus
-    $t-1$ isolated vertices: its deficit is about $n/(2b)$ and it has $t+1$ minimum
-    transversals.
+    hypergraphs with no near-tight local certificate.
+- **Sharpened (2026-10-15, §6d).**
+  - $\log_2\lvert\mathcal X\rvert \le n - \sum_B w_B(\frac12\log_2\frac{\pi\lvert B\rvert}2 - H(\lvert X\cap B\rvert))$
+    for a uniform minimum transversal $X$, so concentrated block sizes are what count.
+  - The deficit may be as large as $n k^{-1/2-\eta}$, not just $\varepsilon n/k$.
+  - At $\tau = n/2$ the deficit is $\sum_B w_B(\lvert B\rvert/2 - \tau_B)$.
+  - $K_{t+1}$ plus isolated vertices is now inside the range. The real rigid model is
+    $K_m^{(k)}$ plus isolated vertices: its shortfall is $\approx (k-1)/2$ per block, and its
+    concentration comes from global minimality.
+  - **Deficit conjecture:** $\log_2\lvert\mathcal X\rvert \le n - \lambda_k\Delta_b$ with
+    $\lambda_k \ge k^{-1/2+2\eta}$. It implies the conjecture, and the examples suggest
+    $\lambda_k = \Theta(1)$.
 
 **Formal so far** (`isabelle/monotone_k/Cluster_PPZ.thy`, about 530 lines, plus
 `Audit_K.thy`; parent `Majority_AC0`, which imports `Depth3_Lower`):
@@ -89,14 +102,15 @@ per block.
   a few seconds.
 
 **Next (from §8 of the log):**
-0. **The open half of the certificate conjecture, by hand** (§6c). This is the main line.
-   - Start with the simplest globally rigid examples: one large clique-like component plus
-     isolated vertices, then chains of overlapping cliques. Show why their counts are small.
-   - Then look for the general mechanism, for example a lower bound on the forbidden mass
-     $\lvert F(Y)\rvert$ in the sequential shadow identity (§6b).
-   - The helper lemma "the union of the minimum transversals has at most $k\tau$ vertices"
-     is unproved. Its graph case relies on a bound on the core that was recalled from memory
-     and not checked.
+0. **The deficit conjecture, by hand** (§6d). This is the main line.
+   - Look for the general mechanism by which global minimality concentrates
+     $\lvert X\cap B\rvert$. In the rigid model, downward deviations of $\lvert X \cap B\rvert$
+     are rare even though the local constraint allows them.
+   - Look for a counterexample with exponentially many minimum transversals and every
+     $O(k)$-set far from half-forced. Neither the cycle-of-payments test nor clique mixtures
+     is one.
+   - The union lemma ($\le k\tau$ vertices in minimum transversals) is **false** for $k \ge 3$
+     and true for graphs (§6d). It is not needed any more.
    - When something survives by hand, formalize it. A formal Shearer lemma (entropy, or the
      combinatorial Chung–Graham–Frankl–Shearer form) would make §6c formal.
 1. **Question C, by hand** (secondary now). If $\tau = n/2$ and there are many minimum transversals, do most
