@@ -8,8 +8,13 @@ $\Sigma_3^k$ for $k \ge 4$. The user chose the $\log k$ question over the factor
 **co-develop formal proofs with the informal reasoning**, so that each established rung is
 formal before we build on it.
 
-**Read first:** `extensions/monotone-k.md`, the research log. §1 has the literature status,
-§6 the formal rung, §7 Question C, §8 the next steps.
+**Read first:** `extensions/monotone-k.md`, the research log:
+- §1: the literature status.
+- §6, §6a: the cluster and Harris rungs.
+- **§6b:** `shadow_branch`, the exact shadow identity, and the barriers.
+- **§6c:** local certificates and the certificate conjecture, which is the current main line.
+- §7: Question C.
+- §8: the next steps.
 
 **The problem.** Let $S_k(n)$ be the largest number of minimum transversals of a hypergraph
 on $n$ vertices with edges of size $\le k$ and $\tau = n/2$. Monotone $\Sigma_3^k$ Majority
@@ -27,6 +32,26 @@ $\sum_{X} \mathbb E_c\, 2^{F_c(X)} \le 2^n$; PPZ then replaces $\mathbb E\, 2^F$
 $2^{\mathbb E F}$. When ones share a critical zero set, they share the same maximum colour,
 and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
 per block.
+
+**Where things stand (2026-10-14).**
+- **Three one-level methods stop at $\Theta(n/k)$:** PPZ, Scheder–Tan's Harris form
+  (`harris_ppz`), and shadow-branching (`shadow_branch`).
+  - All share the leading constant $\frac{1}{2\ln 2}\cdot\frac nk$.
+  - All are tight when each one has a private critical edge, so that the residuals are
+    perfect $k$-matchings.
+  - `shadow_branch` does not even use monotonicity, so by Lecomte–Ramakrishnan it cannot give
+    $\log k$.
+- **The blocks' $\log k$ lies entirely in the shadow** (§6b). A random set of
+  $(1-\frac{1}{k-1})t$ vertices almost never lies inside a minimum transversal. Each block's
+  deviation is pinned to an $O(1)$ window, which costs about $1/\sqrt k$ per block.
+- **The main line is local certificates** (§6c, proved by hand with Shearer's lemma).
+  - A fractional partition into $O(k)$-sets whose local $\tau$'s sum to $\tau(H)$, up to a
+    deficit $\varepsilon n/k$, gives $2^n k^{-\Omega(n/k)}$.
+  - For disjoint blocks it is exact.
+  - Open half: **globally rigid hypergraphs have few minimum transversals.** These are the
+    hypergraphs with no near-tight local certificate. The model case is $K_{t+1}$ plus
+    $t-1$ isolated vertices: its deficit is about $n/(2b)$ and it has $t+1$ minimum
+    transversals.
 
 **Formal so far** (`isabelle/monotone_k/Cluster_PPZ.thy`, about 530 lines, plus
 `Audit_K.thy`; parent `Majority_AC0`, which imports `Depth3_Lower`):
@@ -50,12 +75,31 @@ per block.
     PPZ, not new. The corollary $S_k(n) \le 2^n(1+1/k)^{-n/2}$ was not found stated anywhere.
   - Hand sketch (log §6a): one-forcing per $X$ is capped near $(1+1/k)^t$, using the design
     example, so the zeros or a cross-$X$ argument must supply the $\log k$.
+- **`Shadow_Branch.thy`** (about 180 lines; imports only `Main`; log §6b):
+  - `tr`, `mtr`, `ext`: transversals, minimal transversals, and minimal extensions of $P$.
+  - `minimal_branch`: at most $k^j$ minimal transversals of size $\lvert P\rvert + j$
+    containing $P$.
+  - `shadow_branch`: if $\tau \ge t$, then
+    $\lvert\mathcal X\rvert\binom tj \le \binom{n}{t-j}k^j$ for every $j \le t$.
+  - At $n=2t$ this gives $S_k(n) \lesssim \binom{n}{n/2}(1-1/k)^{n/2}$, on paper.
+  - Provenance: it composes two lemmas of Håstad–Jukna–Pudlák 1995, and GKP24 Theorem 21
+    has $j=1$. The general-$j$ statement was not found stated anywhere.
 - **Build:**
   `WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=20 isabelle-build --session Monotone_K -m "…"`. It takes
   a few seconds.
 
 **Next (from §8 of the log):**
-1. **Question C, by hand.** If $\tau = n/2$ and there are many minimum transversals, do most
+0. **The open half of the certificate conjecture, by hand** (§6c). This is the main line.
+   - Start with the simplest globally rigid examples: one large clique-like component plus
+     isolated vertices, then chains of overlapping cliques. Show why their counts are small.
+   - Then look for the general mechanism, for example a lower bound on the forbidden mass
+     $\lvert F(Y)\rvert$ in the sequential shadow identity (§6b).
+   - The helper lemma "the union of the minimum transversals has at most $k\tau$ vertices"
+     is unproved. Its graph case relies on a bound on the core that was recalled from memory
+     and not checked.
+   - When something survives by hand, formalize it. A formal Shearer lemma (entropy, or the
+     combinatorial Chung–Graham–Frankl–Shearer form) would make §6c formal.
+1. **Question C, by hand** (secondary now). If $\tau = n/2$ and there are many minimum transversals, do most
    of them have $\Omega(n/k)$ disjoint $O(k)$-clusters? Known so far:
    - A cluster-free minimum transversal can exist (the linear-design example in §7), but
      there it was unique, and all its swap neighbours are cluster-rich.
@@ -71,7 +115,14 @@ per block.
 3. **Fallback:** Conjecture A, $S_k(n) \le 2^{(1-1/k)n}$, which doubles PPZ's exponent.
 
 **Rules here:**
-- Prove by hand first, and no brute-force or exhaustive search.
+- Prove by hand first, and no brute-force or exhaustive search. The user prefers attempts at
+  proving the result or a variant, and analysis of the obstacles, over experiments: the
+  numbers grow too fast for useful data (2026-10-14).
+- Check novelty with a background literature agent before presenting a bound as new. Twice
+  this session the idea turned out to be known: Scheder–Tan for Harris, and HJP95/GKP24 for
+  shadow-branching.
+- Never patch Markdown with Python heredocs: non-raw strings turn TeX escapes into control
+  characters. Use Edit.
 - Keep the log honest: label every claim proved [F], proved by hand, or heuristic.
 - Constructions that would beat the blocks are the other direction. Note from §4 that disjoint
   cliques can't beat $K_{2k-2}^{(k)}$.
