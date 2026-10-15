@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 8d5acbdd7bc83be97d739603d4896890408c3939 (2026-10-15)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit fde1f63850890ea5b5f3344dc1da16a047c6e077 (2026-10-15)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper; the current main line is the deficit conjecture of §6d.**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
 ## 1. The question, and what is known
 
@@ -424,7 +424,7 @@ $\Delta \gtrsim \alpha n (k-1)/(2b)$.
   deficit costs at least a constant number of bits per unit. ($\Delta \approx m/C$ costs about
   $2m$ bits in the rigid model with $b = Ck$.)
 
-> **Deficit conjecture.** For rank $k$, $\tau = n/2$ and $b = Ck$, let $\Delta_b$ be the least
+> **Deficit conjecture** (refuted in §6e). For rank $k$, $\tau = n/2$ and $b = Ck$, let $\Delta_b$ be the least
 > deficit of a fractional partition into $b$-sets. Then
 > $\log_2\lvert\mathcal X\rvert \le n - \lambda_k\,\Delta_b$ with $\lambda_k \ge k^{-1/2+2\eta}$.
 
@@ -466,6 +466,92 @@ the certificate conjecture, it is additive: rigid regions pay for themselves whe
 - In the sequential form of §6b, the non-forbidden vertices are $U(H_Y)$ for the residual $H_Y$.
   The counterexample shows $\lvert U(H_Y)\rvert$ can grow like $\tau(H_Y)^2$, so this route
   bounds $F(Y)$ only when very few ones remain free.
+
+## 6e. Deep payments: the deficit conjecture is false (by hand, 2026-10-16)
+
+**Construction.** Let $k$ be large, $s = \lfloor k/4\rfloor$, and $N > b$. Take blocks
+$B_1,\dots,B_N$ of size $2k-2$, a cyclic permutation $\pi$ of $[N]$, and sets $R_i \subseteq B_i$
+with $\lvert R_i\rvert = k-1+s$. The edges are:
+- *inside $B_i$:* every $k$-subset of $B_i$ not contained in $R_i$;
+- *payments:* $A \cup \lbrace g\rbrace$ for every $(k-1)$-subset $A \subseteq R_i$ and every $g \in B_{\pi(i)}$.
+
+The rank is $k$ and $n = N(2k-2)$.
+
+**$\tau = N(k-1) = n/2$.**
+- If $\lvert X\cap B_i\rvert < k-1$, the complement $B_i \setminus X$ has $\ge k$ vertices and
+  contains no inside edge, so it lies in $R_i$. It contains a $(k-1)$-set $A \subseteq R_i$ that
+  $X$ misses. The payment edges then force $X \supseteq B_{\pi(i)}$, an excess of $k-1$ there.
+  The deficiency of $B_i$ is at most $s \le k-1$, and $\pi$ is injective, so
+  $\lvert X\rvert \ge N(k-1)$.
+- Conversely, every choice of $(k-1)$-sets $S_i \subseteq B_i$ with
+  $\lvert S_i\cap R_i\rvert \ge s+1$ is a transversal. Its complement in $B_i$ has only $k-1$
+  vertices, and $\lvert R_i\setminus S_i\rvert \le k-2$, so it meets every $A$.
+
+**The count is that of the blocks.** $\lvert S\cap R_i\rvert$ is hypergeometric with mean
+$(k-1+s)/2 \approx 5k/8$, so $\Pr[\lvert S\cap R_i\rvert \le s] \le e^{-ck}$ by Hoeffding. Hence
+$$\lvert\mathcal X\rvert \ge \Bigl(\tbinom{2k-2}{k-1}(1 - e^{-ck})\Bigr)^N = 2^{\,n - \frac{n}{4k}\log_2 k\,(1+o(1))},$$
+which is the count of disjoint $K_{2k-2}^{(k)}$ blocks to leading order.
+
+**Every small set falls short by a lot: $s_B \ge \frac{s}{4b}\lvert B\rvert$ whenever $\lvert B\rvert \le b < N$.**
+- *Reduction to paths.* Write $m_i = \lvert B\cap B_i\rvert$. $B$ meets fewer than $N$ blocks, so
+  the blocks it meets form $\pi$-paths $i_1 \to \dots \to i_j$. $H[B]$ is a disjoint union over
+  these paths, so it suffices to find, for each path $P$, a transversal of size
+  $\le \lvert P\rvert/2 - \min(s/4, \lvert P\rvert/2)$.
+- *Normal parts.* A part with a vertex outside $R$ can keep $\min(m, k-1)$ vertices out of $X$:
+  at most $k-2$ in $R$, plus one outside. That meets its inside edges and every $(k-1)$-set
+  $A \subseteq R$, so its outgoing payments are met. The part's shortfall is
+  $\min(m,k-1) - m/2 \ge 0$. A part inside $R$ keeps $\min(m,k-2)$ out, with shortfall at least
+  $\min(m/2, (k-3-s)/2) \ge 0$.
+- *Small parts* ($m < s/2$). They have no inside edges, and no $A$, since $\lvert R\cap B\cap B_i\rvert < k-1$.
+  They cost nothing and fall short by $m/2$.
+- *The last non-small part* $q$, scanning back from the end of the path:
+  - If $q$ is the end, its local optimum $\min(a, m-k+1)^+$, with $a = \lvert (B\cap B_q)\setminus R_q\rvert \le k-1-s$,
+    falls short by at least $s/4$. For $m \ge k-1$, the two options average $(k-1-a)/2 \ge s/2$.
+  - If $q$ is not the end and $m_q \le 2k-2-s$, the normal choice falls short by at least
+    $\min(m_q/2, k-1-m_q/2) \ge s/4$. For a part inside $R$ the shortfall is
+    $(k-3-s)/2 \ge s/4$.
+  - If $q$ is not the end and $m_q > 2k-2-s$, make it deficient. Take $X_q = (B\cap B_q)\setminus R_q$,
+    which falls short by $> s/2$, and pay with all of the small part $q+1$, which costs $< s/4$.
+    Later parts are small, and their incoming payments are met because $R\cap B_{q+1} \subseteq X$.
+  - If there is no non-small part, the whole path falls short by $\lvert P\rvert/2$.
+- Summing over a fractional partition gives $\Delta_b \ge s n/(4b)$ for every $b < N$.
+
+**Consequences.**
+- *The deficit conjecture of §6d is false.* With $b = Ck$, $\Delta_b \ge n/(16C+o(1))$ is linear
+  in $n$, yet $\log_2\lvert\mathcal X\rvert = n - \Theta(n\log k/k)$. So $\lambda_k = O(C\log k/k)$,
+  not $\ge k^{-1/2+2\eta}$.
+- *Local-$\tau$ certificates of any block size are off by about a factor $k$ here.* The sharpened
+  theorem needs $\Delta/W \lesssim \sqrt b$, so $sn/(4b) \lesssim n/\sqrt b$, that is
+  $b \gtrsim s^2 \approx k^2/16$. The resulting saving is $O(n\log k/k^2)$, against the true
+  $\Theta(n\log k/k)$.
+- *The certificate conjecture of §6c is not refuted.* Its hypothesis needs $\delta$ below the
+  blocks' constant, and this count sits at that constant. But it cannot be the mechanism: a
+  hypergraph can match the extremal count with no near-tight local certificate.
+- *The concentration form does see it.* For the original blocks, $\lvert X\cap B_i\rvert = k-1$
+  except with probability $e^{-\Omega(k)}$. A deficient block forces a full target block, so
+  such configurations are rarer than normal ones by a factor of about $4^{-k}$. So
+  $H(\lvert X\cap B_i\rvert) = o(1)$, and the bound of §6d gives the full saving.
+
+**What survives: typical lower bounds.** In this example and in the rigid model of §6d,
+$\lvert X\cap B\rvert$ is pinned *from below* not by $\tau_B$ but by a *typical* lower bound
+$\ell_B$, with $\Pr[\lvert X\cap B\rvert < \ell_B]$ small. Deficient configurations are
+possible, but they are rare because of what they force elsewhere.
+- Given such $\ell_B$ with $\sum_B w_B\ell_B \ge n/2 - \Delta'$, the identity
+  $\sum_B w_B\lvert X\cap B\rvert = n/2$ caps the upward deviations too.
+- The proof of §6d then goes through with $\Delta'$ in place of $\Delta$, plus an error term from
+  the rare deficient events, of about $\sum_B w_B(\Pr[\lvert X\cap B\rvert<\ell_B]\log_2\lvert B\rvert + h_2(\Pr[\lvert X\cap B\rvert<\ell_B]))$,
+  where $h_2$ is the binary entropy.
+
+> **Concentration conjecture.** For rank $k$ and $\tau = n/2$, with $X$ a uniform minimum
+> transversal, there is a fractional partition into $O(k)$-sets with
+> $\sum_B w_B H(\lvert X\cap B\rvert) \le \sum_B w_B (\frac12 - \eta)\log_2\lvert B\rvert$,
+> unless $\lvert\mathcal X\rvert \le 2^{\,n - \Omega(n\log k/k)}$ for other reasons.
+
+With the escape clause this is *equivalent* to the conjecture (§6d gives one direction, and the
+clause the other), so it is not a reduction. Its value is as a guide to the mechanism. It is a
+statement about the distribution of $X$, so it invites switching or comparison arguments ("a
+deficient $X$ maps to many normal ones"), which is how the counts in both examples are
+explained. A genuine reduction would name the $\ell_B$ in advance, from the structure of $H$.
 
 ## 7. The structural question
 
@@ -514,9 +600,11 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    and is closed under restriction.
    The lemma once suggested here, that the minimum transversals cover at most $k\tau$ vertices,
    is false for $k \ge 3$ and true for graphs (§6d).
-   **Main line now (§6d):** the deficit conjecture. Prove it first for the rigid model
-   $K_m^{(k)}$ plus isolated vertices and its relatives (cliques glued along small sets), via the
-   concentration form: show that global minimality makes $\lvert X\cap B\rvert$ concentrated.
+   The deficit conjecture of §6d is false (§6e, deep payments). Local-$\tau$ certificates cannot
+   be the mechanism in general.
+   **Main line now (§6e):** typical lower bounds. Find a structural rule that names $\ell_B$ in
+   advance and a switching argument showing that $\lvert X\cap B\rvert < \ell_B$ is rare. Test it
+   on the deep-payment example, where the switch is "a deficient block forces a full target".
 1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
    particular, find out when swaps at disjoint places commute. Note also when the swaps can
    be located canonically, which the charging needs (§7).
