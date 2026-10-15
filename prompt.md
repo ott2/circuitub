@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 079c6d1b83c98546c9c03b726d9deb6b06d75d6d (2026-10-15)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 501217aa9448fb3faa0c83a7481b675d87845757 (2026-10-16)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -16,7 +16,9 @@ formal before we build on it.
 - **§6b:** `shadow_branch`, the exact shadow identity, and the barriers.
 - **§6c:** local certificates and the certificate conjecture.
 - **§6d:** the sharpened (concentration) form, the rigid model case, and the deficit
-  conjecture, which is the current main line.
+  conjecture.
+- **§6e:** deep payments, which refute the deficit conjecture; typical lower bounds, the
+  current main line.
 - §7: Question C.
 - §8: the next steps.
 
@@ -63,8 +65,15 @@ per block.
     $K_m^{(k)}$ plus isolated vertices: its shortfall is $\approx (k-1)/2$ per block, and its
     concentration comes from global minimality.
   - **Deficit conjecture:** $\log_2\lvert\mathcal X\rvert \le n - \lambda_k\Delta_b$ with
-    $\lambda_k \ge k^{-1/2+2\eta}$. It implies the conjecture, and the examples suggest
-    $\lambda_k = \Theta(1)$.
+    $\lambda_k \ge k^{-1/2+2\eta}$. It would imply the conjecture.
+- **Deep payments (2026-10-16, §6e): the deficit conjecture is false.**
+  - Blocks of size $2k-2$ have inside edges all $k$-sets not inside $R_i$, with
+    $\lvert R_i\rvert = k-1+s$ and $s = k/4$. A missed $(k-1)$-subset of $R_i$ forces the
+    whole next block along a cycle.
+  - It has the blocks' count, yet every set of size $\le b$ falls short by
+    $\ge \frac{s}{4b}\lvert B\rvert$, so $\Delta_b = \Theta(n)$ for $b = O(k)$.
+  - So local-$\tau$ certificates cannot be the mechanism. What pins $\lvert X\cap B\rvert$ is a
+    *typical* lower bound: a deficient block is possible but rare, by a factor of about $4^{-k}$.
 
 **Formal so far** (`isabelle/monotone_k/Cluster_PPZ.thy`, about 530 lines, plus
 `Audit_K.thy`; parent `Majority_AC0`, which imports `Depth3_Lower`):
@@ -102,13 +111,15 @@ per block.
   a few seconds.
 
 **Next (from §8 of the log):**
-0. **The deficit conjecture, by hand** (§6d). This is the main line.
-   - Look for the general mechanism by which global minimality concentrates
-     $\lvert X\cap B\rvert$. In the rigid model, downward deviations of $\lvert X \cap B\rvert$
-     are rare even though the local constraint allows them.
-   - Look for a counterexample with exponentially many minimum transversals and every
-     $O(k)$-set far from half-forced. Neither the cycle-of-payments test nor clique mixtures
-     is one.
+0. **Typical lower bounds, by hand** (§6e). This is the main line.
+   - Find a rule that names $\ell_B$ from the structure of $H$, together with a switching
+     argument ("a deficient $X$ maps to many normal ones") showing that
+     $\lvert X\cap B\rvert < \ell_B$ is rare. With the escape clause, the concentration
+     conjecture of §6e is only equivalent to the main conjecture; naming $\ell_B$ in advance
+     is what would make it a reduction.
+   - Test cases: the deep-payment example and the rigid model $K_m^{(k)}$ plus isolated vertices.
+   - Be wary: two conjectures (union lemma, deficit conjecture) fell to explicit
+     constructions within a day. Try to break each new statement before building on it.
    - The union lemma ($\le k\tau$ vertices in minimum transversals) is **false** for $k \ge 3$
      and true for graphs (§6d). It is not needed any more.
    - When something survives by hand, formalize it. A formal Shearer lemma (entropy, or the
