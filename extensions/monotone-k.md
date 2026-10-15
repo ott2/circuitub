@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit cd99a17be617e3380cce73f2eac38c9df6c857ef (2026-10-15)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 8d5acbdd7bc83be97d739603d4896890408c3939 (2026-10-15)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper; the current main line is the deficit conjecture of §6d.**
 
@@ -437,7 +437,7 @@ the certificate conjecture, it is additive: rigid regions pay for themselves whe
 - *Reduction.* Deleting an edge that does not lower $\tau$ keeps every minimum transversal a
   minimum transversal. So the union $U(H)$ of the minimum transversals lies inside the vertex set
   of a $\tau$-critical subhypergraph with the same $\tau$.
-- *Counterexample.* Add $k-2$ private new vertices to each edge of $K_{t+1}$. The result $H$ has
+- *Counterexample* (standard; see the provenance below). Add $k-2$ private new vertices to each edge of $K_{t+1}$. The result $H$ has
   rank $k$ and $\tau(H) = t$: replacing private vertices by clique vertices turns a smaller
   transversal into a vertex cover of $K_{t+1}$ of size $< t$. It is $\tau$-critical. Every
   private vertex of $uv$ lies in a minimum transversal: take it together with the $t-1$ clique
@@ -449,8 +449,20 @@ the certificate conjecture, it is additive: rigid regions pay for themselves whe
   $\lvert N_I(D)\rvert \ge \lvert D\rvert$ for independent $D$, so $W = N_I(D)$ with $D$ *tight*.
   Submodularity of $N_I$, with Hall applied to the independent set $D_1\cap D_2$, shows that a union
   $S$ of tight sets has $\lvert N_I(S)\rvert \le \lvert S\rvert \le \tau$. Hence
-  $\lvert U\rvert \le 2\tau$, that is $\lvert\mathrm{core}\rvert \ge \alpha - \tau$. Boros–Golumbic–Levit's
-  $\alpha - \mu$ is stronger; the literature check is pending.
+  $\lvert U\rvert \le 2\tau$, that is $\lvert\mathrm{core}\rvert \ge \alpha - \tau$.
+- *Provenance* (literature check of 2026-10-15; the notes are kept uncommitted).
+  - The graph bound is classical. It follows from Erdős–Gallai 1961 ($\tau$-critical graphs
+    without isolated vertices have $\le 2\tau$ vertices) and from the Hajnal–Folkman lemma.
+    Boros–Golumbic–Levit (DAM 124, 2002) prove the stronger
+    $\lvert\mathrm{core}\rvert \ge \alpha - \mu + 1$ for connected $G$ with $\alpha > \mu$.
+  - For rank $r$, the largest union is the largest order $v_{\max}(r,\tau)$ of a $\tau$-critical
+    hypergraph, which is $\Theta(\tau^{r-1})$ (Gyárfás–Lehel–Tuza, JCTB 1982).
+  - The counterexample at $k = 3$ has $\binom{t+2}{2}$ vertices. That is the standard
+    construction, conjectured extremal by Szemerédi–Petruska (1972) and asymptotically confirmed
+    by Kézdy–Lehel (2023). Damaschke–Molokov (2009) bound unions of minimal hitting sets directly.
+  - The concentration form (Shearer plus the chain rule on $\lvert X\cap B\rvert$) uses standard
+    ingredients. It was not found applied to counting minimum transversals (about 65%
+    confidence); a referee would likely call it routine.
 - In the sequential form of §6b, the non-forbidden vertices are $U(H_Y)$ for the residual $H_Y$.
   The counterexample shows $\lvert U(H_Y)\rvert$ can grow like $\tau(H_Y)^2$, so this route
   bounds $F(Y)$ only when very few ones remain free.
