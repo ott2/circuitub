@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 20d184bedbf99183d31e00bcf9ffd29631b54e57 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 9aede87ab3bcb9219315b342fed2b66d29428ad9 (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -684,7 +684,38 @@ Three constraints follow.
     self-similarity.
 - **Open (heuristic):** is there a family of $h/2$-subsets that is entropically close to a
   $t$-design, with $t$ of order $k$, in which each block has a private $a$-subset ($a < k$), and
-  whose helper sets satisfy the self-similarity constraint? A literature check is in progress.
+  whose helper sets satisfy the self-similarity constraint?
+- **Literature (checked 2026-10-17).** Nothing treats near-uniform families in which every
+  block has a private subset.
+  - Ray-Chaudhuri–Wilson (1975) rules out private $a$-sets at exact strength $t \ge 2a$.
+    `private_design` with `three_blocks` covers all $t \ge a$, with no appeal to Tits's
+    theorem on Steiner systems.
+  - Closest results: Pikhurko (J. Combin. Des. 2001) on minimal coverings, for fixed block
+    size only; Horsley–Singh (arXiv:1706.06825), a Ray-Chaudhuri–Wilson bound for coverings;
+    Kuperberg–Lovett–Peled (GAFA 2017) for designs with block size $h/2$.
+  - No set-pair theorem imposes design or independence conditions on the second sets.
+  - Balogh–Bollobás–Narayanan (JCTA 2021) note that no hypergraph analogue of Zhao's
+    bipartite reduction is known. The conditioning of (R$_Y$) is in that gap.
+- **The approximate case: a dichotomy (by hand).** Let the selectors be uniform over $P$
+  values. A private $a$-set lies in a $1/P$ fraction of the blocks, against $p_a \approx 2^{-a}$
+  for a uniform half-set. So its $a$-marginal is at total-variation distance
+  $\ge p_a - 1/P$ from uniform.
+  - *Few selectors:* $P \le 2^{a+1}$. Then every helper block of size $b$ has entropy
+    $\le \log_2 P \le a+1$. For $b \ge 2a+2$ the deficit is $\ge b/2$ per block, and (R) holds
+    through the helpers, which are at least half of $V$.
+  - *Many selectors:* each private $a$-set's marginal is at distance $\gtrsim 2^{-a-1}$, so
+    (Pinsker) it has deficit $\gtrsim 2^{-2a}$. Take the fractional partition of $Y$ into all
+    its $a$-sets, with weight $1/\binom{h-1}{a-1}$ each. Han's inequality gives a helper
+    deficit $\gtrsim (h/a)\,\rho\,2^{-2a}$, where $\rho$ is the fraction of $a$-subsets of $Y$
+    that are private.
+  - Self-similarity gives at least $Pm/2$ private sets, so $\rho \ge Pm/(2\binom{h}{a})$.
+    Bollobás caps $P$ at about $\binom{h}{a}2^{-a}$, so $\rho$ is at most about $m2^{-a}$.
+  - So (R) survives selector mixtures unless $P$ lies in a middle range: above $2^{a+1}$, but
+    with private sets too sparse to show up after the $2^{-2a}$ discount. The literature leaves
+    the same range open (total-variation distance $\gtrsim 2^{-a}$).
+  - Pinsker is lossy here. The true cost of making one pattern of probability $2^{-a}$ rare is
+    about $2^{-a}$ bits, not $2^{-2a}$. The sharper form of the dichotomy needs a direct
+    divergence estimate.
 - **Approximate uniformity is cheap.** Small-bias spaces (Naor–Naor) give nearly $b$-wise
   uniform families on $h$ coordinates with about $2^{O(b)}\log h$ members. So the Rao bound
   $P \gtrsim \binom{h}{b/2}$, valid for exact strength $b$, does not bind entropically.

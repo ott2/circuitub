@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 4ad4acb8bb57f19015ae7ff081875887676b5aea (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 9aede87ab3bcb9219315b342fed2b66d29428ad9 (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -156,6 +156,14 @@ per block.
        $\tau \ge m/2$.
      - Open: the entropic (approximate-design) version, where a private set leaks only about
        $2^{-a}$ bits. Literature summary: `notes/summaries/private-subsets-and-designs.md`.
+       Nothing in the literature treats it.
+     - Dichotomy (by hand): with $P \le 2^{a+1}$ selectors, the helpers' blocks are visibly
+       deficient. With more selectors, each private set costs $\gtrsim 2^{-2a}$ (Pinsker),
+       which Han's inequality sums over $Y$. A middle range of $P$ is open.
+     - Next: replace Pinsker by a direct divergence estimate (about $2^{-a}$ per private set),
+       and check whether self-similarity then closes the middle range.
+     - Mixing only passes code-likeness down. A counterexample to (R) needs a part of $V$
+       whose projected family is locally uniform with no selector explaining it.
 0'. **Typical lower bounds, by hand** (§6e).
    - Find a rule that names $\ell_B$ from the structure of $H$, together with a switching
      argument ("a deficient $X$ maps to many normal ones") showing that
