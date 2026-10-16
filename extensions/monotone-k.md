@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 24c70c071b8267b619410296b77528b629309335 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 20d184bedbf99183d31e00bcf9ffd29631b54e57 (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -697,15 +697,17 @@ Three constraints follow.
 - By the "all on" attack $h \gtrsim m$, so helpers are at least half of $V$. For (R) to fail,
   the $O(k)$-blocks *of $Y$* must therefore also be nearly uniform.
 - So the selector family is itself code-like: locally near-uniform, globally of low entropy.
-  It sits on $Y \subsetneq V$ and is enforced by $H$ through minimizing
-  $\lvert S\rvert + \tau(H_S)$, a cousin of the original problem.
-- The regress descends, since $Y$ is part of the same finite hypergraph. A mixture can only
-  pass code-likeness down from its selectors to its group.
-- **Consequence for (R):** any failure of (R) must bottom out in an *intrinsically* code-like
-  family, one not explained by mixing.
-  - To make this a theorem, the "cousin" problem must be shown to be an instance of the
-    original, or (R) must be stated for the weighted problem $\min_S(\lvert S\rvert + \tau(H_S))$.
-  - The latter is natural: it is (R) for hypergraphs with a cost on part of the vertex set.
+  It is the projection of the *same* family $\mathcal X$ onto $Y \subsetneq V$, since
+  $\min_S(\lvert S\rvert + \tau(H_S)) = \tau(H)$.
+- So the regress descends in the vertex set, for one and the same family: code-likeness of
+  $\mathcal X$ on $G$ is inherited from its projection on $Y$. That projection may be a
+  mixture over a further split $Y = G' \sqcup Y'$, and so on.
+- **Consequence for (R):** any failure of (R) bottoms out in a set $Y^*$ on which the
+  projection of $\mathcal X$ is code-like *intrinsically*, not by mixing over a further helper
+  set.
+  - This is a reformulation, not a reduction: the base case is again the code-like question.
+  - It does say where to look. A counterexample to (R) needs a part of $V$ whose projected
+    family is locally uniform without any selector explaining it.
 
 ## 7. The structural question
 
