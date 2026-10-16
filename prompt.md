@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 4a35388da3498f48a8b29e186ecf764c7eb96d08 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 4ad4acb8bb57f19015ae7ff081875887676b5aea (2026-10-16)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -133,6 +133,9 @@ per block.
   `link_rank`, `link_tr`, `link_back`, `link_mint`, and `link_count`
   ($\le 2^{\lvert Y\rvert}M$ minimum transversals with $\lvert X - Y\rvert = j$). The link
   identity (uniform conditionals) is by hand.
+- **`Private_Design.thy`** (log §6f, imports `Main`): `private_design` (if $a$-sets are
+  equally popular and one is private, two blocks share $< a$ points), `three_blocks`,
+  `half_blocks` (three blocks of size $\ge \lvert Y\rvert/2$ force $\lvert Y\rvert < 6a$).
 - **Build:**
   `WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=20 isabelle-build --session Monotone_K -m "…"`. It takes
   a few seconds.
@@ -145,6 +148,14 @@ per block.
      $H_S \supseteq H_{S'}$) and the rank bound prevent it.
    - If one exists, check that (R) fails on it but (R$_Y$) holds. That would confirm (R$_Y$)
      as the right target.
+   - Progress (§6f, 2026-10-17):
+     - Switching is a Bollobás set-pair condition; in complement form, each block has a
+       private $a$-set.
+     - Exact $t$-wise uniform selectors with $t \ge a$ cannot switch (`private_design`).
+     - The "all on" attack forces self-similarity: partition $p$'s helper sets need
+       $\tau \ge m/2$.
+     - Open: the entropic (approximate-design) version, where a private set leaks only about
+       $2^{-a}$ bits. Literature summary: `notes/summaries/private-subsets-and-designs.md`.
 0'. **Typical lower bounds, by hand** (§6e).
    - Find a rule that names $\ell_B$ from the structure of $H$, together with a switching
      argument ("a deficient $X$ maps to many normal ones") showing that

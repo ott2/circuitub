@@ -1,5 +1,5 @@
 theory Audit_K
-  imports Harris_PPZ Shadow_Branch Deep_Payment Link_Gadget
+  imports Harris_PPZ Shadow_Branch Deep_Payment Link_Gadget Private_Design
 begin
 
 text \<open>
@@ -14,7 +14,8 @@ ML \<open>
      @{thm cluster_count_overlap}, @{thm harris_ppz_r}, @{thm harris_ppz},
      @{thm minimal_branch}, @{thm shadow_branch},
      @{thm dp_forces}, @{thm dp_tau}, @{thm dp_normal(1)}, @{thm dp_normal(2)}, @{thm dp_count},
-     @{thm link_rank}, @{thm link_mint}, @{thm link_count}];
+     @{thm link_rank}, @{thm link_mint}, @{thm link_count},
+     @{thm private_design}, @{thm three_blocks}, @{thm half_blocks}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

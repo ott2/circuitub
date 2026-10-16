@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 4a35388da3498f48a8b29e186ecf764c7eb96d08 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 4ad4acb8bb57f19015ae7ff081875887676b5aea (2026-10-16)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -645,6 +645,47 @@ $$\binom{m}{m/2} \lesssim 2^h S_k(m), \quad\text{that is,}\quad h \gtrsim m - \l
 - **Next test:** a selector-mixture hypergraph, if one can be realized. For blocks and deep
   payments, $Y = \emptyset$ already works.
 
+**Selector mixtures as set systems (2026-10-17; exact part [F], rest heuristic).** The
+model:
+- There are $P$ partitions $\pi_p$ of $G$, each with blocks of rank $k-a$.
+- A group edge $f$ of $\pi_q$ is realized as $f\cup A_f$, with $A_f \subseteq Y$ and
+  $\lvert A_f\rvert \le a$.
+- Selector $p$ is a helper configuration $S_p$. It should keep $\pi_p$ alive and kill the
+  other partitions. Write $C_p = Y - S_p$.
+
+Three constraints follow.
+- **"All on" attack (by hand).** A helper in $X$ only satisfies edges, never creates them. So
+  $S_p$ together with a transversal of $\lbrace A_f : f\in\pi_p\rbrace$ kills everything.
+  - Hence the helper sets of $\pi_p$ need, as a rank-$a$ hypergraph on $C_p$, transversal
+    number $\ge m/2$.
+  - So the helper side must contain a copy of the group's difficulty (*self-similarity*), and
+    in particular $h \gtrsim m$.
+- **Switching is a Bollobás set-pair condition.** $A_f \cap S_q = \emptyset$, and
+  $A_f\cap S_p \ne\emptyset$ for $p\ne q$. So $P \le \binom{a+s}{a}$ with $s = \lvert S_p\rvert$
+  (Bollobás 1965; skew form: Frankl, Kalai, Lovász).
+  - A random $A_f$ needs $a \gtrsim \log_2 P$. Structured ones need far fewer.
+  - In complement form: each block $C_p$ has a *private* $a$-set (one inside $C_p$ and inside
+    no other block). For $a = 2$ this is the graph version: each block spans exactly one
+    designated edge, its own.
+- **Exact local uniformity is a design condition, and it kills switching [F].**
+  - If the selectors are exactly $t$-wise uniform, the $C_p$ form a $t$-design, so for
+    $t \ge a$ all $a$-sets lie in equally many blocks.
+  - `private_design`: then one private $a$-set makes every $a$-set lie in at most one block,
+    so two blocks share fewer than $a$ points (a partial Steiner system).
+  - `three_blocks`, `half_blocks`: three such blocks of size $\ge h/2$ force $h < 6a$.
+  - So exact strength $t \ge a$ is incompatible with switching, beyond two selectors. The
+    numerical bounds (Rao: $P \gtrsim \binom{h}{t/2}$; Bollobás) looked compatible, but the
+    structure is not.
+- **Why this does not settle (R).** (R) is entropic. A private $a$-set only makes one
+  pattern on $A$ rare (probability $1/P$, not about $2^{-a}$), and that costs about $2^{-a}$
+  bits: the same leak as one forbidden pattern per edge (§6e).
+  - So approximate designs may carry private subsets almost for free.
+  - An obstruction to (R) by this route must force *many* rare patterns at once, probably via
+    self-similarity.
+- **Open (heuristic):** is there a family of $h/2$-subsets that is entropically close to a
+  $t$-design, with $t$ of order $k$, in which each block has a private $a$-subset ($a < k$), and
+  whose helper sets satisfy the self-similarity constraint? A literature check is in progress.
+
 ## 7. The structural question
 
 The conjecture now follows from a purely structural statement:
@@ -698,7 +739,9 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    a group of size $m$ exists only if the conjecture fails at size $m$ (`link_count`). For the
    proof route, (R) is replaced by its conditional form (R$_Y$).
    **Next by hand:** realize a selector-mixture hypergraph (links block-structured on
-   different partitions), or show the monotonicity $H_S \supseteq H_{S'}$ prevents it.
+   different partitions), or show that the constraints of §6f prevent it. Exact designs are
+   ruled out (`private_design`); the entropic version and partial switching are open. The
+   self-similarity constraint is the most promising lever.
    **Main line now (§6e):** typical lower bounds. Find a structural rule that names $\ell_B$ in
    advance and a switching argument showing that $\lvert X\cap B\rvert < \ell_B$ is rare. Test it
    on the deep-payment example, where the switch is "a deficient block forces a full target".
