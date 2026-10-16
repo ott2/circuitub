@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 9aede87ab3bcb9219315b342fed2b66d29428ad9 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 3d320b765270d78dfb51b328e59ce2657af060dd (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -160,8 +160,11 @@ per block.
      - Dichotomy (by hand): with $P \le 2^{a+1}$ selectors, the helpers' blocks are visibly
        deficient. With more selectors, each private set costs $\gtrsim 2^{-2a}$ (Pinsker),
        which Han's inequality sums over $Y$. A middle range of $P$ is open.
-     - Next: replace Pinsker by a direct divergence estimate (about $2^{-a}$ per private set),
-       and check whether self-similarity then closes the middle range.
+     - The direct divergence estimate gives about $0.22\cdot 2^{-a}$ bits per private set. Han
+       over $a$-sets then certifies (R) only for $a \lesssim \log_2 k$.
+     - Next: try to build an (R)-counterexample with rank split $a \approx k/2$ and $P$ in the
+       middle range, or find a lever on larger helper blocks. Self-similarity is unused so far
+       beyond counting private sets.
      - Mixing only passes code-likeness down. A counterexample to (R) needs a part of $V$
        whose projected family is locally uniform with no selector explaining it.
 0'. **Typical lower bounds, by hand** (§6e).

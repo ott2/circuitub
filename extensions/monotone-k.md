@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 9aede87ab3bcb9219315b342fed2b66d29428ad9 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 3d320b765270d78dfb51b328e59ce2657af060dd (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -713,9 +713,21 @@ Three constraints follow.
   - So (R) survives selector mixtures unless $P$ lies in a middle range: above $2^{a+1}$, but
     with private sets too sparse to show up after the $2^{-2a}$ discount. The literature leaves
     the same range open (total-variation distance $\gtrsim 2^{-a}$).
-  - Pinsker is lossy here. The true cost of making one pattern of probability $2^{-a}$ rare is
-    about $2^{-a}$ bits, not $2^{-2a}$. The sharper form of the dichotomy needs a direct
-    divergence estimate.
+  - Pinsker is lossy here; a direct estimate does better (by hand).
+    - Force one pattern of uniform probability $q = 2^{-a}$ down to $r \le q/2$. The closest
+      distribution spreads the rest uniformly.
+    - Its divergence from uniform is $r\ln\frac rq + (1-r)\ln\frac{1-r}{1-q} \approx q(1 - x + x\ln x)$,
+      with $x = r/q$. That is $\ge 0.15\,q$ nats, about $0.22\cdot 2^{-a}$ bits.
+  - **The direct estimate still does not close the gap, and that is informative.**
+    - The helper deficit is now $\gtrsim (h/a)\,\rho\,2^{-a}$. For (R) we need
+      $c\,n\log k/k$, with $h \ge n/2$.
+    - That requires $\rho \gtrsim a\,2^{a}\log k/k$, which exceeds 1 once $a \gtrsim \log_2 k$.
+    - So Han's inequality over private $a$-sets certifies (R) only for rank splits
+      $a \lesssim \log_2 k$.
+  - **Where an (R)-counterexample would have to live:** selector mixtures with rank split
+    $a \gg \log k$ (for instance $a \approx k/2$, group blocks of rank $k/2$), and $P$ in the
+    middle range. Such a counterexample needs no good count: it would only kill the
+    unconditional Shearer route. (R$_Y$) would survive it.
 - **Approximate uniformity is cheap.** Small-bias spaces (Naor–Naor) give nearly $b$-wise
   uniform families on $h$ coordinates with about $2^{O(b)}\log h$ members. So the Rao bound
   $P \gtrsim \binom{h}{b/2}$, valid for exact strength $b$, does not bind entropically.
