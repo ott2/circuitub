@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit c8ee71fb680637e51f62880e5d868a8fb1ae3321 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 918781d69d268d5828636ceb87c0d5f43a3cae38 (2026-10-16)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -559,6 +559,25 @@ clause the other), so it is not a reduction. Its value is as a guide to the mech
 statement about the distribution of $X$, so it invites switching or comparison arguments ("a
 deficient $X$ maps to many normal ones"), which is how the counts in both examples are
 explained. A genuine reduction would name the $\ell_B$ in advance, from the structure of $H$.
+
+**What any Shearer-type proof needs.** Shearer bounds $\log_2\lvert\mathcal X\rvert$ by
+$\sum_B w_B H(X_B)$. So such a proof works exactly when:
+
+> **(R)** Every $H$ with rank $k$ and $\tau = n/2$ has a fractional partition into $O(k)$-sets
+> with local entropy deficit $\sum_B w_B(\lvert B\rvert - H(X_B)) \ge c\,n\log k/k$.
+
+- (R) is stronger than the conjecture. It would fail for a family of minimum transversals that
+  looks locally uniform but is constrained globally, like a code.
+- Monotonicity makes exact local uniformity impossible: $X$ meets every edge, so each edge
+  forbids one pattern. But that pattern alone costs only about $2^{-k}$ bits.
+- *The worst-case version fails.* Replacing $H(X_B)$ by $\log_2$ of the trace
+  $\lbrace X\cap B : X \in \mathcal X\rbrace$ saves only about one bit per block on deep
+  payments. The excess patterns (size $\ge k$) all occur, just rarely. So the typical
+  (entropy) form is needed, not the trace.
+- *Open, and worth settling first:* is there a monotone, "code-like" $H$ with $\tau = n/2$ and
+  local entropy deficit $o(n\log k/k)$ for every $O(k)$-partition? If its count were large,
+  it would refute the conjecture; if small, it would kill only the Shearer route. Both
+  examples so far (blocks, deep payments) put their entire deficit inside $O(k)$-blocks.
 
 ## 7. The structural question
 
