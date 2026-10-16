@@ -33,6 +33,7 @@ session Monotone_K in "monotone_k" = Majority_AC0 +
     Cluster_PPZ
     Harris_PPZ
     Shadow_Branch
+    Deep_Payment
     Audit_K
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
