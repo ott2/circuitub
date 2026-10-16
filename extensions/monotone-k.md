@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 4ad4acb8bb57f19015ae7ff081875887676b5aea (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 24c70c071b8267b619410296b77528b629309335 (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -685,6 +685,27 @@ Three constraints follow.
 - **Open (heuristic):** is there a family of $h/2$-subsets that is entropically close to a
   $t$-design, with $t$ of order $k$, in which each block has a private $a$-subset ($a < k$), and
   whose helper sets satisfy the self-similarity constraint? A literature check is in progress.
+- **Approximate uniformity is cheap.** Small-bias spaces (Naor–Naor) give nearly $b$-wise
+  uniform families on $h$ coordinates with about $2^{O(b)}\log h$ members. So the Rao bound
+  $P \gtrsim \binom{h}{b/2}$, valid for exact strength $b$, does not bind entropically.
+  Bollobás allows $P$ up to about $(h/2a)^a$.
+
+**Mixing transfers code-likeness; it does not create it (heuristic).**
+- When selector $p$ is in force and $\lvert X\cap G\rvert \approx m/2$, the helper part is
+  fixed: $X \cap Y = S_p$. So the projection $\lbrace X\cap Y\rbrace$ has entropy
+  $\le \log_2 P$.
+- By the "all on" attack $h \gtrsim m$, so helpers are at least half of $V$. For (R) to fail,
+  the $O(k)$-blocks *of $Y$* must therefore also be nearly uniform.
+- So the selector family is itself code-like: locally near-uniform, globally of low entropy.
+  It sits on $Y \subsetneq V$ and is enforced by $H$ through minimizing
+  $\lvert S\rvert + \tau(H_S)$, a cousin of the original problem.
+- The regress descends, since $Y$ is part of the same finite hypergraph. A mixture can only
+  pass code-likeness down from its selectors to its group.
+- **Consequence for (R):** any failure of (R) must bottom out in an *intrinsically* code-like
+  family, one not explained by mixing.
+  - To make this a theorem, the "cousin" problem must be shown to be an instance of the
+    original, or (R) must be stated for the weighted problem $\min_S(\lvert S\rvert + \tau(H_S))$.
+  - The latter is natural: it is (R) for hypergraphs with a cost on part of the vertex set.
 
 ## 7. The structural question
 
