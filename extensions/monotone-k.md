@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 918781d69d268d5828636ceb87c0d5f43a3cae38 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit da2c425d00f2d0718d8d903eeaa80753c16b4196 (2026-10-16)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -628,6 +628,8 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    is false for $k \ge 3$ and true for graphs (§6d).
    The deficit conjecture of §6d is false (§6e, deep payments). Local-$\tau$ certificates cannot
    be the mechanism in general.
+   **Suggested first (§6e, end):** the code-like question. Is there a cheap rank-$k$ gadget
+   forcing "exactly half" on a group much larger than $k$?
    **Main line now (§6e):** typical lower bounds. Find a structural rule that names $\ell_B$ in
    advance and a switching argument showing that $\lvert X\cap B\rvert < \ell_B$ is rare. Test it
    on the deep-payment example, where the switch is "a deficient block forces a full target".

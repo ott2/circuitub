@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit c8ee71fb680637e51f62880e5d868a8fb1ae3321 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit da2c425d00f2d0718d8d903eeaa80753c16b4196 (2026-10-16)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -17,8 +17,8 @@ formal before we build on it.
 - **§6c:** local certificates and the certificate conjecture.
 - **§6d:** the sharpened (concentration) form, the rigid model case, and the deficit
   conjecture.
-- **§6e:** deep payments, which refute the deficit conjecture; typical lower bounds, the
-  current main line.
+- **§6e:** deep payments, which refute the deficit conjecture; typical lower bounds;
+  condition (R) and the code-like question, the current main line.
 - §7: Question C.
 - §8: the next steps.
 
@@ -39,7 +39,7 @@ $2^{\mathbb E F}$. When ones share a critical zero set, they share the same maxi
 and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
 per block.
 
-**Where things stand (2026-10-14).**
+**Where things stand (2026-10-16).**
 - **Three one-level methods stop at $\Theta(n/k)$:** PPZ, Scheder–Tan's Harris form
   (`harris_ppz`), and shadow-branching (`shadow_branch`).
   - All share the leading constant $\frac{1}{2\ln 2}\cdot\frac nk$.
@@ -74,6 +74,15 @@ per block.
     $\ge \frac{s}{4b}\lvert B\rvert$, so $\Delta_b = \Theta(n)$ for $b = O(k)$.
   - So local-$\tau$ certificates cannot be the mechanism. What pins $\lvert X\cap B\rvert$ is a
     *typical* lower bound: a deficient block is possible but rare, by a factor of about $4^{-k}$.
+  - Its $\tau$ and count claims are formal (`Deep_Payment.thy`).
+- **What any Shearer-type proof needs (§6e, condition (R)).** Every $H$ must have an
+  $O(k)$-partition with local entropy deficit
+  $\sum_B w_B(\lvert B\rvert - H(X_B)) \ge c\,n\log k/k$.
+  - The trace (worst-case) version fails on deep payments.
+  - The obstacle is a *code-like* family: locally near-uniform, constrained globally.
+  - Equivalently, a cheap rank-$k$ gadget, with few helper vertices, forcing "exactly half" on
+    a group much larger than $k$. If its helpers were few, disjoint copies would refute the
+    conjecture.
 
 **Formal so far** (`isabelle/monotone_k/Cluster_PPZ.thy`, about 530 lines, plus
 `Audit_K.thy`; parent `Majority_AC0`, which imports `Depth3_Lower`):
@@ -115,7 +124,13 @@ per block.
   a few seconds.
 
 **Next (from §8 of the log):**
-0. **Typical lower bounds, by hand** (§6e). This is the main line.
+0. **The code-like question, by hand** (§6e, end). Suggested first.
+   - Either show that rank-$k$ gadgets forcing "exactly half" on large groups need many helper
+     vertices, or build one.
+   - Start with a group of size $m = k^2$. What do $K_m^{(k)}$-type edges, payments and
+     chains force?
+   - It may be the Majority lower bound in another guise. If so, record why and move on.
+0'. **Typical lower bounds, by hand** (§6e).
    - Find a rule that names $\ell_B$ from the structure of $H$, together with a switching
      argument ("a deficient $X$ maps to many normal ones") showing that
      $\lvert X\cap B\rvert < \ell_B$ is rare. With the escape clause, the concentration
