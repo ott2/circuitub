@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit fde1f63850890ea5b5f3344dc1da16a047c6e077 (2026-10-15)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit c8ee71fb680637e51f62880e5d868a8fb1ae3321 (2026-10-16)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -467,7 +467,14 @@ the certificate conjecture, it is additive: rigid regions pay for themselves whe
   The counterexample shows $\lvert U(H_Y)\rvert$ can grow like $\tau(H_Y)^2$, so this route
   bounds $F(Y)$ only when very few ones remain free.
 
-## 6e. Deep payments: the deficit conjecture is false (by hand, 2026-10-16)
+## 6e. Deep payments: the deficit conjecture is false [F in part], 2026-10-16
+
+*Formal* (`Deep_Payment.thy`, audited):
+- `dp_forces`: a deficient block forces the next one.
+- `dp_tau`: every finite transversal has $\ge N(k-1)$ vertices.
+- `dp_normal`, `dp_count`: at least $\lvert\mathrm{good}\rvert^N$ transversals of size $N(k-1)$.
+
+*By hand:* the Hoeffding estimate of $\lvert\mathrm{good}\rvert$ and the shortfall bound for small sets.
 
 **Construction.** Let $k$ be large, $s = \lfloor k/4\rfloor$, and $N > b$. Take blocks
 $B_1,\dots,B_N$ of size $2k-2$, a cyclic permutation $\pi$ of $[N]$, and sets $R_i \subseteq B_i$

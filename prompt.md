@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 501217aa9448fb3faa0c83a7481b675d87845757 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit c8ee71fb680637e51f62880e5d868a8fb1ae3321 (2026-10-16)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -106,6 +106,10 @@ per block.
   - At $n=2t$ this gives $S_k(n) \lesssim \binom{n}{n/2}(1-1/k)^{n/2}$, on paper.
   - Provenance: it composes two lemmas of Håstad–Jukna–Pudlák 1995, and GKP24 Theorem 21
     has $j=1$. The general-$j$ statement was not found stated anywhere.
+- **`Deep_Payment.thy`** (log §6e):
+  - `dp_forces`, `dp_tau`: $\tau \ge N(k-1)$ for the deep-payment hypergraph.
+  - `dp_normal`, `dp_count`: at least $\lvert\mathrm{good}\rvert^N$ transversals of size $N(k-1)$.
+  - The tail estimate of $\lvert\mathrm{good}\rvert$ and the shortfall bound are by hand.
 - **Build:**
   `WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=20 isabelle-build --session Monotone_K -m "…"`. It takes
   a few seconds.
