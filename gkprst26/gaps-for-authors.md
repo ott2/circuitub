@@ -1,6 +1,6 @@
 # Six gaps in the upper-bound proof of arXiv:2601.04072, with repairs
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, gkprst26/gaps-for-authors.md, on top of commit cdaa4af384e9f0940cea01a761ee639da77e0304 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, gkprst26/gaps-for-authors.md, on top of commit 146614fc924d077ac4c9b178b5a6af40f63374b5 (2026-10-16)}$
 
 *Note for the authors of* Optimal Monotone Depth-Three Circuit Lower Bounds for Majority
 *(Gurumukhani, Kleber, Paturi, Rosin, Saks, Talebanfard; arXiv:2601.04072v2).*
@@ -289,3 +289,21 @@ Since $F$ has at least four 2-clauses, some 2-clause $K$ avoids $a$. It survives
   - Gap 2 is the hypothesis `¬ infam T2o F` of `type2d`.
 - **Audit.** An oracle check confirms that the headline theorems are derived without `sorry`
   or any other unchecked step.
+
+## Attribution
+
+Claude Opus 5.5 (Anthropic, model `claude-opus-5-5`), working in Claude Code, did the
+following in October 2026:
+- the Isabelle formalization, in the course of which the gaps above were found;
+- the counterexamples and the repaired tables;
+- the draft of this note.
+
+András Salamon acted as editor: setting the task and the working constraints, and
+reviewing the results.
+
+The development was built with Isabelle2025-2 and with
+[isabelle-watchdog](https://pypi.org/project/isabelle-watchdog/) and
+[isabelle-query](https://pypi.org/project/isabelle-query/).
+
+The theorem and the structure of its proof are the paper's authors'. Any errors in the
+formalization or in this note are ours.
