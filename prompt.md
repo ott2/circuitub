@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit da2c425d00f2d0718d8d903eeaa80753c16b4196 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 4a35388da3498f48a8b29e186ecf764c7eb96d08 (2026-10-16)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -83,6 +83,16 @@ per block.
   - Equivalently, a cheap rank-$k$ gadget, with few helper vertices, forcing "exactly half" on
     a group much larger than $k$. If its helpers were few, disjoint copies would refute the
     conjecture.
+- **Links (2026-10-16, §6f): the code-like question is the problem itself.**
+  - Given $X\cap Y = S$, the set $X - Y$ is a uniform minimum transversal of the link
+    $H_S = \lbrace e - Y : e\cap S = \emptyset\rbrace$. So the loss is the selectors' deficit
+    plus the average link loss.
+  - `link_count` [F]: an "exactly half" gadget with $h$ helpers on $m$ vertices needs
+    $2^h S_k(m) \gtrsim \binom{m}{m/2}$. Its helper configurations are the CNFs of a
+    $\Sigma_3^k$ cover. So cheap gadgets exist iff the conjecture fails at size $m$.
+  - For the proof route: mixing over selectors washes out local deficits, so (R) may fail
+    for reasons unrelated to the count. The fix is (R$_Y$): Shearer per link, with a partition
+    $w^S$ that may depend on $S$, and the deficit taken from the link part only.
 
 **Formal so far** (`isabelle/monotone_k/Cluster_PPZ.thy`, about 530 lines, plus
 `Audit_K.thy`; parent `Majority_AC0`, which imports `Depth3_Lower`):
@@ -119,17 +129,22 @@ per block.
   - `dp_forces`, `dp_tau`: $\tau \ge N(k-1)$ for the deep-payment hypergraph.
   - `dp_normal`, `dp_count`: at least $\lvert\mathrm{good}\rvert^N$ transversals of size $N(k-1)$.
   - The tail estimate of $\lvert\mathrm{good}\rvert$ and the shortfall bound are by hand.
+- **`Link_Gadget.thy`** (log §6f): `mint` (minimum transversals within $V$), `link`,
+  `link_rank`, `link_tr`, `link_back`, `link_mint`, and `link_count`
+  ($\le 2^{\lvert Y\rvert}M$ minimum transversals with $\lvert X - Y\rvert = j$). The link
+  identity (uniform conditionals) is by hand.
 - **Build:**
   `WALL_TIMEOUT=120 WATCHDOG_TIMEOUT=20 isabelle-build --session Monotone_K -m "…"`. It takes
   a few seconds.
 
 **Next (from §8 of the log):**
-0. **The code-like question, by hand** (§6e, end). Suggested first.
-   - Either show that rank-$k$ gadgets forcing "exactly half" on large groups need many helper
-     vertices, or build one.
-   - Start with a group of size $m = k^2$. What do $K_m^{(k)}$-type edges, payments and
-     chains force?
-   - It may be the Majority lower bound in another guise. If so, record why and move on.
+0. **Selector mixtures, by hand** (§6f, end). The code-like question itself is settled: it is
+   the conjecture at size $m$.
+   - Either realize a hypergraph whose links $H_S$ are block-structured on *different*
+     partitions $\pi_S$ of $G$, or show the monotonicity ($S \subseteq S'$ implies
+     $H_S \supseteq H_{S'}$) and the rank bound prevent it.
+   - If one exists, check that (R) fails on it but (R$_Y$) holds. That would confirm (R$_Y$)
+     as the right target.
 0'. **Typical lower bounds, by hand** (§6e).
    - Find a rule that names $\ell_B$ from the structure of $H$, together with a switching
      argument ("a deficient $X$ maps to many normal ones") showing that

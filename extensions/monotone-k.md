@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit da2c425d00f2d0718d8d903eeaa80753c16b4196 (2026-10-16)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 4a35388da3498f48a8b29e186ecf764c7eb96d08 (2026-10-16)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -578,6 +578,72 @@ $\sum_B w_B H(X_B)$. So such a proof works exactly when:
   local entropy deficit $o(n\log k/k)$ for every $O(k)$-partition? If its count were large,
   it would refute the conjecture; if small, it would kill only the Shearer route. Both
   examples so far (blocks, deep payments) put their entire deficit inside $O(k)$-blocks.
+  *Settled for constructions in §6f; for (R), reformulated there.*
+
+## 6f. Links: the code-like question is the problem itself [F in part], 2026-10-16
+
+**Links.** Split $V = G \sqcup Y$, where $Y$ is the set of *helpers*. For $S \subseteq Y$ let
+the link be $H_S = \lbrace e - Y : e \in H,\ e\cap S = \emptyset\rbrace$, a hypergraph on $G$ of
+rank $\le k$ (`link_rank`). Let $X$ be a minimum transversal and $S = X\cap Y$.
+- $X - Y$ is a transversal of $H_S$ (`link_tr`).
+- If $T$ is a transversal of $H_S$, then $S\cup T$ is a transversal of $H$ (`link_back`). So
+  $X - Y$ is a *minimum* transversal of $H_S$ (`link_mint`).
+- **Link count [F].** `link_count`: if every link has at most $M$ minimum transversals of size
+  $j$, then at most $2^{\lvert Y\rvert}M$ minimum transversals of $H$ have
+  $\lvert X - Y\rvert = j$. The map $X \mapsto (X\cap Y,\ X-Y)$ is injective.
+- **Link identity (by hand).** Conversely, a minimum transversal $T$ of $H_S$ of size
+  $\tau - \lvert S\rvert$ gives a transversal $S\cup T$ of size $\tau$, which is minimum. So,
+  given $X\cap Y = S$, the set $X - Y$ is a *uniform* minimum transversal of $H_S$, and
+  $$n - \log_2\lvert\mathcal X\rvert = \bigl(\lvert Y\rvert - H(X_Y)\bigr) + \mathbb E_S\bigl[\lvert G\rvert - \log_2\lvert\mathrm{mint}(H_S)\rvert\bigr].$$
+  The loss is the selectors' entropy deficit plus the average loss of the links. The problem
+  is closed under conditioning on helpers.
+
+**Consequence for constructions: no cheap gadgets unless the conjecture already fails.**
+Suppose a gadget on a group $G$ of size $m$, with $h$ helpers, puts a near-uniform
+"exactly half" on $G$. Then its minimum transversals cover a constant fraction of the
+$m/2$-subsets of $G$. By `link_count` with $j = m/2$, and since each link with such a minimum
+transversal has $\tau = m/2$:
+$$\binom{m}{m/2} \lesssim 2^h S_k(m), \quad\text{that is,}\quad h \gtrsim m - \log_2 S_k(m) - \tfrac12\log_2 m.$$
+- The helper configurations are exactly the CNFs of a $\Sigma_3^k$ cover of the $m$-slice.
+  So $h$ is at least the log of the depth-3 Majority size at $m$ variables, up to $O(\log m)$.
+- More generally, by the identity, a gadget's total loss is at least the average loss of its
+  links, so disjoint copies of a gadget never beat the best hypergraph on $m$ vertices.
+- So the constructive branch of the code-like question of §6e *is* the conjecture at size
+  $m$: the Majority lower bound in another guise, as anticipated. Nothing further to do there.
+
+**Consequence for (R): mixtures, and the conditional form.**
+- The identity shows how code-like families arise. $X_G$ is a *mixture* over $S$ of uniform
+  minimum transversals of the links. Entropy is concave, so
+  $H(X_B) \ge \mathbb E_S H(X_B \mid S)$: mixing *washes out* local deficits. If different
+  selector values gave links with blocks on different partitions of $G$, then every
+  $O(k)$-set of $G$ would look nearly uniform, while each link is block-structured.
+- So (R) can fail for a reason that has nothing to do with the count. Whether such
+  hypergraphs exist is not known: realizing them is constrained, since
+  $S \subseteq S'$ implies $H_S \supseteq H_{S'}$.
+- **(R$_Y$), conditional form.** Conditioning on the selectors undoes the mixing, *provided
+  the partition may depend on the selector value*.
+  - Apply Shearer to each link separately, with its own fractional partition $w^S$ of $G$.
+    With the identity this gives
+    $$n - \log_2\lvert\mathcal X\rvert \ \ge\ \bigl(\lvert Y\rvert - H(X_Y)\bigr) + \mathbb E_S \sum_B w^S_B\bigl(\lvert B\rvert - H(X_B \mid X_Y = S)\bigr).$$
+  - For $Y = V$ this is the identity, a tautology. The selector term is the original problem on
+    $Y$. So the route drops it (it is $\ge 0$) and needs some $Y$, and for each $S$ some
+    $O(k)$-partition $w^S$, whose *link part* $\mathbb E_S\sum_B w^S_B(\dots)$ is
+    $\ge c\,n\log k/k$.
+  - For $Y = \emptyset$ this is (R).
+  - It is weaker than (R), and it still implies the conjecture.
+  - It is immune to selector mixtures, since $w^S$ can follow $\pi_S$. A *fixed* partition
+    would not be: conditionally on $S$, a fixed $O(k)$-set still meets the blocks of $\pi_S$
+    in a spread way, and still looks nearly uniform.
+- **It is not a tautology.** The partition covers only $V - Y$, so
+  $\lvert V - Y\rvert \ge c\,n\log k/k$ is needed.
+  - Take $G = V - Y$ uniformly random of size $g$. Han's inequality gives
+    $\mathbb E\, H(X_G \mid X_{V-G}) \le (g/n)\log_2\lvert\mathcal X\rvert$.
+  - So $G$ *as a single block* has conditional deficit $\ge (g/n)(n - \log_2\lvert\mathcal X\rvert)$.
+    That is only a $g/n$ fraction of the loss. An $O(k)$-partition of $G$ gives less, by
+    subadditivity.
+  - So the content lies in the $O(k)$ restriction together with a structural choice of $Y$.
+- **Next test:** a selector-mixture hypergraph, if one can be realized. For blocks and deep
+  payments, $Y = \emptyset$ already works.
 
 ## 7. The structural question
 
@@ -628,8 +694,11 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    is false for $k \ge 3$ and true for graphs (§6d).
    The deficit conjecture of §6d is false (§6e, deep payments). Local-$\tau$ certificates cannot
    be the mechanism in general.
-   **Suggested first (§6e, end):** the code-like question. Is there a cheap rank-$k$ gadget
-   forcing "exactly half" on a group much larger than $k$?
+   **Done (§6f):** the code-like question. A cheap rank-$k$ gadget forcing "exactly half" on
+   a group of size $m$ exists only if the conjecture fails at size $m$ (`link_count`). For the
+   proof route, (R) is replaced by its conditional form (R$_Y$).
+   **Next by hand:** realize a selector-mixture hypergraph (links block-structured on
+   different partitions), or show the monotonicity $H_S \supseteq H_{S'}$ prevents it.
    **Main line now (§6e):** typical lower bounds. Find a structural rule that names $\ell_B$ in
    advance and a switching argument showing that $\lvert X\cap B\rvert < \ell_B$ is rare. Test it
    on the deep-payment example, where the switch is "a deficient block forces a full target".
