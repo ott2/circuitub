@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 12f907e48deb7b55379afa01a6d18e2650e7489a (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 6302bf7602e0b6655027d79490d37d5eb914ccba (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -134,6 +134,13 @@ per block.
   near-minimum transversals of the helper-only edges), and `link_count`
   ($\le 2^{\lvert Y\rvert}M$ minimum transversals with $\lvert X - Y\rvert = j$). The link
   identity (uniform conditionals) is by hand.
+- **`Shearer_Sub.thy`, `Shearer_Entropy.thy`** (log §6c, 2026-10-17): `shearer_sub` (Shearer for
+  monotone submodular set functions), `cls`/`ent` (trace entropy under a uniform finite family,
+  by class counts), `ent_sub` (submodularity), `shearer_ent`
+  ($\ln\lvert F\rvert \le \sum_B w_B H(X_B)$). Next formal step: the grouping bound
+  $H(X_B) \le H(\lvert X\cap B\rvert) + \mathbb E\ln\binom{\lvert B\rvert}{\lvert X\cap B\rvert}$,
+  then `central_binomial` from `Binomial_Estimates`, which makes the concentration form of §6d
+  formal (with $(3b+2)/2$ in place of $\pi b/2$).
 - **`Private_Design.thy`** (log §6f, imports `Main`): `private_design` (if $a$-sets are
   equally popular and one is private, two blocks share $< a$ points), `three_blocks`,
   `half_blocks` (three blocks of size $\ge \lvert Y\rvert/2$ force $\lvert Y\rvert < 6a$).

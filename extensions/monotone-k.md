@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 0e7d47f050f657f644075e984b5a3d43c70441dc (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 6302bf7602e0b6655027d79490d37d5eb914ccba (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -353,9 +353,19 @@ By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
   $t/b = n/(2b)$, just outside the theorem's range. Its count is only $t+1$, so the remaining
   case is "globally rigid hypergraphs have few minimum transversals". That half is where a
   proof has to do real work, and it is a cleaner question than Question C.
-- **Formalization.** It would need entropy and Shearer's lemma, or the combinatorial
-  Shearer lemma (Chung–Graham–Frankl–Shearer) with integer multiplicities. Neither is in
-  this repository yet.
+- **Formalization.** Shearer's lemma is now formal (2026-10-17), in two parts.
+  - `Shearer_Sub.thy`: `shearer_sub`, Shearer for any set function on subsets of
+    $\lbrace 0,\dots,n-1\rbrace$ with $h(\emptyset) = 0$, nonnegative prefix increments and
+    diminishing increments (the Madiman–Tetali form). The proof is prefix telescoping.
+  - `Shearer_Entropy.thy`: `ent F B` is the entropy (in nats) of the trace $X\cap B$ for $X$
+    uniform on a finite family $F$, defined by class counts.
+    - `ent_sub`: submodularity. It follows from $\ln y \le y-1$ and the class-counting bound
+      `count_bound`, which groups by the trace on $A'$ and splits on $i$.
+    - `shearer_ent`: $\ln\lvert F\rvert \le \sum_B w_B\, H(X_B)$ for every fractional cover.
+  - The trace (combinatorial) form would not do: the gain comes from the distribution of
+    $\lvert X\cap B\rvert$, which traces cannot see.
+  - Remaining for the theorem: step 3 (grouping by $\lvert X\cap B\rvert$, and the binomial
+    estimate) and step 4 (the entropy of a nonnegative integer).
 
 ## 6d. The certificate theorem sharpened, and the rigid model cases (by hand, 2026-10-15)
 
