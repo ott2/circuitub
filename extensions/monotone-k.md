@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 12f907e48deb7b55379afa01a6d18e2650e7489a (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 0e7d47f050f657f644075e984b5a3d43c70441dc (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -795,6 +795,15 @@ $E_Y = \lbrace e\in H : e\subseteq Y\rbrace$ be the helper-only edges.
   $S_p\cap S_q$, which raises $\tau(H_{S_p\cap S_q})$ above $m/2$. The sandwich bound then
   weakens by the excess. Surviving edges need $A_f \subseteq Y - (S_p\cap S_q)$ for many
   pairs at once, which pulls against privacy.
+  - **Pair-specific edges are a genuine escape route.** Take a group part $f'$ with a helper
+    part $A'$ that meets both $S_p - S_q$ and $S_q - S_p$ and avoids $S_p\cap S_q$. Such an
+    edge is dead under $S_p$ and under $S_q$, but alive under their intersection, so it can
+    defeat the König set $Z$ without $E_Y$.
+  - Every pair needs such edges, against the many König sets $Z$. Their helper parts are
+    subsets of $S_p\triangle S_q$ that meet both halves: a "pair-private" condition in place
+    of privacy.
+  - Whether $P^2$ such families fit within rank $k$, with selectors that stay locally uniform,
+    is the next question if this line is pursued.
 
 ## 7. The structural question
 
