@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 3d320b765270d78dfb51b328e59ce2657af060dd (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 12f907e48deb7b55379afa01a6d18e2650e7489a (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -751,6 +751,50 @@ Three constraints follow.
   - This is a reformulation, not a reduction: the base case is again the code-like question.
   - It does say where to look. A counterexample to (R) needs a part of $V$ whose projected
     family is locally uniform without any selector explaining it.
+
+**The helper-only edges must do the selecting (2026-10-17).** Let
+$E_Y = \lbrace e\in H : e\subseteq Y\rbrace$ be the helper-only edges.
+- **Slack [F].** `proj_slack`: the helper part $X\cap Y$ of a minimum transversal is a
+  transversal of $E_Y$, with $\lvert X\cap Y\rvert \le \lvert S'\rvert + \lvert G\rvert - \lvert X\cap G\rvert$
+  for every transversal $S'$ of $E_Y$. So selectors are near-minimum transversals of $E_Y$, with
+  additive slack about $m/2$. That alone is weak when $h \approx m$, but a sharper statement
+  holds pairwise.
+- **Two block structures cost no more than one (by hand, König).** Take partitions
+  $\pi_p,\pi_q$ of $G$ into blocks of size $2r-2$, with all $r$-subsets of each block as
+  edges.
+  - Each element of $G$ is an edge between its $\pi_p$-block and its $\pi_q$-block. This
+    gives a $(2r-2)$-regular bipartite multigraph, which splits into perfect matchings
+    (König).
+  - $r-1$ of these matchings give a set $Z$ of $m/2$ elements with exactly $r-1$ in every block
+    of both partitions. $Z$ and its complement both meet every block in $r-1 < r$ elements,
+    so $Z$ hits every edge. Hence $\tau(\pi_p\cup\pi_q) = m/2$.
+  - For three partitions there is no such theorem, and a common half-set need not exist.
+- **Intersection attack (by hand; one typicality assumption).** Assume that under
+  $S_p \cap S_q$ only the partitions $p$ and $q$ survive. This holds when every edge of
+  every other partition has $A_f \cap S_p\cap S_q \ne \emptyset$; for $\lvert A_f\rvert = a$ it
+  is typical, but not automatic.
+  - Let $T$ be a transversal of $E_Y$ with $S_p\cap S_q \subseteq T \subseteq S_p\cup S_q$.
+    Then $T\cup Z$ is a transversal of $H$. Minimality ($\tau = \lvert S_p\rvert + m/2$) forces
+    $\lvert T\rvert \ge \lvert S_p\rvert$.
+  - Let $D = S_p\triangle S_q$, and let $E'$ consist of the sets $e\cap D$, for the
+    $e\in E_Y$ that miss $S_p\cap S_q$. (Each such $e\cap D$ is nonempty, since $S_p$ hits $e$.)
+    Then $\tau(E') = \lvert D\rvert/2$, and $S_p - S_q$, $S_q - S_p$ are complementary minimum
+    transversals.
+  - **So $E_Y$ carries an "exactly half" instance on every symmetric difference**
+    $S_p\triangle S_q$. For locally uniform selectors these have size about $h/2$.
+- **The cheapest such $E_Y$ is visible to (R).** A perfect matching on $Y$ satisfies all the
+  sandwich conditions at once, for any selector family drawn from its $2^{h/2}$ minimum
+  covers. But each matching edge is a 2-set with exactly one helper in $X$, a 1-bit deficit
+  per edge, so (R) holds.
+  - For a mixture to evade (R), $E_Y$ must have exactly-half structure on every
+    $S_p\triangle S_q$ while its minimum covers look locally uniform: $E_Y$ must itself be
+    code-like.
+  - This is the regress of the previous paragraph, now concrete and without the slack
+    problem: a selector mixture is a code-like $E_Y$ on $Y$ plus a group that copies it.
+- **What would break the conclusion:** partitions other than $p, q$ surviving under
+  $S_p\cap S_q$, which raises $\tau(H_{S_p\cap S_q})$ above $m/2$. The sandwich bound then
+  weakens by the excess. Surviving edges need $A_f \subseteq Y - (S_p\cap S_q)$ for many
+  pairs at once, which pulls against privacy.
 
 ## 7. The structural question
 

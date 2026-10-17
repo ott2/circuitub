@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 3d320b765270d78dfb51b328e59ce2657af060dd (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 12f907e48deb7b55379afa01a6d18e2650e7489a (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -130,7 +130,8 @@ per block.
   - `dp_normal`, `dp_count`: at least $\lvert\mathrm{good}\rvert^N$ transversals of size $N(k-1)$.
   - The tail estimate of $\lvert\mathrm{good}\rvert$ and the shortfall bound are by hand.
 - **`Link_Gadget.thy`** (log §6f): `mint` (minimum transversals within $V$), `link`,
-  `link_rank`, `link_tr`, `link_back`, `link_mint`, and `link_count`
+  `link_rank`, `link_tr`, `link_back`, `link_mint`, `proj_slack` (helper parts are
+  near-minimum transversals of the helper-only edges), and `link_count`
   ($\le 2^{\lvert Y\rvert}M$ minimum transversals with $\lvert X - Y\rvert = j$). The link
   identity (uniform conditionals) is by hand.
 - **`Private_Design.thy`** (log §6f, imports `Main`): `private_design` (if $a$-sets are
@@ -162,9 +163,14 @@ per block.
        which Han's inequality sums over $Y$. A middle range of $P$ is open.
      - The direct divergence estimate gives about $0.22\cdot 2^{-a}$ bits per private set. Han
        over $a$-sets then certifies (R) only for $a \lesssim \log_2 k$.
-     - Next: try to build an (R)-counterexample with rank split $a \approx k/2$ and $P$ in the
-       middle range, or find a lever on larger helper blocks. Self-similarity is unused so far
-       beyond counting private sets.
+     - Intersection attack plus König: two block partitions with the same even block size
+       have a common half-transversal. So the helper-only edges $E_Y$ carry an "exactly half"
+       instance on every $S_p\triangle S_q$ (`proj_slack` is the formal slack version).
+       The cheapest $E_Y$, a perfect matching, is visible to (R). So a mixture evading (R)
+       needs a code-like $E_Y$: the regress, made concrete.
+     - Next: drop the typicality assumption (other partitions dying on $S_p\cap S_q$), or
+       accept that selector mixtures are not the source of an (R)-counterexample. Then look
+       for *intrinsically* code-like families, or switch to the formal Shearer lemma.
      - Mixing only passes code-likeness down. A counterexample to (R) needs a part of $V$
        whose projected family is locally uniform with no selector explaining it.
 0'. **Typical lower bounds, by hand** (§6e).

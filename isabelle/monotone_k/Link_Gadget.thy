@@ -74,6 +74,41 @@ proof -
   ultimately show ?thesis unfolding mint_def by blast
 qed
 
+text \<open>
+  The helper part of a minimum transversal is a near-minimum transversal of the helper-only
+  edges \<open>{e \<in> H. e \<subseteq> Y}\<close>: any transversal \<open>S'\<close> of those, plus all of \<open>V - Y\<close>, is a transversal
+  of \<open>H\<close>. The slack is \<open>|V - Y| - |X - Y|\<close>.
+\<close>
+
+lemma proj_slack:
+  assumes fin: "finite V" and HV: "\<forall>e\<in>H. e \<subseteq> V" and X: "mint H V X" and Y: "Y \<subseteq> V"
+    and S': "S' \<subseteq> Y" "tr {e\<in>H. e \<subseteq> Y} S'"
+  shows "tr {e\<in>H. e \<subseteq> Y} (X \<inter> Y)"
+    and "card (X \<inter> Y) + card (X - Y) \<le> card S' + card (V - Y)"
+proof -
+  have XV: "X \<subseteq> V" "tr H X" and min: "\<forall>X'. X' \<subseteq> V \<longrightarrow> tr H X' \<longrightarrow> card X \<le> card X'"
+    using X unfolding mint_def by auto
+  show "tr {e\<in>H. e \<subseteq> Y} (X \<inter> Y)"
+    using XV(2) unfolding tr_def by blast
+  have fX: "finite X" using finite_subset[OF XV(1) fin] .
+  have split: "card ((X - Y) \<union> (X \<inter> Y)) = card (X - Y) + card (X \<inter> Y)"
+    by (rule card_Un_disjoint) (use fX in auto)
+  have cX: "card X = card (X \<inter> Y) + card (X - Y)" using split by (simp only: Un_Diff_Int)
+  have "e \<inter> (S' \<union> (V - Y)) \<noteq> {}" if e: "e \<in> H" for e
+  proof (cases "e \<subseteq> Y")
+    case True
+    then show ?thesis using S'(2) e unfolding tr_def by blast
+  next
+    case False
+    then show ?thesis using HV e by blast
+  qed
+  then have "tr H (S' \<union> (V - Y))" unfolding tr_def by blast
+  moreover have "S' \<union> (V - Y) \<subseteq> V" using S'(1) Y by blast
+  ultimately have "card X \<le> card (S' \<union> (V - Y))" using min by blast
+  also have "\<dots> \<le> card S' + card (V - Y)" by (rule card_Un_le)
+  finally show "card (X \<inter> Y) + card (X - Y) \<le> card S' + card (V - Y)" using cX by linarith
+qed
+
 theorem link_count:
   assumes fin: "finite V" and Y: "Y \<subseteq> V"
     and M: "\<And>S. S \<subseteq> Y \<Longrightarrow> card {T. mint (link H Y S) (V - Y) T \<and> card T = j} \<le> M"
