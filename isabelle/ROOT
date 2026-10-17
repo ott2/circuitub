@@ -36,6 +36,7 @@ session Monotone_K in "monotone_k" = Majority_AC0 +
     Deep_Payment
     Link_Gadget
     Private_Design
+    Shearer_Sub
     Audit_K
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
