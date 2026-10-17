@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 94b2482d4d49411e644fa52e50b620ee3b61c200 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit e0daa17e1b06b55a452933d15d0c1128ec8615a6 (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -23,6 +23,8 @@ formal before we build on it.
   form (R$_Y$), and selector mixtures analysed as set systems: Bollobás set pairs, private
   subsets, König, and the intersection attack.
 - **§6g:** typical and deviation forms [F], the test cases redone, and the size condition (D).
+- **§6h:** the conditional certificate [F], mirror payments [F in part], witness components and
+  the component route with its four failure modes.
 - §7: Question C.
 - §8: the next steps.
 
@@ -44,7 +46,22 @@ and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tf
 per block.
 
 **Where things stand (2026-10-17).**
-- **Newest (2026-10-17, §6g):**
+- **Newest (2026-10-17, §6h): structure.**
+  - `certificate_cond` [F] (`Shearer_Conditional.thy`): the cover may depend on a label
+    $g(X)$ at cost $H(g)$; `lent_image`: $H(g) \le \ln\lvert g(F)\rvert$.
+  - **Witness components** $\mathcal K(X)$: components of the graph joining each one to the
+    zeros of its critical edges. *Component route* (by hand from `certificate_cond`): if the
+    components have sizes in $[k^c, Ck]$, their sizes are concentrated given $\mathcal K(X)$,
+    and $H(\mathcal K) = o(n\log k/k)$, then the conjecture's bound holds. Balance is not
+    needed. Four failure modes: small or large components, spread inside components, or
+    high-entropy components (the last is §6f's selector question, sharpened).
+  - **Mirror payments** [F in part] (`Mirror_Payment.thy`): $\tau = n/2$ (`mp_tau`), every
+    deficiency level occurs in a minimum transversal (`mp_deficient`), the one-block trace
+    has $\ge 2^{2k-4}$ patterns (`mp_trace`), and the count is within a bit per block of
+    extremal (`mp_count`). By hand: deficient events have probability about $4\pi k\,4^{-k}$, so
+    the entropy form saves fully on single blocks. The trace form needs unions of $C$ blocks
+    and loses a boundary block. Its components are $B_i$, or $B_i\cup B_{\pi(i)} - r_{\pi(i)}$.
+- **Earlier (2026-10-17, §6g):**
   - `certificate_typ` (bounds $t_B$ failing on a fraction $p_B$, cost $h(p_B) + p_B\ln t_B$)
     and `certificate_dev` (only $D = \sum_B w_B\mathbb E\lvert\,\lvert X\cap B\rvert - c_B\rvert$
     enters) are formal, in `Shearer_Typical.thy`.
@@ -179,6 +196,14 @@ per block.
   - **`Shearer_Typical.thy`** (log §6g): `int_entropy_typ`, `certificate_typ` (Gibbs against
     uniform mass $r$ below $t$ and geometric mass above), `int_entropy_dev`, `certificate_dev`
     (two-sided geometric around any centre).
+  - **`Shearer_Conditional.thy`** (log §6h): `cbound`, `lent_image`, `certificate_cond`.
+  - **`Mirror_Payment.thy`** (log §6h, imports `Deep_Payment`): `mp`, `mp_forces`, `mp_mirror`,
+    `mp_tau`, `mp_glue_tr` (a sufficient condition for glued choices to be transversals),
+    `mp_deficient`, `half_subsets`, `mp_trace`, `mp_count`.
+    Pitfalls met: `card_Diff_subset` gives `card {..<m} - card Z`, so finish with `simp`;
+    `force` looped on an image goal with a set equation, so use `image_eqI[OF _ mem]` and
+    `simp only:`; simp unfolds `S (nxt N i)` along with `S i`, so prove the wanted disjunct
+    by cases; nat goals like `2*k-2 + (N-2)*(k-1) = N*(k-1)` need `add_mult_distrib` by hand.
   - Pitfalls met: `ln_mult` and `ln_realpow` are unconditional here (`ln_mult` has an `if`),
     so use `ln_mult_pos[OF p1 p2]` and plain `rule ln_realpow`. simp rewrites `c - v - 1` to
     `c - Suc v` before `sum.reindex` fires; use `simp only: sum.reindex[OF inj] comp_def`.
@@ -197,15 +222,18 @@ per block.
 **Next (from §8 of the log):**
 0. **The size condition (D): the main line** (§6g). Formal side done (`certificate_typ`,
    `certificate_dev`); the test cases are done by hand (blocks and deep payments $D = 0$,
-   rigid model $D = k-1$ in total). Next:
-   - Name the partition and centres from the structure of $H$. Two mechanisms are known:
-     *global payment* (a deficit forces a larger excess elsewhere) and *spread rigidity* (the
-     freedom is a small set spread over many vertices).
-   - Find an example that separates the trace form from the entropy form: rare sizes that
-     carry many patterns each. Deep payments with $R_i = B_i$ is rigid (it alternates empty
-     and full blocks), so it does not.
-   - Try to break (D) at scale $\gg k$. That is the code-like case, so expect it to lead back
-     to §6f.
+   rigid model $D = k-1$ in total). The structural candidate is now the witness-component
+   route of §6h (`certificate_cond`). Next:
+   - Failure mode 2: inside a fixed component structure, can $\lvert X\cap K\rvert$ spread by
+     $\sqrt{\lvert K\rvert}$? Every one in $K$ shares critical zeros with others, which
+     should pin the size. Try to prove this, starting with components in which all ones
+     share one zero set (the blocks, the rigid clique).
+   - Prove the route's hypotheses for a natural class, such as hypergraphs whose components
+     are unions of blocks of one fixed partition, up to rare events.
+   - Failure mode 3 is §6f's selector question, sharpened: the component structure must
+     carry $\Omega(\log k)$ bits per block, with no coarser $O(k)$-partition absorbing it.
+   - A fully separating trace/entropy example is still open. Mirror payments separate only up
+     to merging $O(1)$ blocks; deep payments with $R_i = B_i$ is rigid.
 0″. **Selector mixtures (parked)** (§6f, end). The code-like question itself is settled: it is
    the conjecture at size $m$.
    - Either realize a hypergraph whose links $H_S$ are block-structured on *different*

@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 94b2482d4d49411e644fa52e50b620ee3b61c200 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit e0daa17e1b06b55a452933d15d0c1128ec8615a6 (2026-10-17)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g.**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
 
 ## 1. The question, and what is known
 
@@ -911,6 +911,120 @@ alone:
   excess elsewhere) and *spread rigidity* (rigid model: the freedom is a $(k-1)$-set spread
   over $m$ vertices, so each block sees almost none of it).
 
+## 6h. Structure: witness components and the conditional certificate [F in part], 2026-10-17
+
+*Formal* (audited):
+- `Shearer_Conditional.thy`:
+  - `certificate_cond`: the cover, the centres and $\theta$ may all depend on a label $g(X)$.
+    Then $\ln\lvert F\rvert \le H(g) + \mathbb E_X\,\beta(X)$, where $\beta(X)$ is the bound of
+    `certificate_dev` for the class of $X$, computed with that class's cover.
+    The proof is one line: $\ln\lvert F\rvert = H(g) + \mathbb E\ln\lvert\text{class}\rvert$ is the
+    definition of `lent`, and $X$ is uniform on its class.
+  - `lent_image`: $H(g) \le \ln\lvert g(F)\rvert$.
+- `Mirror_Payment.thy`, a new test case. It has blocks $B_i$ of size $2k-2$, special vertices
+  $r_i$, $R_i = B_i - r_i$, and a copy map $\iota$ from $R_i$ onto $R_{\pi(i)}$. The edges are:
+  - *inside:* the $k$-subsets of $B_i$ containing $r_i$;
+  - *mirror payments:* $A\cup\lbrace\iota(a)\rbrace$ for every $(k-1)$-set $A \subseteq R_i$ and every $a \in A$.
+
+  The theorems:
+  - `mp_forces`, `mp_mirror`: a block short by $d$ forces the mirror image of its zeros into
+    the next block, an excess of at least $d$.
+  - `mp_tau`: $\tau = N(k-1) = n/2$.
+  - `mp_deficient`: *every* deficiency level $0 \le d \le k-2$ occurs in a minimum transversal.
+    Unlike deep payments, deficient blocks really occur.
+  - `mp_trace`: hence the trace on one block has at least $2^{2k-4} = 2^{\lvert B\rvert - 2}$
+    patterns.
+  - `mp_count`: at least $\binom{2k-3}{k-1}^N$ minimum transversals, which is within one bit
+    per block of the disjoint blocks.
+
+**Mirror payments, by hand.**
+- *Deficient events are rare.* In a minimum transversal all the accounting is tight. So a
+  block of type $D_d$ ($r_i \in X$, zeros $Z' \subseteq R_i$, $\lvert Z'\rvert = k-1+d$)
+  makes the next block exactly $\iota(Z')$. Replacing two free blocks
+  ($\binom{2k-3}{k-1}^2 \approx 4^{2k-3}/(\pi k)$ choices) by a pair $(D, \iota(Z'))$
+  ($2^{2k-4}$ choices) gives $\Pr[\text{block } i \text{ is deficient}] \approx 4\pi k\,4^{-k}$.
+  This is a weight comparison, not yet a careful count of the constraints on the neighbours.
+  So $D = N\cdot\mathrm{poly}(k)4^{-k}$ with centres $k-1$, and `certificate_dev` gives the full
+  per-block saving.
+- *The trace form needs merged blocks.* On one block the trace saves at most 2 bits
+  (`mp_trace`). On a union of $C$ blocks that are consecutive along $\pi$, only the first block
+  can receive from outside. The others are free ($\binom{2k-3}{k-1} = \Theta(4^{k}/\sqrt k)$ patterns each) or
+  determined by their predecessor. So the trace saves about $\frac{C-1}{2}\log_2 k - O(C)$.
+  This is a mild separation: the entropy form works on single blocks, while the trace form
+  loses a boundary block per set. It is not a counterexample to the trace version of (R),
+  since $C = O(1)$ is allowed.
+
+**Witness components.** For $X \in \mathcal X$, each $v \in X$ has a *critical edge* $e$ with
+$e\cap X = \lbrace v\rbrace$, by minimality. Let $\Gamma_X$ join $v$ to the zeros of its critical
+edges. Its components $\mathcal K(X)$ partition $V$; a zero that lies in no critical edge is a
+singleton, a *free zero*. Shared critical zeros are exactly what PPZ loses on (§6), so these
+are the natural units. In the examples:
+
+| example | components of $\Gamma_X$ | $\lvert X\cap K\rvert$ given $\mathcal K(X)$ | entropy of $\mathcal K(X)$ |
+|---|---|---|---|
+| blocks $K_{2k-2}^{(k)}$ | the blocks | fixed, $k-1$ (balanced) | $0$ |
+| deep payments | the blocks | fixed, $k-1$ (balanced) | $0$ |
+| mirror payments | $B_i$, or $B_i\cup B_{\pi(i)} - r_{\pi(i)}$ after a deficiency | fixed, $k-1$ or $2k-2$ (balanced within one) | $N\cdot\mathrm{poly}(k)4^{-k}$ |
+| rigid model | the clique, plus free zeros | fixed, $m-k+1$ (unbalanced) | $0$ |
+
+The mirror-payment row, by hand:
+- In a free block, every one has the critical edge $r_i + v + (k-2 \text{ zeros})$.
+- After a deficiency, $r_i$ is joined to $Z'$.
+- Each $v \in R_i - Z'$ has the critical edge $A\cup\lbrace\iota(v)\rbrace$, with $A - v \subseteq Z'$.
+- Each received $\iota(z)$ has critical edges back into $Z'$.
+- For $d \ge 1$, $r_{\pi(i)}$ is in no critical edge, so it is a free zero.
+
+With $g = \mathcal K$, `certificate_cond` turns this table into a proof route.
+
+> **Component route.** Suppose that the witness components of a uniform minimum transversal
+> have sizes in $[k^{c}, Ck]$, and that given $\mathcal K(X)$ their sizes are concentrated: for
+> some centres $c_K$ (depending on the class), $\mathbb E\lvert\,\lvert X\cap K\rvert - c_K\rvert \le k^{c(1/2-\eta)}$
+> on average over components. Suppose also that $H(\mathcal K(X)) = o(n\log k/k)$. Then
+> $\lvert\mathcal X\rvert \le 2^{\,n-\Omega(c\eta\, n\log k/k)}$.
+
+This follows from `certificate_cond` (assembled by hand). Use $g = \mathcal K$, take the
+components of the class as the cover, and set $\theta = x/(1+x)$. Each component saves
+$\frac12\ln\frac{3\lvert K\rvert+2}{2} \ge \frac c2\ln k$, and pays at most $\ln(1+2x)+1$ (§6g).
+- *Balance is not needed.* The bound $\binom{b}{j} \le 2^b/\sqrt{(3b+2)/2}$ holds for every $j$,
+  and unbalanced but concentrated components save more. Disjoint $K_b^{(k)}$ of mixed sizes,
+  with $\tau = n/2$ overall, are unbalanced with zero deviation.
+- *Small components are excluded on purpose:* a singleton (a free zero) saves nothing.
+- Three of the four examples satisfy it outright.
+- The rigid model fails it only through size: its one component is the whole clique. Its count
+  is tiny anyway, and the fixed partition of §6g handles it ("spread rigidity": cut the clique
+  into $O(k)$ pieces, padded with free zeros).
+- The hypothesis can fail in four ways. Three of them match objects already studied
+  (heuristic, not a proof):
+  0. *Small components* (size $< k^{c}$). Here the ones have nearly private critical zeros,
+     the local picture on which the one-level methods are tight (§6b), so the $\log k$ would
+     have to come from elsewhere. Their vertices could be grouped into larger fixed sets as
+     in §6g, but no rule for that is known.
+  1. *Large components.* These are the rigid case (low count) or the code-like case (an
+     "exactly half" constraint on $m \gg k$ vertices, which by `link_count` is the conjecture
+     at size $m$).
+  2. *Spread inside components.* Even given $\mathcal K(X)$, $\lvert X\cap K\rvert$ varies by
+     about $\sqrt{\lvert K\rvert}$. No example has this. In all four, the component structure
+     already fixes the sizes. This is (D) again, now inside a component, where every one
+     shares critical zeros with the others.
+  3. *High-entropy components*, with $\Omega(\log k)$ bits of component structure per block.
+     This is the selector mixture of §6f, with the component partition playing the selector.
+     The conditional certificate pays exactly that entropy, so the parked question returns
+     with a sharper target. A mixture defeats the component route only if its component
+     structure carries $\Omega(\log k)$ bits per block *and* no coarser $O(k)$-partition
+     absorbs it.
+
+**Two simple facts that the route uses** (by hand).
+- *Deviations are shortfalls.* For an exact partition with $\sum_B c_B = n/2$, every $X$ has
+  $\sum_B(\lvert X\cap B\rvert - c_B) = 0$. So $\sum_B\lvert\,\lvert X\cap B\rvert - c_B\rvert = 2\sum_B(c_B - \lvert X\cap B\rvert)^+$,
+  and $D$ is twice the expected total shortfall. So (D) asks for *typical lower bounds* whose
+  expected total shortfall is small, which ties §6g back to §6e.
+- *Local gadgets are absorbed.* In a disjoint union of units, $\lvert X\cap U\rvert = \tau(U)$ for
+  every minimum transversal, since the $\tau$'s add. So $D = 0$ with the units as blocks,
+  however much the sizes vary inside a unit. More generally, any compensation inside an
+  $O(k)$-region is invisible once that region is a block. A failure of (D) needs
+  compensation across distances $\gg k$, *and* in a pattern that no low-entropy labelling
+  tracks.
+
 ## 7. The structural question
 
 The conjecture now follows from a purely structural statement:
@@ -969,12 +1083,20 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    - The open route is pair-specific edges.
    **Main line now (§6g):** the size condition (D). Typical lower bounds and the deviation form
    are formal (`certificate_typ`, `certificate_dev`), and all three test cases have total
-   deviation $O(k)$. Next:
-   - Name the partition and centres from the structure of $H$. Candidates are the two
-     mechanisms seen so far, global payment and spread rigidity.
-   - Look for an example that separates the trace form from the entropy form (rare sizes
-     carrying many patterns), or show that none exists near the extremal count.
-   - Try to break (D) directly, at scale $\gg k$ (the code-like case).
+   deviation $O(k)$. **Structure (§6h):** the witness components $\mathcal K(X)$, through
+   `certificate_cond`, give a proof route with four failure modes: small or large
+   components, sizes spread inside components, or high-entropy components. Mirror payments [F in part] are a fourth test case, with
+   deficient blocks that do occur, and a mild trace/entropy separation. Next:
+   - Prove the component route's hypotheses for a natural class. A candidate is hypergraphs
+     whose minimum transversals all have components that are unions of blocks of one fixed
+     partition, up to rare events.
+   - Settle failure mode 2: can $\lvert X\cap K\rvert$ spread by $\sqrt{\lvert K\rvert}$ inside
+     a fixed component structure? Inside a component every one shares critical zeros with
+     others, which should pin the size; try to prove this.
+   - Failure mode 3 is the parked selector question of §6f, with a sharper target: the
+     component structure must carry $\Omega(\log k)$ bits per block.
+   - A fully separating trace/entropy example is still open. Mirror payments separate only up
+     to merging $O(1)$ blocks.
 1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
    particular, find out when swaps at disjoint places commute. Note also when the swaps can
    be located canonically, which the charging needs (§7).
