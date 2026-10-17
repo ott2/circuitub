@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 50343ee6c50dd620772f6de39445bf7ad73d67c6 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 0677f410f9d6970c6c83fd68ea92f72130560848 (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -364,8 +364,8 @@ By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
     - `shearer_ent`: $\ln\lvert F\rvert \le \sum_B w_B\, H(X_B)$ for every fractional cover.
   - The trace (combinatorial) form would not do: the gain comes from the distribution of
     $\lvert X\cap B\rvert$, which traces cannot see.
-  - Step 3 is formal too (`Shearer_Concentration.thy`, 2026-10-17); see §6d.
-  - Remaining for the theorem: step 4, the entropy of a nonnegative integer with small mean.
+  - Steps 3 and 4 are formal too (`Shearer_Concentration.thy`, `Shearer_Certificate.thy`,
+    2026-10-17). So the whole theorem, in its sharpened §6d form, is formal; see §6d.
 
 ## 6d. The certificate theorem sharpened, and the rigid model cases (by hand, 2026-10-15)
 
@@ -390,6 +390,20 @@ $$\ln\lvert F\rvert \le \sum_B w_B\Bigl(\lvert B\rvert\ln 2 - \tfrac12\ln\tfrac{
 - For a fractional partition, $\sum_B w_B\lvert B\rvert = n$, and this is the display above.
 - The family need not consist of minimum transversals. Any $F$ works, which is what (R)
   and (R$_Y$) need.
+
+**[F] The sharpened certificate theorem (2026-10-17).** `certificate` in
+`Shearer_Certificate.thy`: suppose every $X \in F$ has $\lvert X\cap B\rvert \ge t_B$ on each
+block of a fractional cover. Then for every $0 < \theta < 1$,
+$$\ln\lvert F\rvert \le \sum_B w_B\Bigl(\lvert B\rvert\ln 2 - \tfrac12\ln\tfrac{3\lvert B\rvert+2}{2}\Bigr) - W\ln(1-\theta) - \Delta\ln\theta,$$
+with $W = \sum_B w_B$ and $\Delta = \sum_B w_B\,\mathbb E(\lvert X\cap B\rvert - t_B)$.
+- The integer-entropy step is Gibbs' inequality against the geometric distribution
+  $(1-\theta)\theta^{j}$ (`gibbs`, `int_entropy`). With one $\theta$ for all blocks, no concavity
+  argument is needed.
+- $\theta = \Delta/(W+\Delta)$ gives $-W\ln(1-\theta) - \Delta\ln\theta = W h(\Delta/W)$ (in nats),
+  the display below.
+- $t_B$ can be any lower bound, not just $\tau(H[B])$. So the theorem also covers the
+  *typical* lower bounds of §6e, except for the rare deficient events. Those would need $t_B$
+  to fail on a small part of $F$, which is the next extension.
 
 **Certificate form, sharpened.** Write $e_B = \lvert X\cap B\rvert - \tau_B \ge 0$, so that
 $H(\lvert X\cap B\rvert) = H(e_B)$ and $\sum_B w_B\,\mathbb E e_B = \Delta$. A nonnegative
