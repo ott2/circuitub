@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 0677f410f9d6970c6c83fd68ea92f72130560848 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 1d0f754e7ade71df66fc1b133829df658e67855e (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -893,13 +893,17 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    **Done (§6f):** the code-like question. A cheap rank-$k$ gadget forcing "exactly half" on
    a group of size $m$ exists only if the conjecture fails at size $m$ (`link_count`). For the
    proof route, (R) is replaced by its conditional form (R$_Y$).
-   **Next by hand:** realize a selector-mixture hypergraph (links block-structured on
-   different partitions), or show that the constraints of §6f prevent it. Exact designs are
-   ruled out (`private_design`); the entropic version and partial switching are open. The
-   self-similarity constraint is the most promising lever.
+   **Parked (§6f):** selector mixtures.
+   - Exact designs are ruled out (`private_design`).
+   - Few selectors, and the intersection attack plus König, both favour (R).
+   - The open route is pair-specific edges.
    **Main line now (§6e):** typical lower bounds. Find a structural rule that names $\ell_B$ in
    advance and a switching argument showing that $\lvert X\cap B\rvert < \ell_B$ is rare. Test it
    on the deep-payment example, where the switch is "a deficient block forces a full target".
+   - The formal side is ready: `certificate` takes any lower bounds $t_B$.
+   - The next formal step allows $t_B$ to fail on a small part of $F$, at a cost of about
+     $\sum_B w_B(p_B\ln\lvert B\rvert + h(p_B))$, via `group_bound` with the indicator
+     $[\lvert X\cap B\rvert \ge t_B]$.
 1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
    particular, find out when swaps at disjoint places commute. Note also when the swaps can
    be located canonically, which the charging needs (§7).

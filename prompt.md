@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 0677f410f9d6970c6c83fd68ea92f72130560848 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 1d0f754e7ade71df66fc1b133829df658e67855e (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -18,7 +18,10 @@ formal before we build on it.
 - **§6d:** the sharpened (concentration) form, the rigid model case, and the deficit
   conjecture.
 - **§6e:** deep payments, which refute the deficit conjecture; typical lower bounds;
-  condition (R) and the code-like question, the current main line.
+  condition (R) and the code-like question.
+- **§6f:** links (the code-like question is the conjecture at size $m$), the conditional
+  form (R$_Y$), and selector mixtures analysed as set systems: Bollobás set pairs, private
+  subsets, König, and the intersection attack.
 - §7: Question C.
 - §8: the next steps.
 
@@ -39,7 +42,22 @@ $2^{\mathbb E F}$. When ones share a critical zero set, they share the same maxi
 and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
 per block.
 
-**Where things stand (2026-10-16).**
+**Where things stand (2026-10-17).**
+- **New on 2026-10-17:**
+  - **The certificate theorem is formal.** `certificate` (`Shearer_Certificate.thy`) states:
+    for any finite family $F$, any fractional cover, any lower bounds
+    $t_B \le \lvert X\cap B\rvert$, and every $0<\theta<1$,
+    $\ln\lvert F\rvert \le \sum_B w_B(\lvert B\rvert\ln 2 - \frac12\ln\frac{3\lvert B\rvert+2}{2}) - W\ln(1-\theta) - \Delta\ln\theta$.
+    Shearer's lemma itself is formal (`shearer_ent`), so §6c and §6d no longer depend on hand
+    proofs.
+  - **Selector mixtures are parked** (§6f). Every natural mixture so far fails in the
+    direction that favours (R):
+    - exact designs cannot switch (`private_design`);
+    - with few selectors the helpers are visibly low-entropy;
+    - the intersection attack plus König forces the helper-only edges to be code-like
+      themselves.
+    The only open route is pair-specific edges. Mixing only passes code-likeness down, so a
+    counterexample to (R) needs an *intrinsically* code-like part.
 - **Three one-level methods stop at $\Theta(n/k)$:** PPZ, Scheder–Tan's Harris form
   (`harris_ppz`), and shadow-branching (`shadow_branch`).
   - All share the leading constant $\frac{1}{2\ln 2}\cdot\frac nk$.
@@ -50,7 +68,7 @@ per block.
 - **The blocks' $\log k$ lies entirely in the shadow** (§6b). A random set of
   $(1-\frac{1}{k-1})t$ vertices almost never lies inside a minimum transversal. Each block's
   deviation is pinned to an $O(1)$ window, which costs about $1/\sqrt k$ per block.
-- **The main line is local certificates** (§6c, proved by hand with Shearer's lemma).
+- **Local certificates** (§6c; formal since 2026-10-17, see above).
   - A fractional partition into $O(k)$-sets whose local $\tau$'s sum to $\tau(H)$, up to a
     deficit $\varepsilon n/k$, gives $2^n k^{-\Omega(n/k)}$.
   - For disjoint blocks it is exact.
@@ -155,7 +173,20 @@ per block.
   a few seconds.
 
 **Next (from §8 of the log):**
-0. **Selector mixtures, by hand** (§6f, end). The code-like question itself is settled: it is
+0. **Typical lower bounds: the main line, by hand and formally** (§6e; item 0' below has the
+   hand-side details).
+   - Formal step: extend `certificate` to lower bounds $t_B$ that hold on all but a small part
+     of $F$. The cost of the rare deficient events is about
+     $\sum_B w_B(p_B\ln\lvert B\rvert + h(p_B))$, where $p_B$ is the probability that the bound
+     fails and $h$ is binary entropy.
+     - The natural route is `group_bound` with $f(X) = [\lvert X\cap B\rvert \ge t_B]$, then
+       `int_entropy` on the good part.
+     - This makes the deep-payment example's count bound formal up to its probability
+       estimate.
+   - Hand step: the switching argument showing that deficient blocks are rare, first in the
+     deep-payment example (a deficient block forces the whole next block), then in the rigid
+     model.
+0″. **Selector mixtures (parked)** (§6f, end). The code-like question itself is settled: it is
    the conjecture at size $m$.
    - Either realize a hypergraph whose links $H_S$ are block-structured on *different*
      partitions $\pi_S$ of $G$, or show the monotonicity ($S \subseteq S'$ implies
@@ -181,9 +212,11 @@ per block.
        instance on every $S_p\triangle S_q$ (`proj_slack` is the formal slack version).
        The cheapest $E_Y$, a perfect matching, is visible to (R). So a mixture evading (R)
        needs a code-like $E_Y$: the regress, made concrete.
-     - Next: drop the typicality assumption (other partitions dying on $S_p\cap S_q$), or
-       accept that selector mixtures are not the source of an (R)-counterexample. Then look
-       for *intrinsically* code-like families, or switch to the formal Shearer lemma.
+     - Escape route found by trying to break the attack: pair-specific edges, whose helper
+       parts meet both halves of $S_p\triangle S_q$ and avoid $S_p\cap S_q$. Whether about
+       $P^2$ such families fit within rank $k$ is open.
+     - If resumed: settle pair-specific edges, or look for *intrinsically* code-like
+       families.
      - Mixing only passes code-likeness down. A counterexample to (R) needs a part of $V$
        whose projected family is locally uniform with no selector explaining it.
 0'. **Typical lower bounds, by hand** (§6e).
@@ -197,8 +230,8 @@ per block.
      constructions within a day. Try to break each new statement before building on it.
    - The union lemma ($\le k\tau$ vertices in minimum transversals) is **false** for $k \ge 3$
      and true for graphs (§6d). It is not needed any more.
-   - When something survives by hand, formalize it. A formal Shearer lemma (entropy, or the
-     combinatorial Chung–Graham–Frankl–Shearer form) would make §6c formal.
+   - When something survives by hand, formalize it. The Shearer toolkit is in place:
+     `shearer_ent`, `group_bound`, `gibbs`, `int_entropy`, `certificate`.
 1. **Question C, by hand** (secondary now). If $\tau = n/2$ and there are many minimum transversals, do most
    of them have $\Omega(n/k)$ disjoint $O(k)$-clusters? Known so far:
    - A cluster-free minimum transversal can exist (the linear-design example in §7), but
@@ -224,6 +257,12 @@ per block.
 - Never patch Markdown with Python heredocs: non-raw strings turn TeX escapes into control
   characters. Use Edit.
 - Keep the log honest: label every claim proved [F], proved by hand, or heuristic.
+- Routine research progress needs no approval (2026-10-17): record results, formalize hand
+  proofs, and launch literature agents without asking, then report. Pushes and anything
+  outward-facing still wait for the user.
+- Run `isabelle-query -R isabelle sorry` from the repo root, or `-R .` from `isabelle/`. A
+  scan of the whole repo also finds `control/Oracle_Control.thy`, the deliberate positive
+  control for the audit.
 - Constructions that would beat the blocks are the other direction. Note from §4 that disjoint
   cliques can't beat $K_{2k-2}^{(k)}$.
 
@@ -377,10 +416,16 @@ The theories:
 1. **Done: the upper bound for every $n$** (`Majority_3CNF_Any`). Small cliques sufficed
    instead of the paper's necklace; the necklace would only improve the constant
    ($c_2 = 2$ to $14/6$).
-2. **The writeup is drafted:** `gkprst26/gaps-for-authors.md`. Every counterexample and every
-   repaired table was re-checked by hand against the v2 LaTeX, which is byte-identical to the
-   arXiv v2 tarball. There is no v3 yet (the user checked on 2026-10-13). The user decides
-   whether and how to send it; never send anything externally.
+2. **The writeup:** `gkprst26/gaps-for-authors.md`. Every counterexample and every repaired
+   table was re-checked by hand against the v2 LaTeX, which is byte-identical to the arXiv v2
+   tarball. There was still no v3 on 2026-10-17 (arXiv listing checked).
+   - On 2026-10-17 the note's "draft" header was removed and an Attribution section added
+     (Claude Opus 5.5 did the formalization and the note; the user edited).
+   - `main` was pushed the same day, so the note and the Isabelle sources are public.
+   - The user planned a short email to the submitting author, Navid Talebanfard. It
+     discloses the LLM assistance and points to the note and to `isabelle/gkprst`.
+   - Whether it was sent, and any reply, is the user's to report. Never send anything
+     externally yourself.
 3. **Watermarks.** Run `tools/watermark.py FILE.md …` to restamp documents with the current
    commit, and use `--check` to see what would change. Run it before committing document
    edits. Never run it on `VERDICT.md`.
