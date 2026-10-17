@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 6302bf7602e0b6655027d79490d37d5eb914ccba (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 50343ee6c50dd620772f6de39445bf7ad73d67c6 (2026-10-17)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
 
@@ -364,8 +364,8 @@ By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
     - `shearer_ent`: $\ln\lvert F\rvert \le \sum_B w_B\, H(X_B)$ for every fractional cover.
   - The trace (combinatorial) form would not do: the gain comes from the distribution of
     $\lvert X\cap B\rvert$, which traces cannot see.
-  - Remaining for the theorem: step 3 (grouping by $\lvert X\cap B\rvert$, and the binomial
-    estimate) and step 4 (the entropy of a nonnegative integer).
+  - Step 3 is formal too (`Shearer_Concentration.thy`, 2026-10-17); see §6d.
+  - Remaining for the theorem: step 4, the entropy of a nonnegative integer with small mean.
 
 ## 6d. The certificate theorem sharpened, and the rigid model cases (by hand, 2026-10-15)
 
@@ -378,6 +378,18 @@ No $\tau_B$ appears. The count is small as soon as the block sizes $\lvert X\cap
 concentrated, to entropy below $\frac12\log_2\lvert B\rvert$, on a fractional partition into
 $O(k)$-sets. Local transversal numbers are one reason for concentration; global minimality can
 be another.
+
+**[F] (2026-10-17), in nats, for any finite family and any fractional cover.** `shearer_conc`
+in `Shearer_Concentration.thy` states:
+$$\ln\lvert F\rvert \le \sum_B w_B\Bigl(\lvert B\rvert\ln 2 - \tfrac12\ln\tfrac{3\lvert B\rvert+2}{2} + H(\lvert X\cap B\rvert)\Bigr).$$
+- The constant $\frac{3b+2}{2}$ replaces $\frac{\pi b}{2}$; it comes from `central_ratio` in
+  `Binomial_Estimates`.
+- The chain-rule step is `group_bound`: if a labelling $g$ determines $f$, then
+  $H(g) \le H(f) + \mathbb E\ln(\#g\text{-values in the }f\text{-class})$. The instance
+  `ent_count` bounds the count by $\binom{\lvert B\rvert}{\lvert X\cap B\rvert}$.
+- For a fractional partition, $\sum_B w_B\lvert B\rvert = n$, and this is the display above.
+- The family need not consist of minimum transversals. Any $F$ works, which is what (R)
+  and (R$_Y$) need.
 
 **Certificate form, sharpened.** Write $e_B = \lvert X\cap B\rvert - \tau_B \ge 0$, so that
 $H(\lvert X\cap B\rvert) = H(e_B)$ and $\sum_B w_B\,\mathbb E e_B = \Delta$. A nonnegative
