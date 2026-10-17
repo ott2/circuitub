@@ -20,7 +20,7 @@ ML \<open>
      @{thm ent_sub}, @{thm shearer_ent},
      @{thm group_bound}, @{thm ent_count}, @{thm ln_binom}, @{thm shearer_conc},
      @{thm gibbs}, @{thm geom_sum}, @{thm int_entropy}, @{thm certificate},
-     @{thm int_entropy_typ}, @{thm certificate_typ}];
+     @{thm int_entropy_typ}, @{thm certificate_typ}, @{thm int_entropy_dev}, @{thm certificate_dev}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

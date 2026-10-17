@@ -125,4 +125,103 @@ proof -
   finally show ?thesis unfolding a_def c_def .
 qed
 
+text \<open>
+  The deviation form: Gibbs against the two-sided geometric distribution
+  \<open>(1-\<theta>)/(1+\<theta>) \<theta>^|v-c|\<close> around any centre \<open>c\<close>. Only the mean absolute deviation
+  \<open>E|f X - c|\<close> enters, so lower and upper tails are treated alike (\<open>int_entropy_dev\<close>,
+  \<open>certificate_dev\<close>).
+\<close>
+
+theorem int_entropy_dev:
+  fixes f :: "'a set \<Rightarrow> nat" and \<theta> :: real and c :: nat
+  assumes fin: "finite F" and ne: "F \<noteq> {}" and th: "0 < \<theta>" "\<theta> < 1"
+  shows "lent F f \<le> ln ((1 + \<theta>) / (1 - \<theta>))
+           - ln \<theta> * ((\<Sum>X\<in>F. \<bar>real (f X) - real c\<bar>) / real (card F))"
+proof -
+  define d where "d v = (v - c) + (c - v)" for v :: nat
+  have dabs: "real (d v) = \<bar>real v - real c\<bar>" for v unfolding d_def by auto
+  define q where "q v = (1 - \<theta>) / (1 + \<theta>) * \<theta> ^ d v" for v
+  have qpos: "\<forall>v\<in>f ` F. 0 < q v" unfolding q_def using th by simp
+  have fI: "finite (f ` F)" using fin by simp
+  define U where "U = {v\<in>f ` F. c \<le> v}"
+  define L where "L = {v\<in>f ` F. \<not> c \<le> v}"
+  have split: "(\<Sum>v\<in>f ` F. (1 - \<theta>) * \<theta> ^ d v)
+      = (\<Sum>v\<in>U. (1 - \<theta>) * \<theta> ^ d v) + (\<Sum>v\<in>L. (1 - \<theta>) * \<theta> ^ d v)"
+    unfolding U_def L_def by (rule sum_split_pred[OF fI])
+  have up: "(\<Sum>v\<in>U. (1 - \<theta>) * \<theta> ^ d v) \<le> 1"
+  proof -
+    have inj: "inj_on (\<lambda>v. v - c) U" by (rule inj_onI) (auto simp: U_def)
+    have "(\<Sum>v\<in>U. (1 - \<theta>) * \<theta> ^ d v) = (\<Sum>v\<in>U. (1 - \<theta>) * \<theta> ^ (v - c))"
+      by (rule sum.cong) (auto simp: U_def d_def)
+    also have "\<dots> = (\<Sum>j\<in>(\<lambda>v. v - c) ` U. (1 - \<theta>) * \<theta> ^ j)"
+      by (simp add: sum.reindex[OF inj])
+    also have "\<dots> \<le> 1" by (rule geom_sum) (use th fI in \<open>auto simp: U_def\<close>)
+    finally show ?thesis .
+  qed
+  have lo: "(\<Sum>v\<in>L. (1 - \<theta>) * \<theta> ^ d v) \<le> \<theta>"
+  proof -
+    have inj: "inj_on (\<lambda>v. c - v - 1) L" by (rule inj_onI) (auto simp: L_def)
+    have "(\<Sum>v\<in>L. (1 - \<theta>) * \<theta> ^ d v) = (\<Sum>v\<in>L. \<theta> * ((1 - \<theta>) * \<theta> ^ (c - v - 1)))"
+    proof (rule sum.cong[OF refl])
+      fix v assume "v \<in> L"
+      then have "d v = Suc (c - v - 1)" unfolding L_def d_def by auto
+      then show "(1 - \<theta>) * \<theta> ^ d v = \<theta> * ((1 - \<theta>) * \<theta> ^ (c - v - 1))" by simp
+    qed
+    also have "\<dots> = \<theta> * (\<Sum>j\<in>(\<lambda>v. c - v - 1) ` L. (1 - \<theta>) * \<theta> ^ j)"
+      by (simp only: sum_distrib_left sum.reindex[OF inj] comp_def)
+    also have "\<dots> \<le> \<theta> * 1"
+      by (rule mult_left_mono, rule geom_sum) (use th fI in \<open>auto simp: L_def\<close>)
+    finally show ?thesis by simp
+  qed
+  have "(\<Sum>v\<in>f ` F. q v) = (\<Sum>v\<in>f ` F. (1 - \<theta>) * \<theta> ^ d v) / (1 + \<theta>)"
+    unfolding q_def by (simp add: sum_divide_distrib)
+  also have "\<dots> \<le> (1 + \<theta>) / (1 + \<theta>)"
+    by (rule divide_right_mono) (use split up lo th in linarith)+
+  also have "\<dots> = 1" using th by simp
+  finally have qsum: "(\<Sum>v\<in>f ` F. q v) \<le> 1" .
+  have g: "lent F f \<le> (\<Sum>X\<in>F. - ln (q (f X))) / real (card F)"
+    by (rule gibbs[OF fin ne qpos qsum])
+  define K where "K = ln ((1 + \<theta>) / (1 - \<theta>))"
+  have lq: "- ln (q (f X)) = K - ln \<theta> * \<bar>real (f X) - real c\<bar>" for X
+  proof -
+    have p1: "0 < (1 - \<theta>) / (1 + \<theta>)" and p2: "0 < \<theta> ^ d (f X)" using th by simp_all
+    have "ln (q (f X)) = ln ((1 - \<theta>) / (1 + \<theta>)) + ln (\<theta> ^ d (f X))"
+      unfolding q_def by (rule ln_mult_pos[OF p1 p2])
+    also have "ln (\<theta> ^ d (f X)) = real (d (f X)) * ln \<theta>" by (rule ln_realpow)
+    finally have "ln (q (f X)) = ln ((1 - \<theta>) / (1 + \<theta>)) + real (d (f X)) * ln \<theta>" .
+    moreover have "ln ((1 - \<theta>) / (1 + \<theta>)) = - K"
+      unfolding K_def using th by (simp add: ln_div)
+    ultimately show ?thesis unfolding dabs by simp
+  qed
+  have N0: "0 < real (card F)" using fin ne by (simp add: card_gt_0_iff)
+  have "(\<Sum>X\<in>F. - ln (q (f X))) = real (card F) * K - ln \<theta> * (\<Sum>X\<in>F. \<bar>real (f X) - real c\<bar>)"
+    unfolding lq by (simp add: sum_subtractf sum_distrib_left)
+  then have "(\<Sum>X\<in>F. - ln (q (f X))) / real (card F)
+      = K - ln \<theta> * ((\<Sum>X\<in>F. \<bar>real (f X) - real c\<bar>) / real (card F))"
+    using N0 by (simp add: diff_divide_distrib)
+  then show ?thesis using g unfolding K_def by simp
+qed
+
+theorem certificate_dev:
+  fixes w :: "nat set \<Rightarrow> real" and c :: "nat set \<Rightarrow> nat" and \<theta> :: real
+  assumes fin: "finite F" and ne: "F \<noteq> {}" and FV: "F \<subseteq> Pow {..<n}"
+    and finB: "finite \<B>" and Bsub: "\<forall>B\<in>\<B>. B \<subseteq> {..<n}" and w0: "\<forall>B\<in>\<B>. 0 \<le> w B"
+    and cover: "\<forall>i<n. 1 \<le> (\<Sum>B\<in>\<B>. if i \<in> B then w B else 0)"
+    and th: "0 < \<theta>" "\<theta> < 1"
+  shows "ln (real (card F)) \<le> (\<Sum>B\<in>\<B>. w B * (real (card B) * ln 2 - ln ((3 * real (card B) + 2) / 2) / 2
+           + (ln ((1 + \<theta>) / (1 - \<theta>))
+           - ln \<theta> * ((\<Sum>X\<in>F. \<bar>real (card (X \<inter> B)) - real (c B)\<bar>) / real (card F)))))"
+proof -
+  define a where "a B = real (card B) * ln 2 - ln ((3 * real (card B) + 2) / 2) / 2" for B :: "nat set"
+  define e where "e B = ln ((1 + \<theta>) / (1 - \<theta>))
+           - ln \<theta> * ((\<Sum>X\<in>F. \<bar>real (card (X \<inter> B)) - real (c B)\<bar>) / real (card F))" for B
+  have one: "lent F (\<lambda>X. card (X \<inter> B)) \<le> e B" for B
+    unfolding e_def by (rule int_entropy_dev[OF fin ne th])
+  have "ln (real (card F)) \<le> (\<Sum>B\<in>\<B>. w B * (a B + lent F (\<lambda>X. card (X \<inter> B))))"
+    unfolding a_def by (rule shearer_conc[OF fin ne FV finB Bsub w0 cover])
+  also have "\<dots> \<le> (\<Sum>B\<in>\<B>. w B * (a B + e B))"
+    by (rule sum_mono) (use w0 one in \<open>auto intro: mult_left_mono\<close>)
+  finally show ?thesis unfolding a_def e_def .
+qed
+
 end
