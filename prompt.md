@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 1d0f754e7ade71df66fc1b133829df658e67855e (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 94b2482d4d49411e644fa52e50b620ee3b61c200 (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -22,6 +22,7 @@ formal before we build on it.
 - **§6f:** links (the code-like question is the conjecture at size $m$), the conditional
   form (R$_Y$), and selector mixtures analysed as set systems: Bollobás set pairs, private
   subsets, König, and the intersection attack.
+- **§6g:** typical and deviation forms [F], the test cases redone, and the size condition (D).
 - §7: Question C.
 - §8: the next steps.
 
@@ -43,7 +44,21 @@ and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tf
 per block.
 
 **Where things stand (2026-10-17).**
-- **New on 2026-10-17:**
+- **Newest (2026-10-17, §6g):**
+  - `certificate_typ` (bounds $t_B$ failing on a fraction $p_B$, cost $h(p_B) + p_B\ln t_B$)
+    and `certificate_dev` (only $D = \sum_B w_B\mathbb E\lvert\,\lvert X\cap B\rvert - c_B\rvert$
+    enters) are formal, in `Shearer_Typical.thy`.
+  - **Correction:** in deep payments *every* minimum transversal has exactly $k-1$ in each
+    block, so deficient blocks never occur, and the worst-case `certificate` (and even the
+    trace form) already gives the full saving. §6e's "rare by $4^{-k}$" and "trace fails"
+    were wrong and are marked corrected.
+  - The rigid model has total deviation $D = k-1$, so `certificate_dev` gives the full saving.
+    The worst-case trace form also saves there (isolated vertices are never in $X$). No example
+    yet separates trace from entropy.
+  - **New main line: the size condition (D)** of §6g. It implies the conjecture and (R).
+    $O(k)$-scale flexibility is absorbed by merging blocks; spread at scale $\gg k$ is the
+    code-like case.
+- **Earlier on 2026-10-17:**
   - **The certificate theorem is formal.** `certificate` (`Shearer_Certificate.thy`) states:
     for any finite family $F$, any fractional cover, any lower bounds
     $t_B \le \lvert X\cap B\rvert$, and every $0<\theta<1$,
@@ -91,12 +106,13 @@ per block.
   - It has the blocks' count, yet every set of size $\le b$ falls short by
     $\ge \frac{s}{4b}\lvert B\rvert$, so $\Delta_b = \Theta(n)$ for $b = O(k)$.
   - So local-$\tau$ certificates cannot be the mechanism. What pins $\lvert X\cap B\rvert$ is a
-    *typical* lower bound: a deficient block is possible but rare, by a factor of about $4^{-k}$.
+    *global* lower bound: a deficient block would force a larger excess elsewhere, so it never
+    occurs in a minimum transversal (§6g corrects §6e's "rare by $4^{-k}$").
   - Its $\tau$ and count claims are formal (`Deep_Payment.thy`).
 - **What any Shearer-type proof needs (§6e, condition (R)).** Every $H$ must have an
   $O(k)$-partition with local entropy deficit
   $\sum_B w_B(\lvert B\rvert - H(X_B)) \ge c\,n\log k/k$.
-  - The trace (worst-case) version fails on deep payments.
+  - The trace (worst-case) version does *not* fail on deep payments (corrected in §6g).
   - The obstacle is a *code-like* family: locally near-uniform, constrained globally.
   - Equivalently, a cheap rank-$k$ gadget, with few helper vertices, forcing "exactly half" on
     a group much larger than $k$. If its helpers were few, disjoint copies would refute the
@@ -160,8 +176,14 @@ per block.
   `ln_binom`, `shearer_conc` (the concentration form, with $(3b+2)/2$ for $\pi b/2$); `gibbs`,
   `int_entropy`, and **`certificate`**, the sharpened certificate theorem with free $\theta$ and
   any lower bounds $t_B$. So §6c and §6d are now fully formal.
-  - Next formal extension: lower bounds $t_B$ that fail on a small part of $F$ (the typical
-    lower bounds of §6e).
+  - **`Shearer_Typical.thy`** (log §6g): `int_entropy_typ`, `certificate_typ` (Gibbs against
+    uniform mass $r$ below $t$ and geometric mass above), `int_entropy_dev`, `certificate_dev`
+    (two-sided geometric around any centre).
+  - Pitfalls met: `ln_mult` and `ln_realpow` are unconditional here (`ln_mult` has an `if`),
+    so use `ln_mult_pos[OF p1 p2]` and plain `rule ln_realpow`. simp rewrites `c - v - 1` to
+    `c - Suc v` before `sum.reindex` fires; use `simp only: sum.reindex[OF inj] comp_def`.
+    A closing simp over a large AC-reshaped sum was slow; state the theorem with the same
+    parenthesization as the proof (`a B + c B`) and finish with `.`.
   - Pitfall met: `linarith` failed on a purely linear goal over `define`d atoms, and `argo`
     closed it. Earlier, `ln_le_cancel_iff` (a simp rule) rewrote `ln x ≤ ln c` hypotheses
     during preprocessing. Use `ln_mono` as an exact rule.
@@ -173,19 +195,17 @@ per block.
   a few seconds.
 
 **Next (from §8 of the log):**
-0. **Typical lower bounds: the main line, by hand and formally** (§6e; item 0' below has the
-   hand-side details).
-   - Formal step: extend `certificate` to lower bounds $t_B$ that hold on all but a small part
-     of $F$. The cost of the rare deficient events is about
-     $\sum_B w_B(p_B\ln\lvert B\rvert + h(p_B))$, where $p_B$ is the probability that the bound
-     fails and $h$ is binary entropy.
-     - The natural route is `group_bound` with $f(X) = [\lvert X\cap B\rvert \ge t_B]$, then
-       `int_entropy` on the good part.
-     - This makes the deep-payment example's count bound formal up to its probability
-       estimate.
-   - Hand step: the switching argument showing that deficient blocks are rare, first in the
-     deep-payment example (a deficient block forces the whole next block), then in the rigid
-     model.
+0. **The size condition (D): the main line** (§6g). Formal side done (`certificate_typ`,
+   `certificate_dev`); the test cases are done by hand (blocks and deep payments $D = 0$,
+   rigid model $D = k-1$ in total). Next:
+   - Name the partition and centres from the structure of $H$. Two mechanisms are known:
+     *global payment* (a deficit forces a larger excess elsewhere) and *spread rigidity* (the
+     freedom is a small set spread over many vertices).
+   - Find an example that separates the trace form from the entropy form: rare sizes that
+     carry many patterns each. Deep payments with $R_i = B_i$ is rigid (it alternates empty
+     and full blocks), so it does not.
+   - Try to break (D) at scale $\gg k$. That is the code-like case, so expect it to lead back
+     to §6f.
 0″. **Selector mixtures (parked)** (§6f, end). The code-like question itself is settled: it is
    the conjecture at size $m$.
    - Either realize a hypergraph whose links $H_S$ are block-structured on *different*

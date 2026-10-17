@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 1d0f754e7ade71df66fc1b133829df658e67855e (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 94b2482d4d49411e644fa52e50b620ee3b61c200 (2026-10-17)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), and `shadow_branch` (§6b). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now typical lower bounds (§6e).**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g.**
 
 ## 1. The question, and what is known
 
@@ -362,8 +362,9 @@ By the theorem this implies $S_k(n) \le 2^n k^{-\Omega(n/k)}$.
     - `ent_sub`: submodularity. It follows from $\ln y \le y-1$ and the class-counting bound
       `count_bound`, which groups by the trace on $A'$ and splits on $i$.
     - `shearer_ent`: $\ln\lvert F\rvert \le \sum_B w_B\, H(X_B)$ for every fractional cover.
-  - The trace (combinatorial) form would not do: the gain comes from the distribution of
-    $\lvert X\cap B\rvert$, which traces cannot see.
+  - The trace (combinatorial) form was expected not to do, because the gain comes from the
+    distribution of $\lvert X\cap B\rvert$, which traces cannot see. No example yet confirms
+    this (§6g): in the blocks, deep payments and the rigid model, the trace already saves.
   - Steps 3 and 4 are formal too (`Shearer_Concentration.thy`, `Shearer_Certificate.thy`,
     2026-10-17). So the whole theorem, in its sharpened §6d form, is formal; see §6d.
 
@@ -401,9 +402,8 @@ with $W = \sum_B w_B$ and $\Delta = \sum_B w_B\,\mathbb E(\lvert X\cap B\rvert -
   argument is needed.
 - $\theta = \Delta/(W+\Delta)$ gives $-W\ln(1-\theta) - \Delta\ln\theta = W h(\Delta/W)$ (in nats),
   the display below.
-- $t_B$ can be any lower bound, not just $\tau(H[B])$. So the theorem also covers the
-  *typical* lower bounds of §6e, except for the rare deficient events. Those would need $t_B$
-  to fail on a small part of $F$, which is the next extension.
+- $t_B$ can be any lower bound, not just $\tau(H[B])$. Bounds that fail on a small part of
+  $F$, and the two-sided deviation form, are formal too (§6g).
 
 **Certificate form, sharpened.** Write $e_B = \lvert X\cap B\rvert - \tau_B \ge 0$, so that
 $H(\lvert X\cap B\rvert) = H(e_B)$ and $\sum_B w_B\,\mathbb E e_B = \Delta$. A nonnegative
@@ -570,15 +570,19 @@ which is the count of disjoint $K_{2k-2}^{(k)}$ blocks to leading order.
 - *The certificate conjecture of §6c is not refuted.* Its hypothesis needs $\delta$ below the
   blocks' constant, and this count sits at that constant. But it cannot be the mechanism: a
   hypergraph can match the extremal count with no near-tight local certificate.
-- *The concentration form does see it.* For the original blocks, $\lvert X\cap B_i\rvert = k-1$
-  except with probability $e^{-\Omega(k)}$. A deficient block forces a full target block, so
-  such configurations are rarer than normal ones by a factor of about $4^{-k}$. So
-  $H(\lvert X\cap B_i\rvert) = o(1)$, and the bound of §6d gives the full saving.
+- *The concentration form does see it.* (Corrected 2026-10-17, §6g: deficient blocks do not
+  merely occur rarely; they never occur.) In a minimum transversal, a block short by
+  $d \le s$ forces a distinct full block, which is $k-1 > s$ over. The other blocks are not
+  deficient, so a deficient block would make $\lvert X\rvert > N(k-1)$. Hence
+  $\lvert X\cap B_i\rvert = k-1$ for *every* minimum transversal, and `certificate` with
+  $t_{B_i} = k-1$ and $\Delta = 0$ gives the full saving. The lower bound $k-1$ is
+  worst-case over $\mathcal X$, but it is global: it is not $\tau(H[B_i]) = k-1-s$.
 
 **What survives: typical lower bounds.** In this example and in the rigid model of §6d,
 $\lvert X\cap B\rvert$ is pinned *from below* not by $\tau_B$ but by a *typical* lower bound
 $\ell_B$, with $\Pr[\lvert X\cap B\rvert < \ell_B]$ small. Deficient configurations are
-possible, but they are rare because of what they force elsewhere.
+possible, but they are rare because of what they force elsewhere. (Corrected in §6g: in this
+example the bound is global but worst-case; only the rigid model needs the typical form.)
 - Given such $\ell_B$ with $\sum_B w_B\ell_B \ge n/2 - \Delta'$, the identity
   $\sum_B w_B\lvert X\cap B\rvert = n/2$ caps the upward deviations too.
 - The proof of §6d then goes through with $\Delta'$ in place of $\Delta$, plus an error term from
@@ -606,10 +610,13 @@ $\sum_B w_B H(X_B)$. So such a proof works exactly when:
   looks locally uniform but is constrained globally, like a code.
 - Monotonicity makes exact local uniformity impossible: $X$ meets every edge, so each edge
   forbids one pattern. But that pattern alone costs only about $2^{-k}$ bits.
-- *The worst-case version fails.* Replacing $H(X_B)$ by $\log_2$ of the trace
+- *The worst-case version* (corrected 2026-10-17, §6g). It was claimed here that the trace
   $\lbrace X\cap B : X \in \mathcal X\rbrace$ saves only about one bit per block on deep
-  payments. The excess patterns (size $\ge k$) all occur, just rarely. So the typical
-  (entropy) form is needed, not the trace.
+  payments, because the excess patterns occur rarely. That is wrong: they never occur, so on
+  the blocks $B_i$ the trace consists of $(k-1)$-sets and saves $\frac12\log_2 k$ per block.
+  The trace form also suffices in the rigid model: isolated vertices are never in $X$, so a
+  block with $a_B$ clique vertices has at most $2^{a_B}$ patterns. So no example yet separates
+  the trace form from the entropy form (§6g).
 - *Open, and worth settling first:* is there a monotone, "code-like" $H$ with $\tau = n/2$ and
   local entropy deficit $o(n\log k/k)$ for every $O(k)$-partition? If its count were large,
   it would refute the conjecture; if small, it would kill only the Shearer route. Both
@@ -841,6 +848,69 @@ $E_Y = \lbrace e\in H : e\subseteq Y\rbrace$ be the helper-only edges.
   - Whether $P^2$ such families fit within rank $k$, with selectors that stay locally uniform,
     is the next question if this line is pursued.
 
+## 6g. Typical lower bounds and the deviation form [F], 2026-10-17
+
+*Formal* (`Shearer_Typical.thy`, audited). Both theorems hold for any finite family $F$, any
+fractional cover and every $0 < \theta < 1$, and both are `gibbs` against a different reference
+distribution.
+- `int_entropy_typ`, `certificate_typ`: lower bounds $t_B$ that may fail. Let $p_B$ be the
+  fraction of $F$ with $\lvert X\cap B\rvert < t_B$, and take any $0 < r_B < 1$. Then the term
+  $-\ln(1-\theta) - \Delta_B\ln\theta$ of `certificate` becomes
+  $$(1-p_B)\bigl(-\ln(1-r_B) - \ln(1-\theta)\bigr) + p_B(\ln t_B - \ln r_B) - \ln\theta\;\mathbb E(\lvert X\cap B\rvert - t_B)^+ .$$
+  The reference puts mass $r_B$ uniformly below $t_B$ and $1-r_B$ geometrically above it. With
+  $r_B = p_B$ the cost of the failures is $h(p_B) + p_B\ln t_B$, as predicted in §6e.
+- `int_entropy_dev`, `certificate_dev`: the two-sided form. For any centres $c_B$, the reference
+  $\frac{1-\theta}{1+\theta}\theta^{\lvert v-c_B\rvert}$ gives
+  $$\ln\lvert F\rvert \le \sum_B w_B\Bigl(\lvert B\rvert\ln 2 - \tfrac12\ln\tfrac{3\lvert B\rvert+2}{2}\Bigr) + W\ln\tfrac{1+\theta}{1-\theta} - D\ln\theta, \qquad D = \sum_B w_B\,\mathbb E\bigl\lvert\,\lvert X\cap B\rvert - c_B\bigr\rvert .$$
+  When the bounds hold everywhere ($c_B = t_B$), it costs an extra $W\ln(1+\theta)$ against
+  `certificate`. But it charges a rare deficiency of depth $d$ and probability $p$ only $pd$
+  in $D$, and it needs no lower bound at all. With $x = D/W$ and $\theta = x/(1+x)$, the cost
+  is exactly $W\ln(1+2x) + Wx\ln(1+1/x) \le W(\ln(1+2x) + 1)$. So the per-block saving
+  $\frac12\ln\frac{3b+2}{2}$ survives while $D/W \lesssim \sqrt b$. For small $x$ the cost is
+  about $D(2 + \ln(W/D))$.
+
+**The test cases, redone** (by hand, from the formal statements).
+- *Blocks:* $c_B = k-1$, $D = 0$.
+- *Deep payments:* $D = 0$ with $c_{B_i} = k-1$, because $\lvert X\cap B_i\rvert = k-1$ for
+  every minimum transversal. A deficient block, short by $d \le s$, forces a distinct full
+  block, $k-1 > s$ over. This corrects §6e, which said the deficient configurations are rare
+  (they never occur) and that the trace form fails there (it does not).
+- *Rigid model,* $K_m^{(k)}$ plus $m-2k+2$ isolated vertices. Here $X$ is the clique minus a
+  uniform $(k-1)$-set $Z$. Take blocks of size $b$ with $a_B$ clique vertices, and $c_B = a_B$.
+  Then $\mathbb E\lvert\,\lvert X\cap B\rvert - a_B\rvert = \mathbb E\lvert Z\cap B\rvert = a_B(k-1)/m$,
+  so the *total* is $D = k-1$, while $W = n/b$. Hence
+  $$\ln\lvert\mathcal X\rvert \le n\ln 2 - \tfrac nb\cdot\tfrac12\ln\tfrac{3b+2}{2} + (k-1)\Bigl(2 + \ln\tfrac{n}{b(k-1)}\Bigr) + o(1).$$
+  The worst-case certificate ($t_B = a_B - (k-1)$) pays about $(k-1)/2$ per block instead.
+  `certificate_typ` with $t_B = a_B$ works too: $p_B \le a_B(k-1)/m$, so the failures cost
+  $O(k\log n)$ in total.
+- *Caveat on the trace.* In all three examples, the worst-case trace form already saves. In
+  the rigid model, the isolated vertices are never in $X$, so the trace on $B$ has at most
+  $2^{a_B}$ patterns. An example where only the entropy form works needs rare *sizes* that
+  carry many patterns each. The obvious attempt, deep payments with $R_i = B_i$, is rigid:
+  its only minimum transversals alternate empty and full blocks.
+
+**The size condition.** The deviation form turns the Shearer route into a statement about sizes
+alone:
+
+> **(D)** Every $H$ with rank $k$ and $\tau = n/2$, with $X$ a uniform minimum transversal, has a
+> fractional partition into $b$-sets, $b = O(k)$, and centres $c_B$ with
+> $\sum_B w_B\,\mathbb E\lvert\,\lvert X\cap B\rvert - c_B\rvert \le W b^{1/2-\eta}$.
+
+- (D) implies the conjecture, by `certificate_dev` (proved). The chain rule shows that (D)
+  implies (R), so (D) is at least as strong (proved).
+- *Flexibility at scale $O(k)$ is harmless* (by hand). If blocks trade size with each other,
+  as in "the sizes on $B\cup B'$ sum to $2k-2$", merge them: the union is still an $O(k)$-set
+  with zero deviation.
+- *Spread at scale $\gg k$ is the code-like case* (heuristic). A size that is spread like a
+  binomial over every $O(k)$-set, on a family with many members, needs an "exactly half"
+  constraint on groups of size $m \gg k$. By `link_count` (§6f), a cheap gadget of that kind
+  exists only if the conjecture fails at size $m$. So (D) and (R) fail on the same kind of
+  object, and (D) is the cleaner one to attack: one integer per block.
+- *Still open:* a rule naming the partition and centres from the structure of $H$. The two
+  mechanisms seen so far are *global payment* (deep payments: a deficit forces a larger
+  excess elsewhere) and *spread rigidity* (rigid model: the freedom is a $(k-1)$-set spread
+  over $m$ vertices, so each block sees almost none of it).
+
 ## 7. The structural question
 
 The conjecture now follows from a purely structural statement:
@@ -897,13 +967,14 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    - Exact designs are ruled out (`private_design`).
    - Few selectors, and the intersection attack plus König, both favour (R).
    - The open route is pair-specific edges.
-   **Main line now (§6e):** typical lower bounds. Find a structural rule that names $\ell_B$ in
-   advance and a switching argument showing that $\lvert X\cap B\rvert < \ell_B$ is rare. Test it
-   on the deep-payment example, where the switch is "a deficient block forces a full target".
-   - The formal side is ready: `certificate` takes any lower bounds $t_B$.
-   - The next formal step allows $t_B$ to fail on a small part of $F$, at a cost of about
-     $\sum_B w_B(p_B\ln\lvert B\rvert + h(p_B))$, via `group_bound` with the indicator
-     $[\lvert X\cap B\rvert \ge t_B]$.
+   **Main line now (§6g):** the size condition (D). Typical lower bounds and the deviation form
+   are formal (`certificate_typ`, `certificate_dev`), and all three test cases have total
+   deviation $O(k)$. Next:
+   - Name the partition and centres from the structure of $H$. Candidates are the two
+     mechanisms seen so far, global payment and spread rigidity.
+   - Look for an example that separates the trace form from the entropy form (rare sizes
+     carrying many patterns), or show that none exists near the extremal count.
+   - Try to break (D) directly, at scale $\gg k$ (the code-like case).
 1. Test Question C on small structures by hand, now with overlapping zero sets allowed. In
    particular, find out when swaps at disjoint places commute. Note also when the swaps can
    be located canonically, which the charging needs (§7).
