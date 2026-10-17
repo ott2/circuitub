@@ -38,6 +38,7 @@ session Monotone_K in "monotone_k" = Majority_AC0 +
     Private_Design
     Shearer_Sub
     Shearer_Entropy
+    Shearer_Concentration
     Audit_K
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
