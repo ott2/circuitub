@@ -1,5 +1,5 @@
 theory Audit_K
-  imports Harris_PPZ Shadow_Branch Deep_Payment Link_Gadget Private_Design Shearer_Sub Shearer_Entropy Shearer_Concentration
+  imports Harris_PPZ Shadow_Branch Deep_Payment Link_Gadget Private_Design Shearer_Sub Shearer_Entropy Shearer_Concentration Shearer_Certificate
 begin
 
 text \<open>
@@ -18,7 +18,8 @@ ML \<open>
      @{thm private_design}, @{thm three_blocks}, @{thm half_blocks},
      @{thm shearer_sub}, @{thm ent_empty}, @{thm ent_full}, @{thm ent_mono}, @{thm count_bound},
      @{thm ent_sub}, @{thm shearer_ent},
-     @{thm group_bound}, @{thm ent_count}, @{thm ln_binom}, @{thm shearer_conc}];
+     @{thm group_bound}, @{thm ent_count}, @{thm ln_binom}, @{thm shearer_conc},
+     @{thm gibbs}, @{thm geom_sum}, @{thm int_entropy}, @{thm certificate}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"
