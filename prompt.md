@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit f0891ba78891fbc2bd536ba3cd8238bffd249ec0 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit adcfb23c7a84243aa28f403cf910399ebb7ea629 (2026-10-18)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -52,7 +52,8 @@ per block.
   `certificate_cond`.
 - Before building on any new statement, try to break it. In this line of work, three of my own
   claims were corrected within hours of writing them (§6g, §6h).
-- Git: `main` is 23 commits ahead of `origin`, unpushed; the tree is clean apart from the
+- Git: `main` is over 20 commits ahead of `origin`, unpushed (check with
+  `git rev-list --count origin/main..main`); the tree is clean apart from the
   uncommitted `notes/`. Push only when the user asks.
 - `Monotone_K` now has 14 theories (the newest are `Shearer_Typical`,
   `Shearer_Conditional` and `Mirror_Payment`). It builds in about 10 s, and `Audit_K` lists
