@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit e0daa17e1b06b55a452933d15d0c1128ec8615a6 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit f0891ba78891fbc2bd536ba3cd8238bffd249ec0 (2026-10-17)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -44,6 +44,19 @@ $\sum_{X} \mathbb E_c\, 2^{F_c(X)} \le 2^n$; PPZ then replaces $\mathbb E\, 2^F$
 $2^{\mathbb E F}$. When ones share a critical zero set, they share the same maximum colour,
 and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
 per block.
+
+**Start here (handoff of 2026-10-18).**
+- Begin with item 0 of "Next" below: failure mode 2 of the component route. Inside a fixed
+  component structure, can $\lvert X\cap K\rvert$ spread by $\sqrt{\lvert K\rvert}$? Try to
+  prove that shared critical zeros pin the size, by hand first, then formally on top of
+  `certificate_cond`.
+- Before building on any new statement, try to break it. In this line of work, three of my own
+  claims were corrected within hours of writing them (§6g, §6h).
+- Git: `main` is 23 commits ahead of `origin`, unpushed; the tree is clean apart from the
+  uncommitted `notes/`. Push only when the user asks.
+- `Monotone_K` now has 14 theories (the newest are `Shearer_Typical`,
+  `Shearer_Conditional` and `Mirror_Payment`). It builds in about 10 s, and `Audit_K` lists
+  every headline theorem.
 
 **Where things stand (2026-10-17).**
 - **Newest (2026-10-17, §6h): structure.**
