@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 3fefb0bf0c0e63f93896a9016702d24c657b6d40 (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 5bb60f582cda04473db9ff14632b8ab95645955f (2026-10-20)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -74,8 +74,12 @@ per block.
   depth-3 size $2^{\Omega(\sqrt t)}/(nD)$, and $2^{\Omega(\sqrt{n\log n})}/(nD)$ under (MT).
   Natural non-symmetric class: threshold functions with weights in $\lbrace1..w\rbrace$,
   $w = O(1)$. They are projections of $\mathrm{Maj}_{O(n)}$, so they have the same gap as
-  Majority, closed by (MT). A literature check on (MT) and on this reduction was running on
-  2026-10-20; its summary goes to `notes/summaries/minimal-transversals-rank-k.md`.
+  Majority, closed by (MT). Literature (2026-10-20,
+  `notes/summaries/minimal-transversals-rank-k.md`): (MT) is the rank-$k$ form of an open
+  question of Miltersen–Radhakrishnan–Wegener (TCS 2005). The best bound,
+  $\mathrm{MT}_k \le n\,2^{n(1-0.282/k)}$, is from Mossé–Sha–Tan (SAT 2022). The reduction is
+  known for Majority; the general-$f$ form was not found stated.
+  `mtr_parts` [F]: (MT) holds when the components of $H$ have $O(k)$ vertices.
 - **Earlier (2026-10-20, §6i): witness antichains [F].** `lym` (induction, no permutations),
   `sperner`, `class_antichain`, `witness_bound`, `witness_partition`. The labelling only needs
   one critical edge per one inside its part (`wclosed`). Small parts save more, not less: a

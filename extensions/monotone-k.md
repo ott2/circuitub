@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 3fed53c5816cbeb3ee961440ccb3616f65c01a0c (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 5bb60f582cda04473db9ff14632b8ab95645955f (2026-10-20)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), and the witness-antichain bound `witness_bound` (§6i). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
 
@@ -1076,11 +1076,18 @@ therefore bound the number of *all* minimal transversals of a rank-$k$ hypergrap
 > minimal transversals (equivalently, maximal independent sets).
 
 - (MT) implies the conjecture, since minimum transversals are minimal.
-- (MT) is open. The literature (see `notes/summaries/harris-ppz-novelty.md` and
-  `private-subsets-and-designs.md`) has the lower bound $\binom{2k-1}{k}^{n/(2k-1)}$ from
-  disjoint $K_{2k-1}^{(k)}$, which is $2^{n-\Theta(n\log k/k)}$. It also has branching upper
-  bounds for small $k$ (Lonc–Truszczyński for rank 3; Cochefert–Couturier–Gaspers–Kratsch).
-  Ilinca–Kahn count maximal independent sets by entropy for graphs.
+- (MT) is open. This is a literature check of 2026-10-20 (`notes/summaries/minimal-transversals-rank-k.md`).
+  - *It is a known open question.* Miltersen–Radhakrishnan–Wegener (TCS 2005, ECCC TR03-017)
+    ask for the maximum number of minimal vertex covers of a hypergraph with $n$ vertices and
+    $n^{O(1)}$ edges. They note that the monotone case is understood worse than the general
+    one. Their Theorem 4 has the block lower bound.
+  - *The best upper bound* is Mossé–Sha–Tan (SAT 2022, Cor. 31–34): a monotone $k$-CNF has at
+    most $2^{n-j/k}$ prime implicants of size $j$, so $\mathrm{MT}_k(n) \le n\,2^{n(1-0.282/k)}$.
+    That is the PPZ-type $\Theta(n/k)$ saving, so the gap to (MT) is the same $\log k$ as ours.
+  - *The lower bound* is $\binom{2k-1}{k}^{n/(2k-1)} = 2^{n-\Theta(n\log k/k)}$, from disjoint
+    $K_{2k-1}^{(k)}$ (MRW; Cochefert–Couturier–Gaspers–Kratsch).
+  - *Branching bounds* are good only for small $k$: Lonc–Truszczyński at rank 3, and CCGK.
+  - Nothing found has savings $\gg n/k$.
 - *(MT) holds for hypergraphs with small components* [F]: `mtr_parts` (`Minterm_Cover.thy`).
   Take as the label the fixed partition into connected components of $H$ (or any partition whose
   parts contain whole edges). It is admissible for every minimal transversal and has entropy 0,
@@ -1123,7 +1130,16 @@ reason is the observation of §6i that the counting never uses $\tau$.
   For $\Pi_3$, apply this to the dual function and its maxterms. This is the classical
   $2^{\Omega(\sqrt n)}$ argument for Majority, in the form of the "isolated points" lower
   bounds of PPZ. It applies to every $f$ with $2^{n-o(\sqrt n)}$ minterms of linear size.
-  The unconditional part is probably folklore; a literature check is pending.
+  - *Literature (2026-10-20).* For Majority the reduction is effectively stated:
+    GKPRST26 Fact 2.3 gives the critical-clause property, and Gurumukhani–Künnemann–Paturi
+    (arXiv 2412.20493) say outright, at $k = 2$, that weight-$t$ points are minimal vertex
+    covers. The idea that one depth-2 subcircuit covers few prime implicants goes back to
+    Valiant and KPPY. The general-$f$ form with $\mathrm{MT}_k$ in the denominator was not found
+    stated; the agent's confidence that it is unpublished was about 75%. Treat it as folklore
+    in spirit.
+  - Monotone depth 3 *can* exceed $2^{\sqrt n}$: Pitassi–Robere's monotone formula bound
+    $2^{\Omega(N)}$ transfers to depth 3. But that function has few minterms. The interest here
+    is in functions with *many* minterms, where counting is the natural method.
 - *Conditional on (MT).* In the first term, replace $(1+1/k)^{-t}$ by the minimal-transversal
   bound $k^{-cn/k}$. This counts only minimal transversals of the narrow part $H_i^{\le k}$:
   those minterms are minimal transversals of it, since their critical edges lie in it. Balancing
