@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 3fefb0bf0c0e63f93896a9016702d24c657b6d40 (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 3fed53c5816cbeb3ee961440ccb3616f65c01a0c (2026-10-20)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), and the witness-antichain bound `witness_bound` (§6i). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
 
@@ -1081,6 +1081,16 @@ therefore bound the number of *all* minimal transversals of a rank-$k$ hypergrap
   disjoint $K_{2k-1}^{(k)}$, which is $2^{n-\Theta(n\log k/k)}$. It also has branching upper
   bounds for small $k$ (Lonc–Truszczyński for rank 3; Cochefert–Couturier–Gaspers–Kratsch).
   Ilinca–Kahn count maximal independent sets by entropy for graphs.
+- *(MT) holds for hypergraphs with small components* [F]: `mtr_parts` (`Minterm_Cover.thy`).
+  Take as the label the fixed partition into connected components of $H$ (or any partition whose
+  parts contain whole edges). It is admissible for every minimal transversal and has entropy 0,
+  so $\#\mathrm{mtr}(H) \le \prod_C\binom{\lvert C\rvert}{\lfloor\lvert C\rvert/2\rfloor}$. The
+  per-vertex loss $\frac1{2b}\log_2\frac{\pi b}{2}$ decreases in $b$. So if all components have
+  $\le Ck$ vertices, there are $\le 2^{\,n - \Omega(n\log k/(Ck))}$ minimal transversals, and in
+  particular minimum ones. This generalizes §4's "disjoint cliques cannot beat
+  $K_{2k-2}^{(k)}$" to arbitrary small components, with no use of $\tau$. A counterexample to
+  (MT) or to the conjecture must be connected at scale $\gg k$, which is the code-like case
+  once more.
 - So the witness route cannot exploit $\tau = n/2$. That is a real restriction only if (MT)
   is false while the conjecture is true, and no example of that is known. To break (MT), one
   would look for many minimal transversals of *spread* sizes, none of them minimum.
