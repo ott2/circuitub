@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit c330c0e41a5a49692cd7e26839e8489a8dc6446d (2026-10-18)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit ff767501b17d884fb875a92ad563958309106b39 (2026-10-20)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -25,6 +25,7 @@ formal before we build on it.
 - **§6g:** typical and deviation forms [F], the test cases redone, and the size condition (D).
 - **§6h:** the conditional certificate [F], mirror payments [F in part], witness components and
   the component route with its four failure modes.
+- **§6i:** witness antichains [F]: Sperner removes failure mode 2; the route now proves (MT).
 - §7: Question C.
 - §8: the next steps.
 
@@ -45,22 +46,32 @@ $2^{\mathbb E F}$. When ones share a critical zero set, they share the same maxi
 and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
 per block.
 
-**Start here (handoff of 2026-10-18).**
-- Begin with item 0 of "Next" below: failure mode 2 of the component route. Inside a fixed
-  component structure, can $\lvert X\cap K\rvert$ spread by $\sqrt{\lvert K\rvert}$? Try to
-  prove that shared critical zeros pin the size, by hand first, then formally on top of
-  `certificate_cond`.
+**Start here (updated 2026-10-20).**
+- Failure mode 2 is settled formally (§6i, `Witness_Antichain.thy`). Within a class of a
+  `wclosed` labelling, the traces on a part form an antichain, so Sperner makes sizes
+  irrelevant: $\ln\lvert F\rvert \le H(g) + \mathbb E\sum_K\ln\binom{\lvert K\rvert}{\lfloor\lvert K\rvert/2\rfloor}$.
+  The route never uses $\tau$, so it would prove the stronger, open (MT): rank $k$ gives at
+  most $2^{n-\Omega(n\log k/k)}$ *minimal* transversals.
+- Next: try to break (MT), or prove the trade-off $\mathbb E\Phi - H(g) \ge c\,n\log k/k$ for
+  a class whose critical structure clusters (item 0 of "Next").
+- Li–Zhong ECCC TR26-261 was read on 2026-10-20 (summary in `notes/summaries/`). It has no
+  direct consequence here; see `extensions/locality-and-monotonicity.md` §2.1.
 - Before building on any new statement, try to break it. In this line of work, three of my own
   claims were corrected within hours of writing them (§6g, §6h).
 - Git: `main` is over 20 commits ahead of `origin`, unpushed (check with
   `git rev-list --count origin/main..main`); the tree is clean apart from the
   uncommitted `notes/`. Push only when the user asks.
-- `Monotone_K` now has 14 theories (the newest are `Shearer_Typical`,
+- `Monotone_K` now has 15 theories (the newest are `Witness_Antichain`, `Shearer_Typical`,
   `Shearer_Conditional` and `Mirror_Payment`). It builds in about 10 s, and `Audit_K` lists
   every headline theorem.
 
-**Where things stand (2026-10-17).**
-- **Newest (2026-10-17, §6h): structure.**
+**Where things stand (2026-10-20).**
+- **Newest (2026-10-20, §6i): witness antichains [F].** `lym` (induction, no permutations),
+  `sperner`, `class_antichain`, `witness_bound`, `witness_partition`. The labelling only needs
+  one critical edge per one inside its part (`wclosed`). Small parts save more, not less: a
+  free zero saves $\ln 2$, which corrects §6h. What remains is the trade-off between part sizes
+  and $H(g)$ (failure modes 1 and 3).
+- **Earlier (2026-10-17, §6h): structure.**
   - `certificate_cond` [F] (`Shearer_Conditional.thy`): the cover may depend on a label
     $g(X)$ at cost $H(g)$; `lent_image`: $H(g) \le \ln\lvert g(F)\rvert$.
   - **Witness components** $\mathcal K(X)$: components of the graph joining each one to the
@@ -211,6 +222,11 @@ per block.
     uniform mass $r$ below $t$ and geometric mass above), `int_entropy_dev`, `certificate_dev`
     (two-sided geometric around any centre).
   - **`Shearer_Conditional.thy`** (log §6h): `cbound`, `lent_image`, `certificate_cond`.
+  - **`Witness_Antichain.thy`** (log §6i, imports `HOL-Library.FuncSet` for `PiE`): `antich`,
+    `lym`, `sperner`, `wclosed`, `class_antichain`, `card_traces`, `witness_bound`,
+    `witness_partition`. Pitfalls met: `term` is an outer keyword, so it can't be a fact name;
+    restate an induction hypothesis with its `:: nat` ascription, or it gets a generic numeric
+    type and `rule` fails; `by` takes at most two methods, so combine extra ones with commas.
   - **`Mirror_Payment.thy`** (log §6h, imports `Deep_Payment`): `mp`, `mp_forces`, `mp_mirror`,
     `mp_tau`, `mp_glue_tr` (a sufficient condition for glued choices to be transversals),
     `mp_deficient`, `half_subsets`, `mp_trace`, `mp_count`.
@@ -238,10 +254,9 @@ per block.
    `certificate_dev`); the test cases are done by hand (blocks and deep payments $D = 0$,
    rigid model $D = k-1$ in total). The structural candidate is now the witness-component
    route of §6h (`certificate_cond`). Next:
-   - Failure mode 2: inside a fixed component structure, can $\lvert X\cap K\rvert$ spread by
-     $\sqrt{\lvert K\rvert}$? Every one in $K$ shares critical zeros with others, which
-     should pin the size. Try to prove this, starting with components in which all ones
-     share one zero set (the blocks, the rigid clique).
+   - **Done (§6i) [F]:** failure mode 2, via Sperner (`witness_bound`). Next: try to break
+     (MT), or prove $\mathbb E\Phi - H(g) \ge c\,n\log k/k$ for a class whose critical
+     structure clusters. Pick the labelling as one canonical critical edge per one.
    - Prove the route's hypotheses for a natural class, such as hypergraphs whose components
      are unions of blocks of one fixed partition, up to rare events.
    - Failure mode 3 is §6f's selector question, sharpened: the component structure must

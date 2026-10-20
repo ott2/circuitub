@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit e0daa17e1b06b55a452933d15d0c1128ec8615a6 (2026-10-17)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit ff767501b17d884fb875a92ad563958309106b39 (2026-10-20)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), and the witness-antichain bound `witness_bound` (§6i). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
 
 ## 1. The question, and what is known
 
@@ -989,6 +989,7 @@ $\frac12\ln\frac{3\lvert K\rvert+2}{2} \ge \frac c2\ln k$, and pays at most $\ln
   and unbalanced but concentrated components save more. Disjoint $K_b^{(k)}$ of mixed sizes,
   with $\tau = n/2$ overall, are unbalanced with zero deviation.
 - *Small components are excluded on purpose:* a singleton (a free zero) saves nothing.
+  *Corrected in §6i:* it saves $\frac12\ln\frac52$ here, and $\ln 2$ under `witness_bound`.
 - Three of the four examples satisfy it outright.
 - The rigid model fails it only through size: its one component is the whole clique. Its count
   is tiny anyway, and the fixed partition of §6g handles it ("spread rigidity": cut the clique
@@ -1005,7 +1006,8 @@ $\frac12\ln\frac{3\lvert K\rvert+2}{2} \ge \frac c2\ln k$, and pays at most $\ln
   2. *Spread inside components.* Even given $\mathcal K(X)$, $\lvert X\cap K\rvert$ varies by
      about $\sqrt{\lvert K\rvert}$. No example has this. In all four, the component structure
      already fixes the sizes. This is (D) again, now inside a component, where every one
-     shares critical zeros with the others.
+     shares critical zeros with the others. *Settled in §6i [F]:* within a class the traces
+     form an antichain, so Sperner makes the sizes irrelevant.
   3. *High-entropy components*, with $\Omega(\log k)$ bits of component structure per block.
      This is the selector mixture of §6f, with the component partition playing the selector.
      The conditional certificate pays exactly that entropy, so the parked question returns
@@ -1024,6 +1026,64 @@ $\frac12\ln\frac{3\lvert K\rvert+2}{2} \ge \frac c2\ln k$, and pays at most $\ln
   $O(k)$-region is invisible once that region is a block. A failure of (D) needs
   compensation across distances $\gg k$, *and* in a pattern that no low-entropy labelling
   tracks.
+
+## 6i. Witness antichains: spread inside components does not matter [F], 2026-10-20
+
+*Formal* (`Witness_Antichain.thy`, audited):
+- `lym`: for an antichain $\mathcal A$ and a finite $U$,
+  $\sum_{T\in\mathcal A,\,T\subseteq U}\lvert T\rvert!\,(\lvert U\rvert-\lvert T\rvert)! \le \lvert U\rvert!$.
+  The proof is by induction on $\lvert U\rvert$ with no permutations. If $U\notin\mathcal A$, write
+  $\lvert U\rvert - \lvert T\rvert$ as the number of $x\in U-T$, swap the sums, and apply the
+  hypothesis to each $U-x$.
+- `sperner`: an antichain of subsets of $U$ has at most $\binom{\lvert U\rvert}{\lfloor\lvert U\rvert/2\rfloor}$ members.
+- `wclosed H X P`: every one $v\in X\cap K$, for $K\in P$, has a critical edge
+  ($e\cap X = \lbrace v\rbrace$) with $e\subseteq K$.
+- `class_antichain`: if every member of a family $G$ is a transversal and $P$ is `wclosed`
+  for all of them, then $\lbrace Y\cap K : Y\in G\rbrace$ is an antichain for each $K\in P$.
+  If $Y\cap K\subseteq Y'\cap K$ and $v\in Y'\cap K$, then $v$'s critical edge $e\subseteq K$
+  is hit by $Y$ inside $K$, hence by $Y'$, so only at $v$.
+- `witness_bound`: for any labelling $g$ such that each $g(X)$ covers $V$ and is `wclosed` for $X$,
+  $$\ln\lvert F\rvert \le H(g) + \mathbb E_X\sum_{K\in g(X)}\ln\binom{\lvert K\rvert}{\lfloor\lvert K\rvert/2\rfloor}.$$
+- `witness_partition`: if the parts are disjoint,
+  $\ln\lvert F\rvert \le H(g) + \lvert V\rvert\ln 2 - \mathbb E_X\sum_{K\in g(X)}\frac12\ln\frac{3\lvert K\rvert+2}{2}$.
+
+**What changes.**
+- *Failure mode 2 of §6h is gone.* The witness components satisfy `wclosed`, since every
+  critical edge of a one lies in that one's component. So no concentration of
+  $\lvert X\cap K\rvert$ is needed. Inside a class, the traces on a part form an antichain, and
+  Sperner charges the middle binomial whatever the sizes are. The component route becomes:
+  $$\ln\lvert\mathcal X\rvert \le n\ln 2 - \Bigl(\mathbb E\,\Phi(X) - H(g)\Bigr),\qquad \Phi(X) = \sum_{K\in g(X)}\Bigl(\lvert K\rvert\ln 2 - \ln\tbinom{\lvert K\rvert}{\lfloor\lvert K\rvert/2\rfloor}\Bigr) \approx \sum_K \tfrac12\ln\tfrac{\pi\lvert K\rvert}{2}.$$
+  The conjecture follows if some admissible labelling has $\mathbb E\Phi - H(g) \ge c\,n\log k/k$.
+- *Failure mode 0 is not a failure of the bound.* Small parts save *more* per vertex. A free
+  zero saves $\ln 2$ (its only trace is $\emptyset$), and a part of size 2 also saves $\ln 2$.
+  *Correction to §6h:* "a singleton saves nothing" was wrong, and it was already wrong for
+  `certificate_dev`, where a singleton block with zero deviation saves $\frac12\ln\frac52$.
+  When parts are small, the cost is entirely in $H(g)$.
+- *More freedom in the labelling.* `wclosed` needs only *one* critical edge per one inside
+  its part. So one may pick a critical edge $e_v$ for each one and use the components of
+  $\lbrace e_v\rbrace$, which are finer than the witness components. This saves more and may
+  cost more entropy. Coarsening is also allowed.
+- *What remains is one trade-off,* between part sizes and label entropy (failure modes 1
+  and 3). A heuristic warning: each one has $\ge k-1$ critical zeros, and there are only
+  $n/2$ zeros, so an unclustered witness graph has a giant component, and then
+  $\Phi = O(\log n)$. The route needs the critical structure to cluster at scale $O(k)$. If
+  it does not, a finer selection $e_v$ has to pay for itself in entropy.
+
+**The route now proves a stronger statement** (by hand). `witness_bound` uses only that
+each $X$ is a *minimal* transversal; $\tau$ never enters. Any proof along this route would
+therefore bound the number of *all* minimal transversals of a rank-$k$ hypergraph:
+> **(MT)** A hypergraph of rank $k$ on $n$ vertices has at most $2^{\,n-\Omega(n\log k/k)}$
+> minimal transversals (equivalently, maximal independent sets).
+
+- (MT) implies the conjecture, since minimum transversals are minimal.
+- (MT) is open. The literature (see `notes/summaries/harris-ppz-novelty.md` and
+  `private-subsets-and-designs.md`) has the lower bound $\binom{2k-1}{k}^{n/(2k-1)}$ from
+  disjoint $K_{2k-1}^{(k)}$, which is $2^{n-\Theta(n\log k/k)}$. It also has branching upper
+  bounds for small $k$ (Lonc–Truszczyński for rank 3; Cochefert–Couturier–Gaspers–Kratsch).
+  Ilinca–Kahn count maximal independent sets by entropy for graphs.
+- So the witness route cannot exploit $\tau = n/2$. That is a real restriction only if (MT)
+  is false while the conjecture is true, and no example of that is known. To break (MT), one
+  would look for many minimal transversals of *spread* sizes, none of them minimum.
 
 ## 7. The structural question
 
@@ -1090,9 +1150,15 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
    - Prove the component route's hypotheses for a natural class. A candidate is hypergraphs
      whose minimum transversals all have components that are unions of blocks of one fixed
      partition, up to rare events.
-   - Settle failure mode 2: can $\lvert X\cap K\rvert$ spread by $\sqrt{\lvert K\rvert}$ inside
-     a fixed component structure? Inside a component every one shares critical zeros with
-     others, which should pin the size; try to prove this.
+   - **Done (§6i) [F]:** failure mode 2. The traces in a class form an antichain, so Sperner
+     replaces size concentration (`witness_bound`). The route is now one trade-off,
+     $\mathbb E\Phi - H(g) \ge c\,n\log k/k$, over labellings that contain one critical edge
+     per one. It never uses $\tau$, so it would prove the stronger (MT): at most
+     $2^{n-\Omega(n\log k/k)}$ minimal transversals at rank $k$.
+   - Next: try to break (MT) (many minimal transversals of spread sizes), or prove the
+     trade-off for a class in which the critical structure clusters. Choose the labelling
+     well: one critical edge per one, picked canonically, for example the
+     lexicographically first.
    - Failure mode 3 is the parked selector question of §6f, with a sharper target: the
      component structure must carry $\Omega(\log k)$ bits per block.
    - A fully separating trace/entropy example is still open. Mirror payments separate only up
