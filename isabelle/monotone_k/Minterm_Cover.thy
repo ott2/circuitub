@@ -1,5 +1,5 @@
 theory Minterm_Cover
-  imports Witness_Antichain Shadow_Branch
+  imports Witness_Antichain Shadow_Branch Harris_PPZ
 begin
 
 text \<open>
@@ -73,6 +73,136 @@ proof -
   have "card M \<le> card (\<Union>i\<in>I. A i)" by (rule card_mono[OF finU sub])
   also have "\<dots> \<le> (\<Sum>i\<in>I. card (A i))" by (rule card_UN_le[OF finI])
   finally show ?thesis unfolding A_def .
+qed
+
+text \<open>
+  With wide clauses. A minterm all of whose elements have a critical edge of size \<open>\<le> k\<close> is counted
+  by \<open>harris_ppz\<close>; any other minterm has a critical edge \<open>e\<close> with \<open>|e| > k\<close>, and at most
+  \<open>2^(n - |e|)\<close> sets meet \<open>e\<close> in a given single point (\<open>single_hit\<close>).
+\<close>
+
+lemma single_hit:
+  assumes e: "e \<subseteq> {..<n}" and v: "v \<in> e"
+  shows "card {X. X \<subseteq> {..<n} \<and> e \<inter> X = {v}} \<le> 2 ^ (n - card e)"
+proof -
+  have sub: "{X. X \<subseteq> {..<n} \<and> e \<inter> X = {v}} \<subseteq> insert v ` Pow ({..<n} - e)"
+  proof
+    fix X assume X: "X \<in> {X. X \<subseteq> {..<n} \<and> e \<inter> X = {v}}"
+    then have "X = insert v (X - e)" "X - e \<in> Pow ({..<n} - e)" by blast+
+    then show "X \<in> insert v ` Pow ({..<n} - e)" by (rule image_eqI)
+  qed
+  have finP: "finite (Pow ({..<n} - e))" by simp
+  have "card {X. X \<subseteq> {..<n} \<and> e \<inter> X = {v}} \<le> card (insert v ` Pow ({..<n} - e))"
+    by (rule card_mono[OF finite_imageI[OF finP] sub])
+  also have "\<dots> \<le> card (Pow ({..<n} - e))" by (rule card_image_le[OF finP])
+  also have "\<dots> = 2 ^ card ({..<n} - e)" by (simp add: card_Pow)
+  also have "card ({..<n} - e) = n - card e"
+    using card_Diff_subset[OF finite_subset[OF e] e] by simp
+  finally show ?thesis .
+qed
+
+theorem minterm_depth3:
+  fixes Hs :: "'i \<Rightarrow> nat set set" and n k t :: nat
+  assumes finI: "finite I" and finH: "\<forall>i\<in>I. finite (Hs i)"
+    and edges: "\<forall>i\<in>I. \<forall>e\<in>Hs i. e \<subseteq> {..<n}"
+    and below: "\<forall>i\<in>I. \<forall>Y. tr (Hs i) Y \<longrightarrow> f Y"
+    and covers: "\<forall>X\<in>M. \<exists>i\<in>I. tr (Hs i) X"
+    and mint: "\<forall>X\<in>M. minterm f X \<and> X \<subseteq> {..<n} \<and> t \<le> card X"
+  shows "real (card M) \<le> real (card I) * 2 ^ n / (1 + 1 / real k) ^ t
+           + (\<Sum>i\<in>I. \<Sum>e\<in>{e\<in>Hs i. k < card e}. real (card e) * 2 ^ (n - card e))"
+proof -
+  define G where "G i = {X\<in>M. tr (Hs i) X \<and> (\<forall>v\<in>X. \<exists>e\<in>Hs i. v \<in> e \<and> e \<inter> X = {v}
+                        \<and> e \<subseteq> {..<n} \<and> card e \<le> k)}" for i
+  define W where "W i = {e\<in>Hs i. k < card e}" for i
+  define S where "S e v = {X. X \<subseteq> {..<n} \<and> e \<inter> X = {v}}" for e :: "nat set" and v
+  define B where "B = (\<Union>i\<in>I. \<Union>e\<in>W i. \<Union>v\<in>e. S e v)"
+  have finM: "finite M" by (rule finite_subset[of _ "Pow {..<n}"]) (use mint in auto)
+  have finG: "finite (G i)" for i unfolding G_def using finM by simp
+  have finW: "finite (W i)" if "i \<in> I" for i unfolding W_def using finH that by simp
+  have fine: "finite e" if i: "i \<in> I" and e: "e \<in> W i" for i e
+  proof -
+    have "e \<subseteq> {..<n}" using edges i e unfolding W_def by blast
+    then show ?thesis by (rule finite_subset) simp
+  qed
+  have finS: "finite (S e v)" for e v unfolding S_def
+    by (rule finite_subset[of _ "Pow {..<n}"]) auto
+  have finB: "finite B" unfolding B_def using finI finW fine finS by blast
+  have sub: "M \<subseteq> (\<Union>i\<in>I. G i) \<union> B"
+  proof
+    fix X assume X: "X \<in> M"
+    obtain i where i: "i \<in> I" and t: "tr (Hs i) X" using covers X by blast
+    have bi: "\<forall>Y. tr (Hs i) Y \<longrightarrow> f Y" using below i by blast
+    have mX: "minterm f X" and XV: "X \<subseteq> {..<n}" using mint X by auto
+    show "X \<in> (\<Union>i\<in>I. G i) \<union> B"
+    proof (cases "\<forall>v\<in>X. \<exists>e\<in>Hs i. v \<in> e \<and> e \<inter> X = {v} \<and> e \<subseteq> {..<n} \<and> card e \<le> k")
+      case True
+      then have "X \<in> G i" unfolding G_def using X t by blast
+      then show ?thesis using i by blast
+    next
+      case False
+      then obtain v where v: "v \<in> X"
+        and nv: "\<not> (\<exists>e\<in>Hs i. v \<in> e \<and> e \<inter> X = {v} \<and> e \<subseteq> {..<n} \<and> card e \<le> k)" by blast
+      obtain e where e: "e \<in> Hs i" and eX: "e \<inter> X = {v}" using minterm_crit[OF bi mX t v] by blast
+      have ve: "v \<in> e" using eX by blast
+      have eV: "e \<subseteq> {..<n}" using edges i e by blast
+      have "k < card e" using nv e ve eX eV by force
+      then have eW: "e \<in> W i" unfolding W_def using e by blast
+      have "X \<in> S e v" unfolding S_def using XV eX by blast
+      then show ?thesis unfolding B_def using i eW ve by blast
+    qed
+  qed
+  have cM: "card M \<le> (\<Sum>i\<in>I. card (G i)) + (\<Sum>i\<in>I. \<Sum>e\<in>W i. \<Sum>v\<in>e. card (S e v))"
+  proof -
+    have "card M \<le> card ((\<Union>i\<in>I. G i) \<union> B)"
+      by (rule card_mono[OF _ sub]) (use finI finG finB in blast)
+    also have "\<dots> \<le> card (\<Union>i\<in>I. G i) + card B" by (rule card_Un_le)
+    also have "card (\<Union>i\<in>I. G i) \<le> (\<Sum>i\<in>I. card (G i))" by (rule card_UN_le[OF finI])
+    also have "card B \<le> (\<Sum>i\<in>I. card (\<Union>e\<in>W i. \<Union>v\<in>e. S e v))" unfolding B_def by (rule card_UN_le[OF finI])
+    also have "\<dots> \<le> (\<Sum>i\<in>I. \<Sum>e\<in>W i. card (\<Union>v\<in>e. S e v))"
+      by (rule sum_mono) (rule card_UN_le[OF finW])
+    also have "\<dots> \<le> (\<Sum>i\<in>I. \<Sum>e\<in>W i. \<Sum>v\<in>e. card (S e v))"
+      by (rule sum_mono, rule sum_mono, rule card_UN_le[OF fine])
+    finally show ?thesis by simp
+  qed
+  have cG: "real (card (G i)) \<le> 2 ^ n / (1 + 1 / real k) ^ t" for i
+  proof -
+    have prem: "\<forall>X\<in>G i. X \<subseteq> {..<n} \<and> (\<forall>e\<in>Hs i. e \<inter> X \<noteq> {}) \<and> t \<le> card X
+        \<and> (\<forall>v\<in>X. \<exists>e\<in>Hs i. v \<in> e \<and> e \<inter> X = {v} \<and> e \<subseteq> {..<n} \<and> card e \<le> k)"
+    proof
+      fix X assume X: "X \<in> G i"
+      have XM: "X \<in> M" and tX: "tr (Hs i) X"
+        and cr: "\<forall>v\<in>X. \<exists>e\<in>Hs i. v \<in> e \<and> e \<inter> X = {v} \<and> e \<subseteq> {..<n} \<and> card e \<le> k"
+        using X unfolding G_def by blast+
+      have "X \<subseteq> {..<n}" "t \<le> card X" using mint XM by blast+
+      moreover have "\<forall>e\<in>Hs i. e \<inter> X \<noteq> {}" using tX unfolding tr_def .
+      ultimately show "X \<subseteq> {..<n} \<and> (\<forall>e\<in>Hs i. e \<inter> X \<noteq> {}) \<and> t \<le> card X
+          \<and> (\<forall>v\<in>X. \<exists>e\<in>Hs i. v \<in> e \<and> e \<inter> X = {v} \<and> e \<subseteq> {..<n} \<and> card e \<le> k)"
+        using cr by blast
+    qed
+    have "real (card (G i)) * (1 + 1 / real k) ^ t \<le> 2 ^ n" by (rule harris_ppz[OF prem])
+    moreover have "0 < (1 + 1 / real k) ^ t" by (simp add: add_pos_nonneg)
+    ultimately show ?thesis by (simp add: pos_le_divide_eq)
+  qed
+  have cS: "card (S e v) \<le> 2 ^ (n - card e)" if "i \<in> I" "e \<in> W i" "v \<in> e" for i e v
+    unfolding S_def by (rule single_hit) (use edges that in \<open>auto simp: W_def\<close>)
+  have "real (card M) \<le> (\<Sum>i\<in>I. real (card (G i))) + (\<Sum>i\<in>I. \<Sum>e\<in>W i. \<Sum>v\<in>e. real (card (S e v)))"
+    using cM by (simp only: of_nat_le_iff of_nat_add of_nat_sum[symmetric])
+  also have "\<dots> \<le> (\<Sum>i\<in>I. 2 ^ n / (1 + 1 / real k) ^ t)
+      + (\<Sum>i\<in>I. \<Sum>e\<in>W i. \<Sum>v\<in>e. (2::real) ^ (n - card e))"
+  proof (rule add_mono)
+    show "(\<Sum>i\<in>I. real (card (G i))) \<le> (\<Sum>i\<in>I. 2 ^ n / (1 + 1 / real k) ^ t)"
+      by (rule sum_mono) (rule cG)
+    show "(\<Sum>i\<in>I. \<Sum>e\<in>W i. \<Sum>v\<in>e. real (card (S e v))) \<le> (\<Sum>i\<in>I. \<Sum>e\<in>W i. \<Sum>v\<in>e. (2::real) ^ (n - card e))"
+    proof (rule sum_mono, rule sum_mono, rule sum_mono)
+      fix i e v assume "i \<in> I" "e \<in> W i" "v \<in> e"
+      then have "card (S e v) \<le> 2 ^ (n - card e)" by (rule cS)
+      then show "real (card (S e v)) \<le> (2::real) ^ (n - card e)"
+        by (metis of_nat_le_iff of_nat_numeral of_nat_power)
+    qed
+  qed
+  also have "\<dots> = real (card I) * 2 ^ n / (1 + 1 / real k) ^ t
+      + (\<Sum>i\<in>I. \<Sum>e\<in>W i. real (card e) * 2 ^ (n - card e))" by simp
+  finally show ?thesis unfolding W_def .
 qed
 
 end
