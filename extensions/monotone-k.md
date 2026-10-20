@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 5bb60f582cda04473db9ff14632b8ab95645955f (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 6c09e99a25747819049237909c5870a95b64246b (2026-10-20)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), and the witness-antichain bound `witness_bound` (§6i). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
 
@@ -1254,6 +1254,11 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
      trade-off for a class in which the critical structure clusters. Choose the labelling
      well: one critical edge per one, picked canonically, for example the
      lexicographically first.
+   - **Main line from 2026-10-20: (MT)** (§6i, §6j). (MT) is the rank-$k$ form of MRW's open
+     question, and it serves every monotone function with many minterms. First read the sources
+     (MRW, and Mossé–Sha–Tan Cor. 31–34) to find where the $\log k$ is lost. Then try to break
+     (MT), which needs connectivity at scale $\gg k$ (`mtr_parts`). Then prove it for connected
+     classes, for instance with entropy in the style of Ilinca–Kahn.
    - Failure mode 3 is the parked selector question of §6f, with a sharper target: the
      component structure must carry $\Omega(\log k)$ bits per block.
    - A fully separating trace/entropy example is still open. Mirror payments separate only up

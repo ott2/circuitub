@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 5bb60f582cda04473db9ff14632b8ab95645955f (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 6c09e99a25747819049237909c5870a95b64246b (2026-10-20)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -47,24 +47,67 @@ $2^{\mathbb E F}$. When ones share a critical zero set, they share the same maxi
 and $2^F$ is heavy-tailed. In the blocks this gives $\mathbb E\, 2^F \approx \tfrac12\sqrt{\pi k}$
 per block.
 
-**Start here (updated 2026-10-20).**
-- Failure mode 2 is settled formally (§6i, `Witness_Antichain.thy`). Within a class of a
-  `wclosed` labelling, the traces on a part form an antichain, so Sperner makes sizes
-  irrelevant: $\ln\lvert F\rvert \le H(g) + \mathbb E\sum_K\ln\binom{\lvert K\rvert}{\lfloor\lvert K\rvert/2\rfloor}$.
-  The route never uses $\tau$, so it would prove the stronger, open (MT): rank $k$ gives at
-  most $2^{n-\Omega(n\log k/k)}$ *minimal* transversals.
-- Next: try to break (MT), or prove the trade-off $\mathbb E\Phi - H(g) \ge c\,n\log k/k$ for
-  a class whose critical structure clusters (item 0 of "Next").
-- Li–Zhong ECCC TR26-261 was read on 2026-10-20 (summary in `notes/summaries/`). It has no
-  direct consequence here; see `extensions/locality-and-monotonicity.md` §2.1.
-- Before building on any new statement, try to break it. In this line of work, three of my own
-  claims were corrected within hours of writing them (§6g, §6h).
-- Git: `main` is over 20 commits ahead of `origin`, unpushed (check with
-  `git rev-list --count origin/main..main`); the tree is clean apart from the
-  uncommitted `notes/`. Push only when the user asks.
-- `Monotone_K` now has 16 theories (the newest are `Minterm_Cover`, `Witness_Antichain`, `Shearer_Typical`,
-  `Shearer_Conditional` and `Mirror_Payment`). It builds in about 10 s, and `Audit_K` lists
-  every headline theorem.
+**Start here (handoff of 2026-10-20): the (MT) strand.** The user finds this strand very
+interesting and asked to continue it.
+
+> **(MT)** A hypergraph of rank $k$ on $n$ vertices has at most $2^{\,n-\Omega(n\log k/k)}$
+> minimal transversals (equivalently, maximal independent sets).
+
+*Why it is the right target* (log §6i, §6j):
+- (MT) implies the Majority conjecture: minimum transversals are minimal.
+- Via `minterm_cover`/`minterm_depth3` [F], it gives $2^{\Omega(\sqrt{n\log n})}/(nD)$ monotone
+  depth-3 lower bounds for *every* monotone $f$ with $2^n/D$ minterms of linear size. That
+  includes the non-symmetric bounded-weight threshold functions, which have the same gap as
+  Majority.
+- The witness route (`witness_bound` [F]) never uses $\tau$, so (MT) is what it proves.
+
+*Status:*
+- It is the rank-$k$ form of an open question of Miltersen–Radhakrishnan–Wegener (TCS 2005,
+  ECCC TR03-017).
+- Best known bounds: $n\,2^{n(1-0.282/k)}$ above (Mossé–Sha–Tan, SAT 2022, Cor. 31–34) and
+  $\binom{2k-1}{k}^{n/(2k-1)}$ below (disjoint $K_{2k-1}^{(k)}$). The gap is the same
+  $\log k$.
+- Literature summary: `notes/summaries/minimal-transversals-rank-k.md`.
+
+*Formal tools in place* (`Monotone_K`):
+- `witness_bound`: $\ln\#\le H(g) + \mathbb E\sum_K\ln\binom{\lvert K\rvert}{\lfloor\lvert K\rvert/2\rfloor}$
+  for any labelling with one critical edge per one inside its part (`wclosed`).
+- `mtr_parts`: (MT) holds when the connected components of $H$ have $O(k)$ vertices.
+- `harris_ppz`: the size-$\ge t$ count $2^n(1+1/k)^{-t}$.
+- `minimal_branch`: at most $k^j$ minimal transversals of size $\lvert P\rvert+j$ above $P$.
+- The Shearer toolkit (§6c–§6h).
+
+*Suggested order:*
+1. **Check the sources first.** Read MRW's open problem and Mossé–Sha–Tan's Cor. 31–34 in the
+   original. Find where their argument loses the $\log k$; it is probably the same Jensen step
+   as PPZ (§6).
+2. **Try to break (MT).** A counterexample must be connected at scale $\gg k$ (`mtr_parts`) and
+   locally near-uniform: the code-like object. Look for many minimal transversals of *spread*
+   sizes, none of them minimum. Also find out whether the $\tau = n/2$ conjecture implies (MT),
+   which is unknown; for example, try to make a popular size $t$ minimum by padding.
+3. **Prove (MT) for connected classes.** Natural ones: hypergraphs whose critical structure
+   clusters (pick one canonical critical edge per one, say the lexicographically first, and
+   bound $H(g)$); bounded-degree or linear hypergraphs; and Ilinca–Kahn-style entropy for
+   maximal independent sets, which is formal-friendly given our Shearer tools.
+4. Keep formalizing each rung that survives. Add every headline theorem to `Audit_K.thy`.
+
+*Cautions:*
+- Before building on any new statement, try to break it. Three of my own claims were corrected
+  within hours (§6g, §6h), and §6i corrected another.
+- The literature agent also claimed that L-R "refute the $\Sigma_3^k$ conjecture for general
+  circuits at $k' \approx 2n/k$". This is unverified and nothing depends on it.
+
+*State:*
+- Git: `main` is 10 commits ahead of `origin` after this handoff, unpushed (check with
+  `git rev-list --count origin/main..main`). The tree is clean apart from the uncommitted
+  `notes/`. Push only when the user asks.
+- `Monotone_K` has 16 theories (newest: `Minterm_Cover`, `Witness_Antichain`). It builds in
+  about 5 s, and `Audit_K` lists every headline theorem.
+- Shell: Bash tool commands run under zsh, so quote globs. Use `gsed`, which is GNU and
+  installed, rather than BSD `sed -i ''`. `grep` is Claude Code's ugrep shim. These notes are
+  also in memory.
+- Li–Zhong ECCC TR26-261 was read on 2026-10-20. It has no direct consequence here
+  (`extensions/locality-and-monotonicity.md` §2.1).
 
 **Where things stand (2026-10-20).**
 - **Newest (2026-10-20, §6j): beyond Majority [F in part].** At the user's suggestion.
@@ -271,6 +314,7 @@ per block.
    - **Done (§6i) [F]:** failure mode 2, via Sperner (`witness_bound`). Next: try to break
      (MT), or prove $\mathbb E\Phi - H(g) \ge c\,n\log k/k$ for a class whose critical
      structure clusters. Pick the labelling as one canonical critical edge per one.
+     **This is now the main line, the (MT) strand: see "Start here" above.**
    - Prove the route's hypotheses for a natural class, such as hypergraphs whose components
      are unions of blocks of one fixed partition, up to rare events.
    - Failure mode 3 is §6f's selector question, sharpened: the component structure must
