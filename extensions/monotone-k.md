@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit ff767501b17d884fb875a92ad563958309106b39 (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 3fefb0bf0c0e63f93896a9016702d24c657b6d40 (2026-10-20)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), and the witness-antichain bound `witness_bound` (§6i). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
 
@@ -1084,6 +1084,75 @@ therefore bound the number of *all* minimal transversals of a rank-$k$ hypergrap
 - So the witness route cannot exploit $\tau = n/2$. That is a real restriction only if (MT)
   is false while the conjecture is true, and no example of that is known. To break (MT), one
   would look for many minimal transversals of *spread* sizes, none of them minimum.
+
+## 6j. Beyond Majority: every monotone function with many minterms [F in part], 2026-10-20
+
+The user asked whether the techniques extend to non-symmetric functions. They do, and the
+reason is the observation of §6i that the counting never uses $\tau$.
+
+*Formal* (`Minterm_Cover.thy`, audited). Let $f$ be any predicate on sets, and $H$ a monotone CNF
+*below* $f$, meaning every transversal of $H$ satisfies $f$.
+- `minterm_mtr`, `minterm_crit`: a minterm $X$ of $f$ (with $f(X)$ true and $f(X-v)$ false
+  for every $v\in X$) that satisfies $H$ is a minimal transversal of $H$, and each $v\in X$
+  has a critical edge. If $X-v$ satisfied $H$, it would satisfy $f$. No monotonicity of $f$ is
+  used.
+- `minterm_cover`: if an OR of CNFs $H_i$, $i\in I$, each below $f$, accepts every minterm
+  in $M$, then $\lvert M\rvert \le \sum_i \#\mathrm{mtr}(H_i)$.
+- `minterm_depth3`, with wide clauses: for minterms of size $\ge t$,
+  $$\lvert M\rvert \le \lvert I\rvert\,\frac{2^n}{(1+1/k)^t} + \sum_{i\in I}\ \sum_{e\in H_i,\ \lvert e\rvert > k}\lvert e\rvert\, 2^{\,n-\lvert e\rvert}.$$
+  A minterm whose critical edges are all narrow is counted by `harris_ppz`. Any other one has
+  a wide critical edge $e$, and at most $2^{n-\lvert e\rvert}$ sets meet $e$ in a given single
+  point (`single_hit`).
+
+**Consequences** (by hand, from the formal statements).
+- *Unconditional.* Suppose a monotone $\Sigma_3$ circuit of size $s$ computes $f$, and $f$ has
+  at least $2^n/D$ minterms of size $\ge t$. The circuit has at most $s$ CNFs and $s$ clauses,
+  so $2^n/D \le s\,2^n(1+1/k)^{-t} + s\,n\,2^{n-k-1}$ for every $k$. With $k = \lceil\sqrt t\rceil$
+  and $(1+1/k)^t \ge e^{t/(2k)}$,
+  $$s \ge 2^{\Omega(\sqrt t)}/(nD).$$
+  For $\Pi_3$, apply this to the dual function and its maxterms. This is the classical
+  $2^{\Omega(\sqrt n)}$ argument for Majority, in the form of the "isolated points" lower
+  bounds of PPZ. It applies to every $f$ with $2^{n-o(\sqrt n)}$ minterms of linear size.
+  The unconditional part is probably folklore; a literature check is pending.
+- *Conditional on (MT).* In the first term, replace $(1+1/k)^{-t}$ by the minimal-transversal
+  bound $k^{-cn/k}$. This counts only minimal transversals of the narrow part $H_i^{\le k}$:
+  those minterms are minimal transversals of it, since their critical edges lie in it. Balancing
+  $k^{cn/k}$ against $2^k$ gives $k \approx \sqrt{n\log n}$ and $s \ge 2^{\Omega(\sqrt{n\log n})}/(nD)$.
+  So the $\log k$ program of this log is not about Majority. It is about the count (MT), and
+  it serves every monotone function with nearly as many minterms as Majority.
+- *The scope is narrow, but natural.* Counting needs an antichain of minterms of size
+  $2^{n-o(\sqrt n)}$, essentially a positive fraction of the middle layers up to
+  $2^{o(\sqrt n)}$. Functions such as clique or perfect matching have far fewer minterms and
+  are out of reach.
+
+**A non-symmetric class where both sides match up to the same question** (by hand).
+Take linear threshold functions $f(x) = [\sum_i w_i x_i \ge \theta]$ with integer weights
+$1 \le w_i \le w$, and $\theta$ near $\frac12\sum_i w_i$.
+- *Lower bound.* Every set of weight exactly $\theta$ is a minterm. There are
+  $2^n/O(\sqrt{w^2 n})$ of them by the local limit theorem, provided $\theta$ is reachable,
+  for example when $\gcd_i w_i = 1$ and enough of the $w_i$ equal 1. At $w = 1$ it is the
+  central binomial. These minterms have size $\ge \theta/w$, which is linear.
+  So $s \ge 2^{\Omega(\sqrt n)}/\mathrm{poly}(n)$ unconditionally, and
+  $2^{\Omega(\sqrt{n\log n})}$ under (MT).
+- *Upper bound.* $f$ is a monotone projection of $\mathrm{Maj}_N$ with $N = \sum_i w_i \le wn$:
+  repeat $x_i$ $w_i$ times, and pad with constants to move the threshold. So the monotone KPPY
+  formulas give size $2^{O(\sqrt{wn\log(wn)})}$.
+- For $w = O(1)$, monotone depth-3 complexity of these non-symmetric functions sits between
+  $2^{\Omega(\sqrt n)}$ and $2^{O(\sqrt{n\log n})}$, exactly as for Majority, and (MT) would
+  close the gap. Non-monotone depth 3 is not settled here: L-R's $2^{O(\sqrt n)}$ is for
+  symmetric functions, and a projection from $\mathrm{Maj}_N$ gives $2^{O(\sqrt{wn})}$. So the
+  separation question carries over too, for $w = O(1)$.
+- Other members of the class are any monotone projections of Majority with $O(n)$ variables,
+  and block-weighted thresholds.
+
+**Questions this opens.**
+- Is there a monotone $f$ with $2^{n-o(\sqrt n)}$ minterms whose monotone depth-3 complexity
+  is far *above* $2^{\sqrt{n\log n}}$? The counting bound cannot give more than
+  $2^n/\mathrm{MT}_k$ per CNF, so its limit is set by (MT) together with the cost of wide
+  clauses.
+- Upper bounds beyond projections of Majority: covering a non-symmetric antichain by CNFs
+  below $f$, each with many minimal transversals, needs CNFs adapted to $f$. Random
+  permutations (`threshold_cover`) only work for symmetric $f$.
 
 ## 7. The structural question
 

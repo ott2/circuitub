@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit ff767501b17d884fb875a92ad563958309106b39 (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 3fefb0bf0c0e63f93896a9016702d24c657b6d40 (2026-10-20)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -26,6 +26,7 @@ formal before we build on it.
 - **§6h:** the conditional certificate [F], mirror payments [F in part], witness components and
   the component route with its four failure modes.
 - **§6i:** witness antichains [F]: Sperner removes failure mode 2; the route now proves (MT).
+- **§6j:** beyond Majority [F in part]: minterms of any $f$ are minimal transversals; bounded-weight thresholds.
 - §7: Question C.
 - §8: the next steps.
 
@@ -61,12 +62,21 @@ per block.
 - Git: `main` is over 20 commits ahead of `origin`, unpushed (check with
   `git rev-list --count origin/main..main`); the tree is clean apart from the
   uncommitted `notes/`. Push only when the user asks.
-- `Monotone_K` now has 15 theories (the newest are `Witness_Antichain`, `Shearer_Typical`,
+- `Monotone_K` now has 16 theories (the newest are `Minterm_Cover`, `Witness_Antichain`, `Shearer_Typical`,
   `Shearer_Conditional` and `Mirror_Payment`). It builds in about 10 s, and `Audit_K` lists
   every headline theorem.
 
 **Where things stand (2026-10-20).**
-- **Newest (2026-10-20, §6i): witness antichains [F].** `lym` (induction, no permutations),
+- **Newest (2026-10-20, §6j): beyond Majority [F in part].** At the user's suggestion.
+  `minterm_mtr`, `minterm_crit`, `minterm_cover`, `single_hit`, `minterm_depth3`
+  (`Minterm_Cover.thy`): a minterm of any $f$ that satisfies a CNF below $f$ is a minimal
+  transversal of it. So every monotone $f$ with $2^n/D$ minterms of size $\ge t$ needs
+  depth-3 size $2^{\Omega(\sqrt t)}/(nD)$, and $2^{\Omega(\sqrt{n\log n})}/(nD)$ under (MT).
+  Natural non-symmetric class: threshold functions with weights in $\lbrace1..w\rbrace$,
+  $w = O(1)$. They are projections of $\mathrm{Maj}_{O(n)}$, so they have the same gap as
+  Majority, closed by (MT). A literature check on (MT) and on this reduction was running on
+  2026-10-20; its summary goes to `notes/summaries/minimal-transversals-rank-k.md`.
+- **Earlier (2026-10-20, §6i): witness antichains [F].** `lym` (induction, no permutations),
   `sperner`, `class_antichain`, `witness_bound`, `witness_partition`. The labelling only needs
   one critical edge per one inside its part (`wclosed`). Small parts save more, not less: a
   free zero saves $\ln 2$, which corrects §6h. What remains is the trade-off between part sizes
