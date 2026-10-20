@@ -26,7 +26,8 @@ ML \<open>
      @{thm half_subsets}, @{thm mp_trace}, @{thm mp_count},
      @{thm lym}, @{thm sperner}, @{thm class_antichain}, @{thm card_traces},
      @{thm witness_bound}, @{thm witness_partition},
-     @{thm minterm_mtr}, @{thm minterm_crit}, @{thm minterm_cover}, @{thm single_hit}, @{thm minterm_depth3}];
+     @{thm minterm_mtr}, @{thm minterm_crit}, @{thm minterm_cover}, @{thm single_hit}, @{thm minterm_depth3},
+     @{thm mtr_crit}, @{thm mtr_parts}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

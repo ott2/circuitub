@@ -76,6 +76,53 @@ proof -
 qed
 
 text \<open>
+  A fixed partition into parts that each contain whole edges (for instance the connected
+  components of \<open>H\<close>) is \<open>wclosed\<close> for every minimal transversal, so the minimal transversals number
+  at most \<open>\<Prod>\<^sub>K (|K| choose |K|/2)\<close> (\<open>mtr_parts\<close>): (MT) holds when all parts have \<open>O(k)\<close> vertices.
+\<close>
+
+lemma mtr_crit:
+  assumes "mtr H X" and "v \<in> X"
+  shows "\<exists>e\<in>H. e \<inter> X = {v}"
+proof -
+  have "X - {v} \<subset> X" using assms(2) by blast
+  then have "\<not> tr H (X - {v})" using assms(1) unfolding mtr_def by blast
+  then obtain e where e: "e \<in> H" and e0: "e \<inter> (X - {v}) = {}" unfolding tr_def by blast
+  have "e \<inter> X \<noteq> {}" using assms(1) e unfolding mtr_def tr_def by blast
+  then show ?thesis using e e0 by blast
+qed
+
+theorem mtr_parts:
+  assumes finV: "finite V" and UP: "\<Union>P = V" and disj: "pairwise disjnt P"
+    and inside: "\<forall>e\<in>H. \<exists>K\<in>P. e \<subseteq> K"
+  shows "card {X. X \<subseteq> V \<and> mtr H X} \<le> (\<Prod>K\<in>P. card K choose (card K div 2))"
+proof -
+  define G where "G = {X. X \<subseteq> V \<and> mtr H X}"
+  have finG: "finite G" unfolding G_def by (rule finite_subset[of _ "Pow V"]) (use finV in auto)
+  have finP: "finite P" using finite_UnionD[of P] finV UP by simp
+  have finK: "finite K" if "K \<in> P" for K
+    by (rule finite_subset[OF _ finV]) (use that UP in blast)
+  have GP: "\<forall>Y\<in>G. Y \<subseteq> \<Union>P" using UP unfolding G_def by blast
+  have trG: "\<forall>Y\<in>G. \<forall>e\<in>H. e \<inter> Y \<noteq> {}" unfolding G_def mtr_def tr_def by blast
+  have clG: "\<forall>Y\<in>G. wclosed H Y P"
+    unfolding wclosed_def
+  proof (intro ballI)
+    fix Y K v assume Y: "Y \<in> G" and K: "K \<in> P" and v: "v \<in> Y \<inter> K"
+    have mY: "mtr H Y" using Y unfolding G_def by blast
+    obtain e where e: "e \<in> H" and eY: "e \<inter> Y = {v}" using mtr_crit[OF mY] v by blast
+    obtain K' where K': "K' \<in> P" and eK': "e \<subseteq> K'" using inside e by blast
+    have "v \<in> K'" using eY eK' by blast
+    then have "K' = K" using disj K K' v unfolding pairwise_def disjnt_def by blast
+    then show "\<exists>e\<in>H. e \<subseteq> K \<and> e \<inter> Y = {v}" using e eK' eY by blast
+  qed
+  have tK: "card ((\<lambda>Y. Y \<inter> K) ` G) \<le> card K choose (card K div 2)" if K: "K \<in> P" for K
+    by (rule sperner[OF class_antichain[OF trG clG K] finK[OF K]]) blast
+  have "card G \<le> (\<Prod>K\<in>P. card ((\<lambda>Y. Y \<inter> K) ` G))" by (rule card_traces[OF finG finP GP])
+  also have "\<dots> \<le> (\<Prod>K\<in>P. card K choose (card K div 2))" by (rule prod_mono) (simp add: tK)
+  finally show ?thesis unfolding G_def .
+qed
+
+text \<open>
   With wide clauses. A minterm all of whose elements have a critical edge of size \<open>\<le> k\<close> is counted
   by \<open>harris_ppz\<close>; any other minterm has a critical edge \<open>e\<close> with \<open>|e| > k\<close>, and at most
   \<open>2^(n - |e|)\<close> sets meet \<open>e\<close> in a given single point (\<open>single_hit\<close>).
