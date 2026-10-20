@@ -43,6 +43,7 @@ session Monotone_K in "monotone_k" = Majority_AC0 +
     Shearer_Typical
     Shearer_Conditional
     Mirror_Payment
+    Witness_Antichain
     Audit_K
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +
