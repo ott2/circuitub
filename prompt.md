@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit adcfb23c7a84243aa28f403cf910399ebb7ea629 (2026-10-18)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit c330c0e41a5a49692cd7e26839e8489a8dc6446d (2026-10-18)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -561,7 +561,9 @@ The full list is in memory (`ndtht-isabelle-tips.md`) and in
 - The ndtht insights and the watchdog proof hints have been taken up by those projects.
 
 Uncommitted, by design: `notes/summaries/chukhin-tr26-248.md` (a hand-checked summary of
-ECCC TR26-248).
+ECCC TR26-248) and `notes/summaries/li-zhong-tr26-261.md` (ECCC TR26-261, read 2026-10-20:
+the point-list decomposition; no direct consequence for monotone Majority, see its last
+section).
 
 ## Background: the previous work (Lecomte–Ramakrishnan and its extensions)
 

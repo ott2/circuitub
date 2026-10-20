@@ -1,6 +1,6 @@
 # Locality and monotonicity in the Lecomte–Ramakrishnan construction
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit 2914f680589cc0705774e787e6e5d4ad34bb4c1c (2026-10-13)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit c330c0e41a5a49692cd7e26839e8489a8dc6446d (2026-10-18)}$
 
 This document is separate from the verification of Lecomte and Ramakrishnan,
 *Optimal Shallow Circuits for Majority* (arXiv:2609.34029). It asks how much of the
@@ -101,7 +101,7 @@ L-R show that, with unbounded fan-in, negations plus pairwise coupling remove a
 $\sqrt{\log n}$ factor from the exponent.
 
 **Beyond the parity barrier: other functions.** By L-R, no symmetric function needs
-depth-$d$ circuits larger than $2^{O(n^{1/(d-1)})}$. Two recent papers beat this bound with
+depth-$d$ circuits larger than $2^{O(n^{1/(d-1)})}$. Three recent papers beat this bound with
 non-symmetric explicit functions.
 - OpenAI (Sept 2026) gives a function in P that needs OR–AND–OR circuits of size
   $2^{\omega(\sqrt n)}$.
@@ -113,6 +113,18 @@ non-symmetric explicit functions.
     restriction lemma bounds the expected $\mathrm{size}_b$ of a restricted wide CNF by $1$,
     and a disjoint sparsification lemma does the rest. The method stops at
     $(n\log n)^{1/(d-1)}$.
+- Li and Zhong (ECCC TR26-261) remove the $\log\log n$: $2^{\Omega((n\log n)^{1/(d-1)})}$
+  for inverse trace $\mathrm{Tr}(x^{-1})$ over $\mathbb F_{2^N}$, for the trilinear function,
+  and for OpenAI's evaluator. At depth 3 this is $2^{\Omega(\sqrt{n\log n})}$.
+  - Sparsification is replaced by a *point-list decomposition*: every width-$b$ CNF on $m$
+    variables is a disjoint union of $2^{\varepsilon m}$ sets $\mathrm{cl}_b(A_i)$. Each
+    $A_i$ is a list of $2^{O(b)}\log m$ points, and $\mathrm{cl}_b(A)$ is the set of points
+    whose every pattern on $\le b$ coordinates occurs in $A$. The proof is a decision tree
+    that branches on rare patterns. Each true branch shrinks the set by $2^{Cb}$, so leaves
+    can be named by few fixed coordinates.
+  - They also prove a correlation bound $2^{-\Omega(n\log\log S/(\log S)^{d-1})}$ and upper
+    bounds $\mathrm{size}_9 \le 2^{O(\sqrt n\log n)}$ for inverse trace.
+  - The method's own limit (their §8) is again $\sqrt{n\log n}$ at depth 3.
 
 This does not change the questions here. Their answers concern Majority, which is
 symmetric, and for monotone formulas Majority's depth-3 complexity is still between
@@ -121,6 +133,12 @@ transfer:
 - Random restrictions push Majority's threshold outside the window of the live variables.
 - The restriction lemma writes $H_\rho$ as a signed sum of narrow CNFs. That loses the
   monotone count ("few accepted points of weight $n/2$") on which our covering bounds rest.
+- The point-list decomposition, read as a label for `certificate_cond`
+  (`extensions/monotone-k.md` §6h), costs $\varepsilon$ bits per variable. The $\log k$ question
+  has a budget of $o(\log k/k)$ bits per variable. At that price the leaves' guarantee (no
+  occurring pattern rarer than $2^{-Cb}$, with $C \gtrsim k$) is vacuous at block scale (by
+  hand). Their Shearer bound $\lvert\mathrm{cl}_b(A)\rvert \le \lvert A\rvert^{m/b}$ is the
+  trace form we already have formally (`shearer_ent`).
 
 It does change the context: since L-R, the open question for Majority is a
 monotone/non-monotone separation, not a route past the parity barrier.
