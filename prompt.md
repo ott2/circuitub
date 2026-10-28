@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 6c09e99a25747819049237909c5870a95b64246b (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit ff34cc668fa2896ee5f2a7a72deb7f7bc8a19f90 (2026-10-28)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -27,6 +27,7 @@ formal before we build on it.
   the component route with its four failure modes.
 - **§6i:** witness antichains [F]: Sperner removes failure mode 2; the route now proves (MT).
 - **§6j:** beyond Majority [F in part]: minterms of any $f$ are minimal transversals; bounded-weight thresholds.
+- **§6k:** the (MT) strand [F in part]: adaptive witnesses (`past_antichain`), (MT) for unions of few cliques (`clique_bound`), random hypergraphs do not break (MT).
 - §7: Question C.
 - §8: the next steps.
 
@@ -76,8 +77,29 @@ interesting and asked to continue it.
 - `harris_ppz`: the size-$\ge t$ count $2^n(1+1/k)^{-t}$.
 - `minimal_branch`: at most $k^j$ minimal transversals of size $\lvert P\rvert+j$ above $P$.
 - The Shearer toolkit (§6c–§6h).
+- `past_antichain`, `past_defect` (`Past_Antichain.thy`, 2026-10-28): adaptive parts. The traces
+  on $K$, given agreement on the revealed set $S$, form an antichain if critical edges lie in
+  $S\cup K$. With $\le d$ exceptions there are at most $(d+1)\binom{\lvert K\rvert}{\lvert K\rvert/2}$ traces.
+- `closed_bound`, `clique_bound` (`Closed_Blocks.thy`, 2026-10-28):
+  $\ln\# \le N\ln 2 + n(\ln 2 - \ln\frac{3m+2}{2}/(2m))$ when every one lies in a closed block
+  among $N$ blocks of size $\le m$. Unions of cliques $\bigcup_i\binom{B_i}{c_i+1}$, overlapping
+  arbitrarily, qualify.
 
-*Suggested order:*
+*Progress on 2026-10-28* (log §6k):
+- Step 1 is done: MST lose the $\log k$ at the Jensen step.
+- Step 2, partly done: random hypergraphs with any edge probabilities save
+  $(\frac12-o(1))\,n\log_2 k/k$, twice the block saving (first moment, by hand). Random
+  overlapping cliques do worse still (heuristic). Equivalent forms: fixed points of antitone
+  $(k-1)$-DNF networks, and the uniform-measure event "independent and dominating".
+- Step 3, first connected class [F]: unions of $N\le n\log_2(3k)/(8k)$ cliques of size
+  $\le 2k$, in any overlap pattern.
+- A literature agent checked random-hypergraph counts, fixed points of antitone Boolean networks,
+  and unions of cliques. Its note is `notes/summaries/mt-literature-2026-10-28.md`, uncommitted.
+- **Next:** the entropy form of `closed_bound`, paying $h(\Pr[\text{closed}\mid\text{past}])$ per
+  block instead of $\ln 2$. It needs a formal adaptive chain rule over `lent`. Then look for other
+  block structures in which a block containing one critical edge is closed.
+
+*Suggested order (from 2026-10-20):*
 1. **Check the sources first.** Read MRW's open problem and Mossé–Sha–Tan's Cor. 31–34 in the
    original. Find where their argument loses the $\log k$; it is probably the same Jensen step
    as PPZ (§6).
@@ -98,19 +120,20 @@ interesting and asked to continue it.
   circuits at $k' \approx 2n/k$". This is unverified and nothing depends on it.
 
 *State:*
-- Git: `main` is 10 commits ahead of `origin` after this handoff, unpushed (check with
+- Git: `main` is 13 commits ahead of `origin` after the 2026-10-28 session, unpushed (check with
   `git rev-list --count origin/main..main`). The tree is clean apart from the uncommitted
   `notes/`. Push only when the user asks.
-- `Monotone_K` has 16 theories (newest: `Minterm_Cover`, `Witness_Antichain`). It builds in
-  about 5 s, and `Audit_K` lists every headline theorem.
+- `Monotone_K` has 18 theories (newest: `Closed_Blocks`, `Past_Antichain`). It builds in
+  about 20 s, and `Audit_K` lists every headline theorem.
 - Shell: Bash tool commands run under zsh, so quote globs. Use `gsed`, which is GNU and
   installed, rather than BSD `sed -i ''`. `grep` is Claude Code's ugrep shim. These notes are
   also in memory.
 - Li–Zhong ECCC TR26-261 was read on 2026-10-20. It has no direct consequence here
   (`extensions/locality-and-monotonicity.md` §2.1).
 
-**Where things stand (2026-10-20).**
-- **Newest (2026-10-20, §6j): beyond Majority [F in part].** At the user's suggestion.
+**Where things stand (2026-10-28).**
+- **Newest (2026-10-28, §6k): the (MT) strand [F in part].** See "Progress on 2026-10-28" under "Start here": `past_antichain`, `past_defect`, `closed_bound`, `clique_bound` (unions of few cliques satisfy (MT)); random hypergraphs save twice the block amount.
+- **Earlier (2026-10-20, §6j): beyond Majority [F in part].** At the user's suggestion.
   `minterm_mtr`, `minterm_crit`, `minterm_cover`, `single_hit`, `minterm_depth3`
   (`Minterm_Cover.thy`): a minterm of any $f$ that satisfies a CNF below $f$ is a minimal
   transversal of it. So every monotone $f$ with $2^n/D$ minterms of size $\ge t$ needs

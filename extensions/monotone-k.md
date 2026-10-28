@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 6c09e99a25747819049237909c5870a95b64246b (2026-10-20)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit ff34cc668fa2896ee5f2a7a72deb7f7bc8a19f90 (2026-10-28)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), and the witness-antichain bound `witness_bound` (§6i). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now the size condition (D) of §6g and the witness-component route of §6h.**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), the witness-antichain bound `witness_bound` (§6i), and the adaptive form `past_antichain` with `clique_bound`, (MT) for unions of few cliques (§6k). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now (MT) (§6i–§6k).**
 
 ## 1. The question, and what is known
 
@@ -1180,6 +1180,137 @@ $1 \le w_i \le w$, and $\theta$ near $\frac12\sum_i w_i$.
   below $f$, each with many minimal transversals, needs CNFs adapted to $f$. Random
   permutations (`threshold_cover`) only work for symmetric $f$.
 
+## 6k. The (MT) strand: adaptive witnesses, closed blocks, random hypergraphs [F in part], 2026-10-28
+
+**Sources (step 1 of the handoff).** Mossé–Sha–Tan's Cor. 31 ($2^{n-j/k}$ prime implicants of
+size $j$) is the satisfiability coding lemma, with the average codeword length turned into a count
+by Jensen. Their $0.282/k$ comes from optimising $j$ against $\binom nj$. So their $\log k$ is lost
+at the same step as PPZ's (§6). (This is from the literature note's reading of the PDF; MRW's
+$2^{n(1-1/(100k))}$, by the switching lemma, was not rechecked.)
+
+*Formal* (`Past_Antichain.thy`, `Closed_Blocks.thy`, audited).
+- `past_antichain`: let $G$ be transversals that agree on a revealed set $S$. If every one
+  $v\in X\cap K$ of every $X\in G$ has a critical edge inside $S\cup K$ (`loc`), then
+  $\lbrace X\cap K : X\in G\rbrace$ is an antichain. The proof is one line. Let $e$ be the
+  critical edge of $v$ for $X'$, and $u\in e\cap X$. Then $u\in X'$, because $X$ and $X'$ agree
+  on $S$ and $X\cap K\subseteq X'\cap K$. So $u = v$. (`class_antichain` is the case $S=\emptyset$.)
+- `past_defect`, via `residue_antichain` and `gapped_sperner`: if each $X$ has at most $d$ ones in
+  $K$ without such an edge, then comparable traces differ by at most $d$ elements. The traces
+  whose sizes lie in one residue class mod $d+1$ then form an antichain, so there are at most
+  $(d+1)\binom{\lvert K\rvert}{\lfloor\lvert K\rvert/2\rfloor}$ traces. This is a weak Erdős
+  theorem with a two-line proof.
+- `closed_blocks`, `closed_bound`: fix blocks $B_0,\dots,B_{N-1}$ of size $\le m$. A block is
+  *closed* for $X$ if every one of $X$ in it has a critical edge inside it. If every one lies in
+  some closed block, then
+  $$\ln\#F \le N\ln 2 + n\Bigl(\ln 2 - \frac{\ln((3m+2)/2)}{2m}\Bigr).$$
+  The proof labels $X$ by its set $T$ of closed blocks, which costs $2^N$. It then reveals the
+  blocks of $T$ in order: block $i$ contributes the part $B_i$ minus the earlier blocks of $T$,
+  whose traces are an antichain given the past. Nothing outside $\bigcup T$ is a one. The
+  per-part saving is $\frac12\ln\frac{3j+2}{2}\ge\frac{j}{2m}\ln\frac{3m+2}{2}$, by concavity (`chord`,
+  from weighted AM-GM, `wamgm`).
+- `clique_closed`, `clique_bound`: let $H = \bigcup_i\binom{B_i}{c_i+1}$, a union of cliques that
+  may overlap arbitrarily. Then every block containing a critical edge is closed: swap $v$ for
+  any other one $u\in B_i$ in the edge. So `closed_bound` applies.
+
+**Consequences** (by hand, from the formal statements).
+- *(MT) holds for unions of few cliques.* Take blocks of size $m\le Ck$ and at most
+  $N\le n\log_2\frac{3m+2}{2}/(4m)$ of them. Then
+  $\#\mathrm{mtr}\le 2^{\,n-\Omega(n\log k/k)}$. The blocks may overlap in any pattern, so $H$ may
+  be connected at every scale. The average number of blocks per vertex can be about
+  $\frac14\log_2 k$. This is the first connected class for which (MT) is formal. `mtr_parts` needed
+  components of size $O(k)$. On disjoint blocks the label is wasted, but the saving is still
+  $n\ln\frac{3k}{4}/(4k)$.
+- *Adaptive chain rule* (by hand; standard). Let the parts $K_1,K_2,\dots$ be chosen one at a
+  time, each as a function of the traces revealed so far. Then
+  $$\ln\lvert F\rvert \le \mathbb E\sum_i \ln\Bigl((1+d_i)\tbinom{\lvert K_i\rvert}{\lfloor\lvert K_i\rvert/2\rfloor}\Bigr),$$
+  where $d_i$ is the largest defect over the members consistent with the history. Labels may be
+  interleaved as extra steps, each costing its conditional entropy. Special cases:
+  - PPZ in its entropy (Jensen) form: singleton parts in random order, with $d_i = 0$ exactly
+    when the vertex is determined.
+  - `witness_bound`: reveal the label, then fixed parts. The adaptive version asks for less,
+    since critical edges may also lie in *earlier* parts.
+  - `closed_blocks` (counting form).
+
+  The defect term makes the route robust. A part of size $\Theta(k)$ with up to $k^{1/2-\varepsilon}$
+  leaking ones still saves $\Omega(\log k)$.
+- *What limits `closed_bound`* is the label cost $N\ln 2$, paid for every block. In the entropy
+  form one would reveal the bit "is $B_i$ closed?" only for blocks that still have unrevealed
+  vertices, at cost $h(\Pr[\text{closed}\mid\text{past}])$. When tightness is rare (high
+  multiplicity), this is much cheaper. This is the next rung, and it needs a formal adaptive
+  chain rule on top of `lent`.
+
+**Trying to break (MT) (step 2).**
+- *Random hypergraphs do not* [by hand, first moment]. Each set of size $j\le k$ is an edge
+  independently with probability $p_j$. For a fixed $Y$ with $\lvert Y\rvert = t = \beta n$, the
+  events "no edge inside $Y$" and "$v$ has an edge $e$ with $e - v\subseteq Y$", for each $v\notin Y$,
+  involve disjoint sets of potential edges. So the probability that $Y$ is a maximal
+  independent set is exactly
+  $\prod_{j}(1-p_j)^{\binom tj}\cdot\prod_{v\notin Y}\bigl(1-\prod_j(1-p_j)^{\binom t{j-1}}\bigr)$.
+  Put $\mu = \sum_j p_j\binom t{j-1}$. Since $\binom tj \approx \binom t{j-1}\,t/j\ge\binom t{j-1}t/k$,
+  the per-vertex exponent is at most
+  $$H(\beta) - \frac{\mu\beta}{k} + (1-\beta)\ln(1-e^{-\mu}) + o(1).$$
+  The best choice is $e^{-\mu}=\beta/(k(1-\beta)+\beta)$. If $\lvert\beta-\frac12\rvert\ge\sqrt{\ln k/k}$,
+  entropy alone loses $2\ln k/k$. Otherwise the middle term is
+  $-\frac{1}{2k}\ln k\,(1-o(1))$. Hence
+  $\mathbb E\,\#\mathrm{MIS}\le 2^{\,n-(\frac12-o(1))\,n\log_2k/k}$ for every choice of the $p_j$, and
+  by Markov the typical count obeys the same bound. That is *twice* the block saving
+  ($\frac14 n\log_2 k/k$). The cost splits as $\frac{\ln k}{2k}$ for independence (each one needs
+  about $\ln k$ tight edges, which puts about $n\ln k/(2k)$ edges at risk inside $Y$) plus
+  $\frac1{2k}$ for coverage.
+- *Random overlapping cliques* [heuristic, first moment with blocks treated as independent].
+  Take blocks of size $m$ with cap $c=\beta m$ (edges $\binom{B}{c+1}$), each vertex in $r$
+  blocks, and $Y$ of density $\frac12$. The loss is about
+  $\frac{\beta}{2\beta-1}\cdot\frac{\ln k}{2k}$, minimised at $\beta\to1$, which is the random
+  hypergraph again. Multiplicity $r>1$ does not help. Only $r=1$, the disjoint blocks, reaches
+  $\frac{\ln k}{4k}$.
+- So connected *random* structures lose more than disjoint blocks. A counterexample to (MT) must
+  be connected at scale $\gg k$ (`mtr_parts`), must not be a union of few cliques
+  (`clique_bound`), and must beat the random first moment. It would have to be structured and
+  code-like.
+
+**Equivalent forms** (by hand).
+- *Fixed points.* $Y$ is a maximal independent set iff $Y = V\setminus N(Y)$, where
+  $N(Y) = \lbrace v : \exists e\ni v,\ e - v\subseteq Y\rbrace$. Here $[v\in N(Y)]$ is a monotone
+  $(k-1)$-DNF of $Y_{-v}$, so $Y_v = \neg g_v(Y_{-v})$ for such DNFs. Conversely, for *any* network
+  $Y_v = \neg g_v(Y_{-v})$ with monotone $(k-1)$-DNFs $g_v$, the fixed points are maximal
+  independent sets of $H = \lbrace t\cup\lbrace v\rbrace : t\text{ a term of }g_v\rbrace$, which
+  has rank $k$. So (MT) is equivalent to: an antitone Boolean network whose coordinates are
+  $(k-1)$-DNFs has at most $2^{n-\Omega(n\log k/k)}$ fixed points. (These fixed points form an
+  antichain directly: if $Y\subsetneq Y'$ and $v\in Y'-Y$, then $g_v(Y)$, hence $g_v(Y')$.)
+- *Uniform measure.* $\#\mathrm{MIS} = 2^n\Pr_Y[Y = V\setminus N(Y)]$ for uniform $Y$. The event is
+  "independent" (decreasing) and "dominating" (increasing). Harris bounds the probability by the
+  product, which is only about $\frac14$ per block. In a block the true probability is about
+  $1/\sqrt{\pi k}$: the two events are complementary thresholds, and their intersection is a thin
+  shell.
+- *Conditional antichains everywhere.* For every $S$, the traces $Y\cap S$ given $Y_{V-S}$
+  form an antichain, so $H(Y_S\mid Y_{V-S})\le\ln\binom{\lvert S\rvert}{\lfloor\lvert S\rvert/2\rfloor}$.
+  This holds without any rank condition, so the rank must enter through *past*-closed parts, as
+  in `past_antichain`.
+
+**Literature** (agent, 2026-10-28; `notes/summaries/mt-literature-2026-10-28.md`; all from
+snippets and abstracts only).
+- *Random hypergraphs.* No count of maximal independent sets in $H_k(n,p)$ was found. The graph
+  first moment is in arXiv 0907.3309. Confidence that the hypergraph form is unstated: about 80%.
+- *Boolean networks.* The fixed-point bounds use the interaction graph only:
+  - Aracena–Richard–Salinas (SIAM J. Discrete Math. 2017): $2^{\tau}$ for a feedback vertex set
+    $\tau$, and bounds via cycle packings;
+  - Richard; Gadouleau–Richard–Riis.
+
+  For negative networks Richard's notes reportedly give $\binom{n}{n/2}$, which is the antichain
+  remark above. No width-dependent bound was found, so (MT) in network form would be new there
+  too.
+- *Unions of cliques.* No count of maximal packings, or of maximal sets with bounded intersection
+  with each block, was found. Partial Steiner systems are counted in full, not the maximal ones.
+  Confidence that `clique_bound` is unstated: about 80%. It is a modest statement in any case.
+
+**Open, in order.**
+1. The entropy form of `closed_bound`: pay $h(\Pr[\text{closed}\mid\text{past}])$ per block, not
+   $\ln 2$. That would cover unions of cliques with polynomially large multiplicity whenever
+   tightness is rare. First formalize the adaptive chain rule.
+2. Beyond cliques: which block structures have "a block containing one critical edge is
+   closed"? Matroid circuits do not, unless $Y\cap B$ is a basis.
+3. Whether the $\tau = n/2$ conjecture implies (MT) is still open.
+
 ## 7. The structural question
 
 The conjecture now follows from a purely structural statement:
@@ -1259,6 +1390,15 @@ already gives $\lvert\mathcal X\rvert \le 2^{n+1}\gamma^{-\varepsilon}$.
      (MRW, and Mossé–Sha–Tan Cor. 31–34) to find where the $\log k$ is lost. Then try to break
      (MT), which needs connectivity at scale $\gg k$ (`mtr_parts`). Then prove it for connected
      classes, for instance with entropy in the style of Ilinca–Kahn.
+   - **Done (§6k), 2026-10-28:**
+     - The sources were checked: MST lose the $\log k$ at the Jensen step.
+     - Random hypergraphs, and random overlapping cliques, do not break (MT) (by hand).
+     - `past_antichain`/`past_defect` [F] give adaptive parts with defects.
+     - `clique_bound` [F]: (MT) holds for unions of $O(n\log k/k)$ cliques that may overlap
+       arbitrarily.
+
+     **Next:** the entropy form of `closed_bound`, which pays per closed block only
+     $h(\Pr[\text{closed}\mid\text{past}])$. It needs a formal adaptive chain rule.
    - Failure mode 3 is the parked selector question of §6f, with a sharper target: the
      component structure must carry $\Omega(\log k)$ bits per block.
    - A fully separating trace/entropy example is still open. Mirror payments separate only up
