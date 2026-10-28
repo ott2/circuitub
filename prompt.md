@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit ff34cc668fa2896ee5f2a7a72deb7f7bc8a19f90 (2026-10-28)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 740fb882ce769580bddcbcea7436128e38968d87 (2026-10-28)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -120,7 +120,7 @@ interesting and asked to continue it.
   circuits at $k' \approx 2n/k$". This is unverified and nothing depends on it.
 
 *State:*
-- Git: `main` is 13 commits ahead of `origin` after the 2026-10-28 session, unpushed (check with
+- Git: `main` is 4 commits ahead of `origin` after the 2026-10-28 session, unpushed (check with
   `git rev-list --count origin/main..main`). The tree is clean apart from the uncommitted
   `notes/`. Push only when the user asks.
 - `Monotone_K` has 18 theories (newest: `Closed_Blocks`, `Past_Antichain`). It builds in
