@@ -1,6 +1,6 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit ff34cc668fa2896ee5f2a7a72deb7f7bc8a19f90 (2026-10-28)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit e740118d8d8f443a22f713e545f46fdf6a769dfc (2026-10-28)}$
 
 Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), the witness-antichain bound `witness_bound` (§6i), and the adaptive form `past_antichain` with `clique_bound`, (MT) for unions of few cliques (§6k). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now (MT) (§6i–§6k).**
 
@@ -1310,6 +1310,71 @@ snippets and abstracts only).
 2. Beyond cliques: which block structures have "a block containing one critical edge is
    closed"? Matroid circuits do not, unless $Y\cap B$ is a basis.
 3. Whether the $\tau = n/2$ conjecture implies (MT) is still open.
+
+## 6l. The crossing decomposition of the ETH paper, and what transfers (by hand), 2026-10-30
+
+The user asked whether the decomposition technique of *A $2^{o(n)}$ time algorithm for 3-SAT*
+(Claude/Anthropic, 2026-10-26, with a Lean proof) could be used here.
+
+**The technique.**
+- #$k$-SAT becomes a sum of products on a complete graph of $K$ nodes with $\lambda$ bits per
+  edge. The nodes are placed on a grid.
+- The two diagonals of each rectangle form a *crossing* $[x=v][y=u]$. Row-wise and column-wise
+  it is a permutation matrix, so it costs $2\lambda$ bits in each direction.
+- The eight-square identity, used blockwise and grouped by the number of column choices, writes
+  $2^t$ times the crossing as $A_0+\dots+A_t$. Each $A_i$ costs $c^{\mathrm{row}}_i + c^{\mathrm{col}}_i\le 11\lambda/3 + O(1)$
+  bits, against $4\lambda$ for the crossing. These are the pieces of their Definition 7, with
+  $\rho = 11/12$.
+- Each of the polynomially many terms then merges all rows or all columns, whichever is cheaper.
+  It balances by a random grouping and recurses. The exponent goes from $e$ to about $\rho e$.
+- Their Appendix G is clear that the saving lies outside every single-contraction-order model
+  (Austrin–Kaski–Kubjas): it needs a *signed* expansion, and a different order for each term.
+
+**Barrier: nonnegative or Boolean pieces do not exist** (by hand). Suppose
+$\sum_{i\in I}A_i = d\,[x=v][y=u]$ with $d>0$ and every $A_i\ge 0$.
+- Then $\mathrm{supp}\,A_i\subseteq\mathrm{supp}$ of the crossing. Row-wise and column-wise, that
+  support is a permutation pattern.
+- A nonnegative matrix supported in a permutation pattern is a diagonal matrix times a
+  permutation, so its rank equals the size of its support.
+- Factoring through $c$ bits gives rank $\le 2^c$. So $2^{c^{\mathrm{row}}_i}$ and
+  $2^{c^{\mathrm{col}}_i}$ are both $\ge\lvert\mathrm{supp}\,A_i\rvert$.
+- The supports cover all $2^{2\lambda}$ ones, so some $i$ has
+  $\lvert\mathrm{supp}\,A_i\rvert\ge 2^{2\lambda}/\lvert I\rvert$. Then
+  $c^{\mathrm{row}}_i+c^{\mathrm{col}}_i\ge 4\lambda - 2\log_2\lvert I\rvert = 4\lambda - O(\log\lambda)$,
+  that is, $\rho\ge 1-o(1)$.
+- The same holds over the Boolean semiring: a Boolean rectangle inside a permutation pattern
+  holds one 1, so the Boolean rank is again the number of ones.
+
+So the saving is *cancellation*, and it has no positive or monotone shadow. That fits
+Lecomte–Ramakrishnan: non-monotone depth 3 is cheap for Majority, and monotonicity must enter
+essentially.
+
+**What this means here.**
+- *The algebraic half does not transfer.* Every bound in this log counts or measures entropy of
+  a positive quantity: PPZ, Harris, Shearer, Sperner, `witness_bound`, `closed_bound`. A monotone
+  $\Sigma_3$ circuit is an OR of CNFs, so it has no cancellation either. The barrier says that
+  the crossing trick cannot appear in either place. The algorithm does not touch the combinatorial
+  counts $S_k(n)$ or $\mathrm{MT}_k(n)$ either: computing a number quickly does not bound it.
+- *The combinatorial half is already here, in a richer form.* "A different contraction order
+  for each term" is our label $g(X)$: an $X$-dependent partition. The paper pays $O(\log\lambda)$
+  bits per crossing for $\lvert I\rvert$ terms, and chooses between two partitions (rows or
+  columns). Our budget is $o(n\log k/k)$ bits in all, and `witness_bound`, `past_antichain` and
+  `closed_bound` already let the partition depend on $X$ and on the past.
+  - Choosing among $r$ fixed partitions is `witness_bound` with $H(g)\le\ln r$ (`lent_image`).
+  - The natural grid test case, where rows and columns are cliques, is already covered by
+    `clique_bound`: $N/n\approx 2/m$.
+- *One structural lesson worth keeping.* The paper's per-term criterion is that the costs in
+  the two directions *sum* to less than the original, so the better one wins by averaging. The
+  entropy analogue: let $\Phi_P(X)$ be the saving of a partition $P$ for $X$, for instance with
+  defects as in `past_defect`. If $\sum_{j\le r}\Phi_{P_j}(X)\ge r\,c\,n\log k/k$ for every $X$,
+  then the label "best $j$" gives (MT) at cost $\ln r$. A useful sum condition needs per-$X$
+  defect counts, which `past_defect` does not yet allow, since its $d$ is worst-case over the
+  class. A coarse label for the defects (powers of 2, about $\log\log k$ bits per part) would.
+  This is untested.
+
+**Consequences for the project.** None of the documents rely on ETH or SETH; this was checked
+by grep on 2026-10-30. GPPST's $\Sigma_3^k$ conjecture and (MT) are combinatorial and are
+unaffected.
 
 ## 7. The structural question
 

@@ -1,6 +1,6 @@
 # Locality and monotonicity in the Lecomte–Ramakrishnan construction
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit c330c0e41a5a49692cd7e26839e8489a8dc6446d (2026-10-18)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/locality-and-monotonicity.md, on top of commit e740118d8d8f443a22f713e545f46fdf6a769dfc (2026-10-28)}$
 
 This document is separate from the verification of Lecomte and Ramakrishnan,
 *Optimal Shallow Circuits for Majority* (arXiv:2609.34029). It asks how much of the
@@ -142,6 +142,18 @@ transfer:
 
 It does change the context: since L-R, the open question for Majority is a
 monotone/non-monotone separation, not a route past the parity barrier.
+
+**The ETH refutation (2026-10-26).** *A $2^{o(n)}$ time algorithm for 3-SAT* (Claude/Anthropic,
+with a Lean proof; OpenAI claims a similar result) counts $k$-SAT solutions in time
+$2^{O(km/\sqrt{\log m})}$.
+- It writes each crossing $[x=v][y=u]$ of a grid-placed tensor network as a *signed* sum
+  (eight-square identity) of pieces that are cheaper row-wise plus column-wise. Each term then
+  merges rows or columns, whichever is cheaper.
+- *Barrier* (by hand, `extensions/monotone-k.md` §6l): no such pieces exist with nonnegative or
+  Boolean values. They would be supported inside a permutation pattern, where rank equals
+  support size. So the technique is pure cancellation, a further instance of the theme of this
+  document that negations or signs are what make shallow constructions cheap.
+- Nothing here depends on ETH.
 
 ### 2.2 The class
 
