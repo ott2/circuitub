@@ -1,6 +1,6 @@
 # Handoff: monotone Σ₃ᵏ for Majority, k ≥ 4 (after formalizing Gurumukhani et al.)
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 740fb882ce769580bddcbcea7436128e38968d87 (2026-10-28)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, prompt.md, on top of commit 572a0f9b92b79483906769e8f3a615a21f72e5a6 (2026-11-01)}$
 
 ## Current focus: the $\log k$ question (session `Monotone_K`)
 
@@ -95,9 +95,18 @@ interesting and asked to continue it.
   $\le 2k$, in any overlap pattern.
 - A literature agent checked random-hypergraph counts, fixed points of antitone Boolean networks,
   and unions of cliques. Its note is `notes/summaries/mt-literature-2026-10-28.md`, uncommitted.
-- **Next:** the entropy form of `closed_bound`, paying $h(\Pr[\text{closed}\mid\text{past}])$ per
-  block instead of $\ln 2$. It needs a formal adaptive chain rule over `lent`. Then look for other
-  block structures in which a block containing one critical edge is closed.
+- **Done on 2026-11-01 (log §6m) [F]:** the entropy form, `label_entropy` (`Closed_Entropy.thy`).
+  - Any label $L(X)$ of closed blocks covering the ones costs $\sum_i h(\Pr[i\in L(X)])$, and
+    each $X$ is charged its own parts.
+  - Tools: `lent_pair` (subadditivity via `gibbs`), `lent_bits`, `lent_bool`, `lent_split`.
+  - No adaptive chain rule was needed.
+  - By hand, it proves (MT) for clustered closed covers: if $\mathbb E\lvert L\rvert = a\,n/m$ with
+    $a = O(1)$, then multiplicity up to $r\approx m^{1/4-\varepsilon}$ is allowed.
+- **Next:**
+  - a structural bound on $a$ (the closed-block cover number of a typical minimal transversal)
+    for unions of cliques;
+  - other block structures in which a block containing one critical edge is closed;
+  - or a counterexample, which needs minimal transversals whose ones have no clustered closed cover.
 
 *Suggested order (from 2026-10-20):*
 1. **Check the sources first.** Read MRW's open problem and Mossé–Sha–Tan's Cor. 31–34 in the
@@ -120,11 +129,11 @@ interesting and asked to continue it.
   circuits at $k' \approx 2n/k$". This is unverified and nothing depends on it.
 
 *State:*
-- Git: `main` is 4 commits ahead of `origin` after the 2026-10-28 session, unpushed (check with
+- Git: `main` is 9 commits ahead of `origin` after the 2026-11-01 session, unpushed (check with
   `git rev-list --count origin/main..main`). The tree is clean apart from the uncommitted
   `notes/`. Push only when the user asks.
-- `Monotone_K` has 18 theories (newest: `Closed_Blocks`, `Past_Antichain`). It builds in
-  about 20 s, and `Audit_K` lists every headline theorem.
+- `Monotone_K` has 19 theories (newest: `Closed_Entropy`, `Closed_Blocks`, `Past_Antichain`). It builds in
+  about 35 s, and `Audit_K` lists every headline theorem.
 - Shell: Bash tool commands run under zsh, so quote globs. Use `gsed`, which is GNU and
   installed, rather than BSD `sed -i ''`. `grep` is Claude Code's ugrep shim. These notes are
   also in memory.

@@ -1,8 +1,8 @@
 # Monotone $\Sigma_3^k$ for Majority, $k \ge 4$: research log
 
-$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit e740118d8d8f443a22f713e545f46fdf6a769dfc (2026-10-28)}$
+$\tiny\color{transparent}\text{provenance: github.com/ott2/circuitub, extensions/monotone-k.md, on top of commit 572a0f9b92b79483906769e8f3a615a21f72e5a6 (2026-11-01)}$
 
-Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), the witness-antichain bound `witness_bound` (§6i), and the adaptive form `past_antichain` with `clique_bound`, (MT) for unions of few cliques (§6k). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now (MT) (§6i–§6k).**
+Status: **open problem. Formal rungs (session `Monotone_K`): `cluster_count` (§6) and the Harris inequality with its consequences (§6a), `shadow_branch` (§6b), and the Shearer certificate theorems, including typical and deviation forms (§6c, §6d, §6g), the witness-antichain bound `witness_bound` (§6i), and the adaptive form `past_antichain` with `clique_bound`, (MT) for unions of few cliques (§6k), and its entropy form `label_entropy` (§6m). The rest is pen and paper. The deficit conjecture of §6d is refuted in §6e; the main line is now (MT) (§6i–§6k).**
 
 ## 1. The question, and what is known
 
@@ -1375,6 +1375,68 @@ essentially.
 **Consequences for the project.** None of the documents rely on ETH or SETH; this was checked
 by grep on 2026-10-30. GPPST's $\Sigma_3^k$ conjecture and (MT) are combinatorial and are
 unaffected.
+
+## 6m. Entropy labels for closed blocks [F], 2026-11-01
+
+*Formal* (`Closed_Entropy.thy`, audited).
+- `lent_pair`: $H(g,h)\le H(g)+H(h)$. Proof: `gibbs` against the product distribution
+  $p_g(a)p_h(b)$, whose mass on the occurring pairs is at most 1.
+- `lent_bits`: a label $L(X)\subseteq\lbrace 0..N-1\rbrace$ has $H(L)\le\sum_i H([i\in L(X)])$.
+  `lent_bool`: each bit costs its binary entropy, $h(p)=-p\ln p-(1-p)\ln(1-p)$ (`bent`).
+- `lent_split`: $\ln\lvert F\rvert = H(g) + \mathbb E\ln\lvert\text{class of }X\rvert$ exactly.
+- **`label_entropy`.** Let $L(X)$ be *any* set of blocks that are closed for $X$ and cover the
+  ones of $X$. Then
+  $$\ln\#F \le \sum_{i<N} h\bigl(\Pr[i\in L(X)]\bigr) + \mathbb E_X\sum_{i\in L(X)}\ln\tbinom{\lvert K_i\rvert}{\lfloor\lvert K_i\rvert/2\rfloor},$$
+  where $K_i$ is $B_i$ minus the earlier blocks of $L(X)$. Special cases:
+  - `closed_entropy_avg`, with $L$ the set of all closed blocks;
+  - `closed_entropy`, the worst-case form, with $n(\ln 2-\frac{\ln((3m+2)/2)}{2m})$;
+  - `clique_entropy` for unions of cliques.
+
+  The counting form `closed_bound` pays $\ln 2$ per block. Here a block costs only $h(p_i)$,
+  which is nearly 0 when the block is almost always or almost never in the label.
+
+**What it gives** (by hand, from `label_entropy`). Take blocks of size $\le m$, let $N = rn/m$
+(so $r$ is the average multiplicity), and let $L$ be an *irredundant* label: every block of $L(X)$
+contributes a one not covered by earlier blocks, so every part is nonempty. Write
+$\mathbb E\lvert L(X)\rvert = a\,n/m$, and $\sigma_m = \frac12\ln\frac{3m+2}{2}$.
+- *Saving per part.* For $1\le j\le m$, $s(j) = j\ln2-\ln\binom{j}{\lfloor j/2\rfloor}$ is at
+  least $\ln 2$ (since $\binom{j}{\lfloor j/2\rfloor}\le 2^{j-1}$), and also at least
+  $\frac jm\sigma_m$ (`chord`). So $s(j)\ge\frac12\ln2+\frac{j}{2m}\sigma_m$, and the expected
+  saving is at least $\frac{a n}{m}\cdot\frac{\ln 2}{2} + \frac{n}{2m}\sigma_m$. Vertices outside
+  the label save $\ln 2\ge\sigma_m/(2m)$ each.
+- *Cost.* $h$ is concave and $h(p)\le p\ln(e/p)$, so
+  $\sum_i h(p_i)\le N h(\frac{an/m}{N})\le\frac{an}{m}\ln\frac{er}{a}$.
+- *Net.*
+  $$\ln\#\mathrm{mtr}\le n\ln 2-\frac nm\Bigl(\frac{\sigma_m}{2}-a\ln\frac{er}{\sqrt2\,a}\Bigr).$$
+  So (MT) holds, with saving $\Omega(n\log k/k)$ for $m = \Theta(k)$, whenever
+  $$a\ln\frac{er}{\sqrt2\,a}\le(1-\varepsilon)\,\tfrac14\ln m,\qquad\text{e.g. } a\le 1,\ r\le\tfrac{\sqrt2}{e}\,m^{(1-\varepsilon)/4}.$$
+  This is polynomial multiplicity, against $r\approx\frac14\log_2 k$ for `clique_bound`.
+- *The condition is on $a$.*
+  - $a\ge\mathbb E\lvert X\rvert/n$ always, since each block holds at most $m$ ones.
+  - $a = O(1)$ says that the ones of a typical minimal transversal can be covered by
+    $O(n/m)$ closed blocks: the critical structure *clusters at scale $m$*. That is the
+    handoff's "clustered" class made precise.
+  - The label may be canonical, for example the lexicographically first minimum cover, so $a$ is
+    then the expected closed-block cover number of the ones times $m/n$.
+  - If covers need many tiny parts, $a$ approaches $m$, and the bound fails once $r\ge2$. The
+    small parts then save only about a PPZ amount.
+- *Sanity checks.*
+  - Disjoint blocks: $a = 1$, $r = 1$, so the condition holds.
+  - Random overlapping cliques: a tight block holds about $k$ ones. If each one lies in about
+    $\lambda$ tight blocks, a greedy cover has $a = O(\log\lambda)$ (set cover), so the condition
+    holds for $r\le m^{c/\log\lambda}$. With $\lambda = O(1)$ that is polynomial multiplicity
+    (heuristic).
+
+**Where this leaves the strand.** (MT) is now formal, unconditionally, for components of size
+$O(k)$ (`mtr_parts`) and for unions of $O(n\log k/k)$ cliques (`clique_bound`). It is reduced, by
+a formal inequality, to a covering statement about the uniform measure: *clustered closed covers
+with $a = O(1)$ and multiplicity $r\le m^{1/4-\varepsilon}$*.
+- What remains for unions of cliques is a structural bound on $a$, or on $\sum_i h(p_i)$
+  directly.
+- Beyond cliques, one needs block structures in which a block holding one critical edge is
+  closed, as in §6k.
+- A counterexample to (MT) must have minimal transversals whose ones admit no clustered closed
+  cover. Any block family it carries must have high multiplicity or force tiny parts.
 
 ## 7. The structural question
 
