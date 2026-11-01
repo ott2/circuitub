@@ -32,7 +32,7 @@ ML \<open>
      @{thm fibre_count}, @{thm closed_fixed}, @{thm closed_blocks}, @{thm clique_closed}, @{thm clique_union},
      @{thm wamgm}, @{thm chord}, @{thm part_saving}, @{thm closed_bound}, @{thm clique_bound}, @{thm saving_nonneg}, @{thm prod_bound},
      @{thm lent_explicit}, @{thm lent_pair}, @{thm lent_cong}, @{thm lent_bits}, @{thm lent_bool}, @{thm lent_max},
-     @{thm closed_entropy}, @{thm clique_entropy}];
+     @{thm closed_entropy}, @{thm clique_entropy}, @{thm lent_split}, @{thm lcls_closed}, @{thm closed_entropy_avg}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

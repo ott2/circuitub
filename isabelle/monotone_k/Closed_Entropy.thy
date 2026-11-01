@@ -244,6 +244,85 @@ proof -
   finally show ?thesis unfolding c_def by simp
 qed
 
+text \<open>The average form: \<open>ln |F| = H(T) + E ln |class of X|\<close> exactly, so each \<open>X\<close> is charged
+  the product over the parts of its own label, not the worst label.\<close>
+
+lemma lent_split:
+  assumes fin: "finite F" and ne: "F \<noteq> {}"
+  shows "ln (real (card F)) = lent F g + (\<Sum>X\<in>F. ln (real (lcls F g X))) / real (card F)"
+  unfolding lent_def by simp
+
+lemma lcls_closed:
+  fixes N :: nat
+  assumes finF: "finite F" and tr: "\<forall>X\<in>F. \<forall>e\<in>H. e \<inter> X \<noteq> {}"
+    and finB: "\<forall>i<N. finite (B i)"
+    and cov: "\<forall>X\<in>F. \<forall>v\<in>X. \<exists>i<N. v \<in> B i \<and> bclosed H X (B i)" and X: "X \<in> F"
+  shows "lcls F (closedset H B N) X \<le> (\<Prod>i\<in>closedset H B N X.
+    card (part B (closedset H B N X) i) choose (card (part B (closedset H B N X) i) div 2))"
+proof -
+  define T where "T = closedset H B N X"
+  define G where "G = {Y\<in>F. closedset H B N Y = T}"
+  have TN: "T \<subseteq> {..<N}" unfolding T_def closedset_def by blast
+  have "card G \<le> (\<Prod>i\<in>T. card (part B T i) choose (card (part B T i) div 2))"
+  proof (rule closed_fixed[OF _ _ _ _ _ TN])
+    show "finite G" using finF unfolding G_def by simp
+    show "\<forall>X\<in>G. \<forall>e\<in>H. e \<inter> X \<noteq> {}" using tr unfolding G_def by blast
+    show "\<forall>X\<in>G. \<forall>i\<in>T. bclosed H X (B i)" unfolding G_def closedset_def by blast
+    show "\<forall>X\<in>G. X \<subseteq> \<Union>(B ` T)"
+    proof (intro ballI subsetI)
+      fix Y v assume Y: "Y \<in> G" and v: "v \<in> Y"
+      obtain i where "i < N" "v \<in> B i" "bclosed H Y (B i)" using cov Y v unfolding G_def by blast
+      then have "i \<in> T" using Y unfolding G_def closedset_def by blast
+      then show "v \<in> \<Union>(B ` T)" using \<open>v \<in> B i\<close> by blast
+    qed
+    show "\<forall>i\<in>T. finite (B i)" using finB TN by blast
+  qed
+  moreover have "lcls F (closedset H B N) X = card G" unfolding lcls_def G_def T_def by (simp add: eq_commute)
+  ultimately show ?thesis unfolding T_def by simp
+qed
+
+theorem closed_entropy_avg:
+  fixes N :: nat
+  assumes finF: "finite F" and ne: "F \<noteq> {}"
+    and tr: "\<forall>X\<in>F. \<forall>e\<in>H. e \<inter> X \<noteq> {}"
+    and finB: "\<forall>i<N. finite (B i)"
+    and cov: "\<forall>X\<in>F. \<forall>v\<in>X. \<exists>i<N. v \<in> B i \<and> bclosed H X (B i)"
+  shows "ln (real (card F)) \<le> (\<Sum>i<N. bent (real (card {X\<in>F. bclosed H X (B i)}) / real (card F)))
+    + (\<Sum>X\<in>F. \<Sum>i\<in>closedset H B N X.
+         ln (real (card (part B (closedset H B N X) i) choose (card (part B (closedset H B N X) i) div 2))))
+      / real (card F)"
+proof -
+  define g where "g = closedset H B N"
+  define b where "b X i = card (part B (g X) i) choose (card (part B (g X) i) div 2)" for X i
+  have N: "0 < real (card F)" using finF ne by (simp add: card_gt_0_iff)
+  have pt: "ln (real (lcls F g X)) \<le> (\<Sum>i\<in>g X. ln (real (b X i)))" if X: "X \<in> F" for X
+  proof -
+    have finT: "finite (g X)" unfolding g_def closedset_def by simp
+    have pos: "0 < real (b X i)" for i unfolding b_def by simp
+    have "real (lcls F g X) \<le> real (\<Prod>i\<in>g X. b X i)"
+      unfolding g_def b_def by (rule of_nat_mono, rule lcls_closed[OF finF tr finB cov X])
+    then have "ln (real (lcls F g X)) \<le> ln (real (\<Prod>i\<in>g X. b X i))"
+      by (rule ln_mono) (rule lcls_pos[OF finF X])
+    also have "\<dots> = (\<Sum>i\<in>g X. ln (real (b X i)))"
+      using ln_prod[OF finT, of "\<lambda>i. real (b X i)"] pos by (simp add: of_nat_prod)
+    finally show ?thesis .
+  qed
+  have "ln (real (card F)) = lent F g + (\<Sum>X\<in>F. ln (real (lcls F g X))) / real (card F)"
+    by (rule lent_split[OF finF ne])
+  also have "(\<Sum>X\<in>F. ln (real (lcls F g X))) / real (card F) \<le> (\<Sum>X\<in>F. \<Sum>i\<in>g X. ln (real (b X i))) / real (card F)"
+    by (rule divide_right_mono, rule sum_mono, rule pt) (use N in simp_all)
+  also have "lent F g \<le> (\<Sum>i<N. lent F (\<lambda>X. i \<in> g X))"
+    by (rule lent_bits[OF finF ne]) (simp add: g_def closedset_def subset_iff)
+  also have "(\<Sum>i<N. lent F (\<lambda>X. i \<in> g X)) = (\<Sum>i<N. bent (real (card {X\<in>F. bclosed H X (B i)}) / real (card F)))"
+  proof (rule sum.cong[OF refl])
+    fix i assume "i \<in> {..<N}"
+    then have "(\<lambda>X. i \<in> g X) = (\<lambda>X. bclosed H X (B i))" unfolding g_def closedset_def by auto
+    then show "lent F (\<lambda>X. i \<in> g X) = bent (real (card {X\<in>F. bclosed H X (B i)}) / real (card F))"
+      using lent_bool[OF finF ne, of "\<lambda>X. bclosed H X (B i)"] by simp
+  qed
+  finally show ?thesis unfolding g_def b_def by simp
+qed
+
 corollary clique_entropy:
   fixes N :: nat
   assumes finV: "finite V" and BV: "\<forall>i<N. B i \<subseteq> V" and Bm: "\<forall>i<N. card (B i) \<le> m" and m: "0 < m"
