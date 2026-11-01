@@ -323,6 +323,56 @@ proof -
   finally show ?thesis unfolding g_def b_def by simp
 qed
 
+text \<open>Any label works: \<open>L X\<close> need only consist of blocks closed for \<open>X\<close> that cover the ones of
+  \<open>X\<close>. A sparser label (for instance an irredundant subcover) costs less entropy.\<close>
+
+theorem label_entropy:
+  fixes N :: nat and L :: "'a set \<Rightarrow> nat set"
+  assumes finF: "finite F" and ne: "F \<noteq> {}"
+    and tr: "\<forall>X\<in>F. \<forall>e\<in>H. e \<inter> X \<noteq> {}"
+    and finB: "\<forall>i<N. finite (B i)" and LN: "\<forall>X\<in>F. L X \<subseteq> {..<N}"
+    and clL: "\<forall>X\<in>F. \<forall>i\<in>L X. bclosed H X (B i)"
+    and covL: "\<forall>X\<in>F. X \<subseteq> \<Union>(B ` L X)"
+  shows "ln (real (card F)) \<le> (\<Sum>i<N. bent (real (card {X\<in>F. i \<in> L X}) / real (card F)))
+    + (\<Sum>X\<in>F. \<Sum>i\<in>L X. ln (real (card (part B (L X) i) choose (card (part B (L X) i) div 2))))
+      / real (card F)"
+proof -
+  define b where "b X i = card (part B (L X) i) choose (card (part B (L X) i) div 2)" for X i
+  have N: "0 < real (card F)" using finF ne by (simp add: card_gt_0_iff)
+  have pt: "ln (real (lcls F L X)) \<le> (\<Sum>i\<in>L X. ln (real (b X i)))" if X: "X \<in> F" for X
+  proof -
+    define T where "T = L X"
+    define G where "G = {Y\<in>F. L Y = T}"
+    have TN: "T \<subseteq> {..<N}" unfolding T_def using LN X by blast
+    have finT: "finite T" using TN finite_subset by blast
+    have "card G \<le> (\<Prod>i\<in>T. card (part B T i) choose (card (part B T i) div 2))"
+    proof (rule closed_fixed[OF _ _ _ _ _ TN])
+      show "finite G" using finF unfolding G_def by simp
+      show "\<forall>X\<in>G. \<forall>e\<in>H. e \<inter> X \<noteq> {}" using tr unfolding G_def by blast
+      show "\<forall>X\<in>G. \<forall>i\<in>T. bclosed H X (B i)" using clL unfolding G_def by blast
+      show "\<forall>X\<in>G. X \<subseteq> \<Union>(B ` T)" using covL unfolding G_def by blast
+      show "\<forall>i\<in>T. finite (B i)" using finB TN by blast
+    qed
+    moreover have "lcls F L X = card G" unfolding lcls_def G_def T_def by (simp add: eq_commute)
+    ultimately have "lcls F L X \<le> (\<Prod>i\<in>L X. b X i)" unfolding b_def T_def by simp
+    then have le: "real (lcls F L X) \<le> real (\<Prod>i\<in>L X. b X i)" by (rule of_nat_mono)
+    have pos: "0 < real (b X i)" for i unfolding b_def by simp
+    have "ln (real (lcls F L X)) \<le> ln (real (\<Prod>i\<in>L X. b X i))"
+      by (rule ln_mono[OF le]) (rule lcls_pos[OF finF X])
+    also have "\<dots> = (\<Sum>i\<in>L X. ln (real (b X i)))"
+      using ln_prod[OF finT[unfolded T_def], of "\<lambda>i. real (b X i)"] pos by (simp add: of_nat_prod)
+    finally show ?thesis .
+  qed
+  have "ln (real (card F)) = lent F L + (\<Sum>X\<in>F. ln (real (lcls F L X))) / real (card F)"
+    by (rule lent_split[OF finF ne])
+  also have "(\<Sum>X\<in>F. ln (real (lcls F L X))) / real (card F) \<le> (\<Sum>X\<in>F. \<Sum>i\<in>L X. ln (real (b X i))) / real (card F)"
+    by (rule divide_right_mono, rule sum_mono, rule pt) (use N in simp_all)
+  also have "lent F L \<le> (\<Sum>i<N. lent F (\<lambda>X. i \<in> L X))" by (rule lent_bits[OF finF ne LN])
+  also have "(\<Sum>i<N. lent F (\<lambda>X. i \<in> L X)) = (\<Sum>i<N. bent (real (card {X\<in>F. i \<in> L X}) / real (card F)))"
+    by (rule sum.cong[OF refl]) (rule lent_bool[OF finF ne])
+  finally show ?thesis unfolding b_def by simp
+qed
+
 corollary clique_entropy:
   fixes N :: nat
   assumes finV: "finite V" and BV: "\<forall>i<N. B i \<subseteq> V" and Bm: "\<forall>i<N. card (B i) \<le> m" and m: "0 < m"
