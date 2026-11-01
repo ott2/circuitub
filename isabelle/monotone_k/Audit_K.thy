@@ -1,5 +1,5 @@
 theory Audit_K
-  imports Harris_PPZ Shadow_Branch Deep_Payment Link_Gadget Private_Design Shearer_Sub Shearer_Entropy Shearer_Concentration Shearer_Certificate Shearer_Typical Shearer_Conditional Mirror_Payment Witness_Antichain Past_Antichain Minterm_Cover Closed_Blocks
+  imports Harris_PPZ Shadow_Branch Deep_Payment Link_Gadget Private_Design Shearer_Sub Shearer_Entropy Shearer_Concentration Shearer_Certificate Shearer_Typical Shearer_Conditional Mirror_Payment Witness_Antichain Past_Antichain Minterm_Cover Closed_Blocks Closed_Entropy
 begin
 
 text \<open>
@@ -30,7 +30,9 @@ ML \<open>
      @{thm mtr_crit}, @{thm mtr_parts},
      @{thm residue_antichain}, @{thm gapped_sperner}, @{thm past_local}, @{thm past_antichain}, @{thm past_defect},
      @{thm fibre_count}, @{thm closed_fixed}, @{thm closed_blocks}, @{thm clique_closed}, @{thm clique_union},
-     @{thm wamgm}, @{thm chord}, @{thm part_saving}, @{thm closed_bound}, @{thm clique_bound}];
+     @{thm wamgm}, @{thm chord}, @{thm part_saving}, @{thm closed_bound}, @{thm clique_bound}, @{thm saving_nonneg}, @{thm prod_bound},
+     @{thm lent_explicit}, @{thm lent_pair}, @{thm lent_cong}, @{thm lent_bits}, @{thm lent_bool}, @{thm lent_max},
+     @{thm closed_entropy}, @{thm clique_entropy}];
   val oracles = Thm_Deps.all_oracles headline;
   val _ =
     if null oracles then writeln "AUDIT OK: headline theorems depend on no oracles"

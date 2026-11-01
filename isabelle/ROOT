@@ -47,6 +47,7 @@ session Monotone_K in "monotone_k" = Majority_AC0 +
     Past_Antichain
     Minterm_Cover
     Closed_Blocks
+    Closed_Entropy
     Audit_K
 
 session GKPRST_Majority in "gkprst/majority" = Majority_AC0 +

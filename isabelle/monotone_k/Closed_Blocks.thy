@@ -236,6 +236,78 @@ proof -
   finally show ?thesis .
 qed
 
+lemma saving_nonneg:
+  assumes m: "0 < m"
+  shows "0 \<le> ln 2 - ln ((3 * real m + 2) / 2) / (2 * real m)"
+proof -
+  have p4: "(3 * real j + 2) / 2 \<le> (4::real) ^ j" for j
+  proof (induction j)
+    case 0 then show ?case by simp
+  next
+    case (Suc j)
+    have "(1::real) \<le> 4 ^ j" by (rule one_le_power) simp
+    then show ?case using Suc.IH by simp
+  qed
+  have "ln ((3 * real m + 2) / 2) \<le> ln ((4::real) ^ m)" by (rule ln_mono[OF p4]) simp
+  also have "ln ((4::real) ^ m) = real m * ln 4" by (simp add: ln_realpow)
+  also have "ln (4::real) = 2 * ln 2" using ln_mult[of 2 2] by simp
+  finally show ?thesis using m by (simp add: field_simps)
+qed
+
+lemma prod_bound:
+  assumes finV: "finite V" and BV: "\<forall>i<N. B i \<subseteq> V" and Bm: "\<forall>i<N. card (B i) \<le> m" and m: "0 < m"
+    and T: "T \<in> Pow {..<N}"
+  shows "real (\<Prod>i\<in>T. card (part B T i) choose (card (part B T i) div 2))
+    \<le> exp (real (card V) * (ln 2 - ln ((3 * real m + 2) / 2) / (2 * real m)))"
+proof -
+  define c where "c = ln 2 - ln ((3 * real m + 2) / 2) / (2 * real m)"
+  have c0: "0 \<le> c" unfolding c_def by (rule saving_nonneg[OF m])
+  have finB: "\<forall>i<N. finite (B i)" using BV finV finite_subset by blast
+  define b where "b T i = card (part B T i) choose (card (part B T i) div 2)" for T i
+  have finT: "finite T" using T finite_subset by blast
+  have pos: "0 < real (b T i)" for i unfolding b_def by simp
+  have partB: "part B T i \<subseteq> B i" for i unfolding part_def by blast
+  have cardp: "card (part B T i) \<le> m" if "i \<in> T" for i
+    using card_mono[OF _ partB[of i]] finB Bm that T by (meson PowD lessThan_iff subsetD order_trans)
+  have "ln (real (\<Prod>i\<in>T. b T i)) = (\<Sum>i\<in>T. ln (real (b T i)))"
+    using ln_prod[OF finT, of "\<lambda>i. real (b T i)"] pos by (simp add: of_nat_prod)
+  also have "\<dots> \<le> (\<Sum>i\<in>T. real (card (part B T i)) * c)"
+    by (rule sum_mono) (unfold b_def c_def, rule part_saving[OF cardp m], simp)
+  also have "\<dots> = real (\<Sum>i\<in>T. card (part B T i)) * c" by (simp add: sum_distrib_right)
+  also have "(\<Sum>i\<in>T. card (part B T i)) = card (\<Union>(part B T ` T))"
+  proof (rule card_UN_disjoint[symmetric, OF finT])
+    show "\<forall>i\<in>T. finite (part B T i)"
+    proof
+      fix i assume "i \<in> T"
+      then have "i < N" using T by blast
+      then have "finite (B i)" using finB by blast
+      then show "finite (part B T i)" by (rule finite_subset[OF partB])
+    qed
+    show "\<forall>i\<in>T. \<forall>j\<in>T. i \<noteq> j \<longrightarrow> part B T i \<inter> part B T j = {}"
+    proof (intro ballI impI)
+      fix i j assume i: "i \<in> T" and j: "j \<in> T" and ij: "i \<noteq> j"
+      show "part B T i \<inter> part B T j = {}"
+      proof (cases "i < j")
+        case True then have "B i \<subseteq> upto B T j" unfolding upto_def using i by blast
+        then show ?thesis unfolding part_def by blast
+      next
+        case False then have "j < i" using ij by simp
+        then have "B j \<subseteq> upto B T i" unfolding upto_def using j by blast
+        then show ?thesis unfolding part_def by blast
+      qed
+    qed
+  qed
+  also have "real (card (\<Union>(part B T ` T))) * c \<le> real (card V) * c"
+  proof (rule mult_right_mono[OF _ c0])
+    have "\<Union>(part B T ` T) \<subseteq> V" using partB BV T by blast
+    then show "real (card (\<Union>(part B T ` T))) \<le> real (card V)" by (simp add: card_mono finV)
+  qed
+  finally have "ln (real (\<Prod>i\<in>T. b T i)) \<le> real (card V) * c" .
+  moreover have "0 < real (\<Prod>i\<in>T. b T i)" using pos by (simp add: prod_pos)
+  ultimately have "real (\<Prod>i\<in>T. b T i) \<le> exp (real (card V) * c)" by (metis exp_ln exp_le_cancel_iff)
+  then show ?thesis unfolding b_def c_def .
+qed
+
 theorem closed_bound:
   assumes finF: "finite F" and ne: "F \<noteq> {}" and finV: "finite V"
     and tr: "\<forall>X\<in>F. \<forall>e\<in>H. e \<inter> X \<noteq> {}"
@@ -245,66 +317,9 @@ theorem closed_bound:
 proof -
   define c where "c = ln 2 - ln ((3 * real m + 2) / 2) / (2 * real m)"
   have finB: "\<forall>i<N. finite (B i)" using BV finV finite_subset by blast
-  have c0: "0 \<le> c"
-  proof -
-    have p4: "(3 * real j + 2) / 2 \<le> (4::real) ^ j" for j
-    proof (induction j)
-      case 0 then show ?case by simp
-    next
-      case (Suc j)
-      have "(1::real) \<le> 4 ^ j" by (rule one_le_power) simp
-      then show ?case using Suc.IH by simp
-    qed
-    have "ln ((3 * real m + 2) / 2) \<le> ln ((4::real) ^ m)" by (rule ln_mono[OF p4]) simp
-    also have "ln ((4::real) ^ m) = real m * ln 4" by (simp add: ln_realpow)
-    also have "ln (4::real) = 2 * ln 2" using ln_mult[of 2 2] by simp
-    finally show ?thesis unfolding c_def using m by (simp add: field_simps)
-  qed
   define b where "b T i = card (part B T i) choose (card (part B T i) div 2)" for T i
   have each: "real (\<Prod>i\<in>T. b T i) \<le> exp (real (card V) * c)" if T: "T \<in> Pow {..<N}" for T
-  proof -
-    have finT: "finite T" using T finite_subset by blast
-    have pos: "0 < real (b T i)" for i unfolding b_def by simp
-    have partB: "part B T i \<subseteq> B i" for i unfolding part_def by blast
-    have cardp: "card (part B T i) \<le> m" if "i \<in> T" for i
-      using card_mono[OF _ partB[of i]] finB Bm that T by (meson PowD lessThan_iff subsetD order_trans)
-    have "ln (real (\<Prod>i\<in>T. b T i)) = (\<Sum>i\<in>T. ln (real (b T i)))"
-      using ln_prod[OF finT, of "\<lambda>i. real (b T i)"] pos by (simp add: of_nat_prod)
-    also have "\<dots> \<le> (\<Sum>i\<in>T. real (card (part B T i)) * c)"
-      by (rule sum_mono) (unfold b_def c_def, rule part_saving[OF cardp m], simp)
-    also have "\<dots> = real (\<Sum>i\<in>T. card (part B T i)) * c" by (simp add: sum_distrib_right)
-    also have "(\<Sum>i\<in>T. card (part B T i)) = card (\<Union>(part B T ` T))"
-    proof (rule card_UN_disjoint[symmetric, OF finT])
-      show "\<forall>i\<in>T. finite (part B T i)"
-      proof
-        fix i assume "i \<in> T"
-        then have "i < N" using T by blast
-        then have "finite (B i)" using finB by blast
-        then show "finite (part B T i)" by (rule finite_subset[OF partB])
-      qed
-      show "\<forall>i\<in>T. \<forall>j\<in>T. i \<noteq> j \<longrightarrow> part B T i \<inter> part B T j = {}"
-      proof (intro ballI impI)
-        fix i j assume i: "i \<in> T" and j: "j \<in> T" and ij: "i \<noteq> j"
-        show "part B T i \<inter> part B T j = {}"
-        proof (cases "i < j")
-          case True then have "B i \<subseteq> upto B T j" unfolding upto_def using i by blast
-          then show ?thesis unfolding part_def by blast
-        next
-          case False then have "j < i" using ij by simp
-          then have "B j \<subseteq> upto B T i" unfolding upto_def using j by blast
-          then show ?thesis unfolding part_def by blast
-        qed
-      qed
-    qed
-    also have "real (card (\<Union>(part B T ` T))) * c \<le> real (card V) * c"
-    proof (rule mult_right_mono[OF _ c0])
-      have "\<Union>(part B T ` T) \<subseteq> V" using partB BV T by blast
-      then show "real (card (\<Union>(part B T ` T))) \<le> real (card V)" by (simp add: card_mono finV)
-    qed
-    finally have "ln (real (\<Prod>i\<in>T. b T i)) \<le> real (card V) * c" .
-    moreover have "0 < real (\<Prod>i\<in>T. b T i)" using pos by (simp add: prod_pos)
-    ultimately show ?thesis by (metis exp_ln exp_le_cancel_iff)
-  qed
+    unfolding b_def c_def by (rule prod_bound[OF finV BV Bm m T])
   have "real (card F) \<le> real (\<Sum>T\<in>Pow {..<N}. \<Prod>i\<in>T. b T i)"
     unfolding b_def by (rule of_nat_mono, rule closed_blocks[OF finF tr finB cov])
   also have "\<dots> = (\<Sum>T\<in>Pow {..<N}. real (\<Prod>i\<in>T. b T i))" by simp
